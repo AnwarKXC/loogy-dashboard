@@ -1,7 +1,9 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   count?: number
-  ids?: number[]
+  // Accept number[] or string[] from callers (template bindings sometimes
+  // infer string ids). We coerce to numbers when making the API request.
+  ids?: Array<number | string>
 }>(), {
   count: 0,
   ids: () => []
@@ -24,7 +26,8 @@ async function onSubmit() {
     const { deleted } = await $fetch<{ deleted: number }>('/api/customers', {
       method: 'DELETE',
       body: {
-        ids: props.ids
+        // Ensure numeric ids are sent to the API
+        ids: (props.ids ?? []).map(v => Number(v))
       }
     })
 

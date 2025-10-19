@@ -11,7 +11,9 @@ export default defineEventHandler(async (event) => {
   const bucket = runtimeConfig.s3Bucket
   const accessKey = runtimeConfig.s3AccessKey
   const secretKey = runtimeConfig.s3SecretAccessKey
-  const region = runtimeConfig.s3Region || 'eu-north-1'
+  const region = typeof runtimeConfig.s3Region === 'string'
+    ? runtimeConfig.s3Region
+    : 'eu-north-1'
 
   await requireSuperAdmin(event)
 
@@ -41,7 +43,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const client = new S3Client({
-    region,
+    // Ensure region is a string to satisfy the S3ClientConfig type
+    region: String(region),
     credentials: {
       accessKeyId: accessKey,
       secretAccessKey: secretKey

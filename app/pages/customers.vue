@@ -12,7 +12,7 @@ const UCheckbox = resolveComponent('UCheckbox')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const toast = useToast()
-const table = useTemplateRef('table')
+const table = useTemplateRef<any>('table')
 
 const page = ref(1)
 const pageSize = ref(10)
@@ -160,8 +160,8 @@ const pageSizeItems = [
   { label: '50 per page', value: 50 }
 ]
 
-const selectedCustomerIds = computed(() =>
-  table.value?.tableApi?.getSelectedRowModel().rows.map(row => row.original.id) ?? []
+const selectedCustomerIds = computed<number[]>(() =>
+  table.value?.tableApi?.getSelectedRowModel().rows.map((row: any) => row.original.id) ?? []
 )
 
 const selectedCount = computed(() => selectedCustomerIds.value.length)

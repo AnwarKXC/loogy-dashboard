@@ -931,7 +931,8 @@ export default defineEventHandler(async (event) => {
     }
 
     const candidate = tokens[0]
-    return /[\u0600-\u06FF]/.test(candidate) ? candidate : null
+    // Ensure candidate is a string before calling RegExp.test
+    return (typeof candidate === 'string' && /[\u0600-\u06FF]/.test(candidate)) ? candidate : null
   })()
 
   const arabicExtras = [body.descriptionAr, body.shortDescriptionAr, copy.descriptionAr, copy.shortDescriptionAr]
