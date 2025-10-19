@@ -12,7 +12,7 @@ const UCheckbox = resolveComponent('UCheckbox')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const toast = useToast()
-const table = useTemplateRef<any>('table')
+const table = useTemplateRef<HTMLTableElement | undefined>('table')
 
 const page = ref(1)
 const pageSize = ref(10)
@@ -160,9 +160,19 @@ const pageSizeItems = [
   { label: '50 per page', value: 50 }
 ]
 
-const selectedCustomerIds = computed<number[]>(() =>
-  table.value?.tableApi?.getSelectedRowModel().rows.map((row: any) => row.original.id) ?? []
-)
+function isRowWithOriginalId(row: unknown): row is { original: { id: number } } {
+  return typeof row === 'object'
+    && row !== null
+    && 'original' in row
+    && typeof (row as { original: { id?: unknown } }).original.id === 'number'
+}
+
+const selectedCustomerIds = computed<number[]>(() => {
+  const rows: unknown[] = table.value?.tableApi?.getSelectedRowModel().rows ?? []
+  return rows
+    .map((row: unknown): number | undefined => isRowWithOriginalId(row) ? row.original.id : undefined)
+    .filter((id: unknown): id is number => typeof id === 'number')
+})
 
 const selectedCount = computed(() => selectedCustomerIds.value.length)
 
