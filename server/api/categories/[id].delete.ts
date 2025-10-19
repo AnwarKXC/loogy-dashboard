@@ -1,6 +1,6 @@
 import { eventHandler, createError, setResponseStatus } from 'h3'
 
-import prisma from '../../utils/prisma'
+import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getLocalizedString } from '../products/utils'
 

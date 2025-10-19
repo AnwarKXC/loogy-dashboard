@@ -1,7 +1,7 @@
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 
-import prisma from '../../utils/prisma'
+import { prisma } from '../../utils/prisma'
 import { createSuperAdminSession, verifyPassword } from '../../utils/superadmin-session'
 
 const loginSchema = z.object({

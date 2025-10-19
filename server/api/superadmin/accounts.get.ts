@@ -1,6 +1,6 @@
 import { eventHandler } from 'h3'
 
-import prisma from '../../utils/prisma'
+import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 
 export default eventHandler(async (event) => {

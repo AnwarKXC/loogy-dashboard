@@ -4,7 +4,7 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 
-import prisma from '../../utils/prisma'
+import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { customerListInclude, mapCustomerToListItem } from '../../utils/customers'
 

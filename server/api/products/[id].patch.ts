@@ -1,8 +1,8 @@
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 
-import { Prisma } from '~/generated/prisma'
-import prisma from '../../utils/prisma'
+import { Prisma } from '../../../app/generated/prisma'
+import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getProductInclude, mapProductToDetail } from '../../utils/products'
 import type { ProductWithRelations } from '../../utils/products'

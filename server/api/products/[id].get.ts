@@ -1,7 +1,7 @@
 import { createError, eventHandler } from 'h3'
 import { z } from 'zod'
 
-import prisma from '../../utils/prisma'
+import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getProductInclude, mapProductToDetail } from '../../utils/products'
 import type { ProductWithRelations } from '../../utils/products'

@@ -1,8 +1,8 @@
 import { createError, eventHandler } from 'h3'
 import { z } from 'zod'
 
-import type { Prisma } from '~/generated/prisma'
-import prisma from '../../utils/prisma'
+import type { Prisma } from '../../../app/generated/prisma'
+import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getProductInclude, mapProductToListItem } from '../../utils/products'
 import type { ProductWithRelations } from '../../utils/products'
