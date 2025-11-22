@@ -16,13 +16,12 @@ export default defineNuxtConfig({
     s3AccessKey: process.env.S3_ACCESS_KEY,
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
     s3Bucket: process.env.S3_BUCKET_NAME,
+    whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN,
+    whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    whatsappApiVersion: process.env.WHATSAPP_API_VERSION,
+    adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER,
     public: {
-    }
-  },
-
-  routeRules: {
-    '/api/**': {
-      cors: true
+      socketUrl: process.env.SOCKET_URL || 'http://localhost:3000'
     }
   },
 
@@ -34,6 +33,7 @@ export default defineNuxtConfig({
         target: 'esnext'
       }
     }
+
   },
 
   eslint: {

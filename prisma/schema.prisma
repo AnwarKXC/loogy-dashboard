@@ -79,6 +79,8 @@ model User {
   orders           Order[]
   behaviors        UserBehavior[]
   preference       UserPreference?
+  chatMessages     Chat[]
+  conversation     Conversation?
 
   @@index([role])
   @@index([isActive])
@@ -496,4 +498,83 @@ model UserPreferenceLastBrand {
 
   @@index([preferenceId])
   @@index([brandId])
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
+
+model Chat {
+  id          String        @id @default(uuid())
+  userId      Int?
+  isFromAdmin Boolean       @default(false)
+  content     String
+  status      MessageStatus @default(SENT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  conversationId String
+
+  @@index([userId])
+  @@index([conversationId])
+  @@index([isFromAdmin])
+  @@index([createdAt])
+}
+
+model Conversation {
+  id                     String    @id @default(uuid())
+  userId                 Int       @unique
+  lastMessageAt          DateTime  @default(now())
+  lastMessageContent     String?
+  unreadCount            Int       @default(0)
+  isActive               Boolean   @default(true)
+  lastWhatsAppNotifiedAt DateTime?
+  adminLastRepliedAt     DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Chat[]
+  analytics ConversationAnalytics?
+
+  @@index([userId])
+  @@index([lastMessageAt])
+  @@index([isActive])
+}
+
+model ConversationAnalytics {
+  id                  String   @id @default(uuid())
+  conversationId      String   @unique
+  totalMessages       Int      @default(0)
+  userMessages        Int      @default(0)
+  adminMessages       Int      @default(0)
+  avgResponseTimeMs   Int?
+  firstResponseTimeMs Int?
+  lastResponseTimeMs  Int?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model WhatsAppNotificationLog {
+  id           String   @id @default(uuid())
+  userId       Int
+  messageId    String?
+  phoneNumber  String
+  content      String
+  status       String   @default("pending")
+  errorMessage String?
+  sentAt       DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([sentAt])
 }

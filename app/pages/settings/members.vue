@@ -139,6 +139,7 @@ async function handleInvite(event: FormSubmitEvent<InviteSchema>) {
             v-model="inviteState.name"
             placeholder="Ada Lovelace"
             autocomplete="name"
+            class="w-full"
           />
         </UFormField>
 
@@ -149,6 +150,7 @@ async function handleInvite(event: FormSubmitEvent<InviteSchema>) {
             placeholder="manager@example.com"
             autocomplete="email"
             required
+            class="w-full"
           />
         </UFormField>
 
@@ -156,6 +158,9 @@ async function handleInvite(event: FormSubmitEvent<InviteSchema>) {
           <UInput
             v-model="inviteState.password"
             type="password"
+
+            class="w-full"
+
             placeholder="Temporary password"
             autocomplete="new-password"
             required
@@ -165,6 +170,7 @@ async function handleInvite(event: FormSubmitEvent<InviteSchema>) {
         <UFormField label="Role" name="role">
           <USelect
             v-model="inviteState.role"
+            class="w-full"
             :items="[
               { label: 'Manager', value: 'MANAGER' },
               { label: 'Sales', value: 'SALES' }

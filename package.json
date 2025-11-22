@@ -20,6 +20,7 @@
     "@unovis/ts": "^1.6.1",
     "@unovis/vue": "^1.6.1",
     "@vueuse/nuxt": "^13.9.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
@@ -27,6 +28,8 @@
     "multiparty": "^4.2.3",
     "nuxt": "^4.1.2",
     "pg": "^8.16.3",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "zod": "^4.1.11"
   },
   "devDependencies": {

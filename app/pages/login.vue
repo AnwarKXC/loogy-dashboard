@@ -87,6 +87,7 @@ async function handleSubmit(event: FormSubmitEvent<LoginSchema>) {
           <UInput
             v-model="state.email"
             type="email"
+            class="w-full"
             placeholder="you@example.com"
             autocomplete="email"
           />
@@ -96,6 +97,8 @@ async function handleSubmit(event: FormSubmitEvent<LoginSchema>) {
           <UInput
             v-model="state.password"
             type="password"
+            class="w-full"
+
             placeholder="••••••••"
             autocomplete="current-password"
           />
