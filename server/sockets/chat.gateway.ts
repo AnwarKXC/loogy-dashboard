@@ -1,7 +1,7 @@
 import { Server as SocketServer } from 'socket.io'
 import type { Server as HttpServer } from 'http'
 import prisma from '../db'
-import { whatsappService } from '../utils/whatsapp'
+import { notifyAdmins } from '../utils/web-push'
 
 interface ChatMessage {
   conversationId: string
@@ -176,19 +176,6 @@ export function initializeSocketServer(httpServer: HttpServer) {
         if (isFromAdmin) {
           updateData.adminLastRepliedAt = new Date()
           updateData.unreadCount = 0 // Reset unread when admin replies
-          // Reset WhatsApp throttle when admin replies
-          whatsappService.resetThrottle(userId)
-
-          // Send WhatsApp message to user
-          // We need to get user's phone number
-          if (conversation.user.phoneNumber) {
-            await whatsappService.sendMessage({
-              to: conversation.user.phoneNumber,
-              message: content,
-              userId: conversation.user.id,
-              messageId: message.id
-            })
-          }
         } else {
           updateData.unreadCount = { increment: 1 }
         }
@@ -258,12 +245,11 @@ export function initializeSocketServer(httpServer: HttpServer) {
             createdAt: message.createdAt.toISOString()
           })
 
-          // Send WhatsApp notification to admin
-          await whatsappService.notifyAdminNewMessage(
-            userId,
-            conversation.user.name,
+          // Send Web Push notification to admin
+          await notifyAdmins(
+            `New Message from ${conversation.user.name}`,
             content,
-            conversationId
+            `/chat?id=${conversationId}`
           )
         }
 

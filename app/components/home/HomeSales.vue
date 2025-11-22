@@ -19,23 +19,22 @@ const sampleEmails = [
 ]
 
 const { data } = await useAsyncData('sales', async () => {
-  const sales: Sale[] = []
-  const currentDate = new Date()
+  const response = await $fetch<any>('/api/orders', {
+    query: {
+      page: 1,
+      pageSize: 5,
+      sort: 'newest'
+    },
+    headers: useRequestHeaders(['cookie'])
+  })
 
-  for (let i = 0; i < 5; i++) {
-    const hoursAgo = randomInt(0, 48)
-    const date = new Date(currentDate.getTime() - hoursAgo * 3600000)
-
-    sales.push({
-      id: (4600 - i).toString(),
-      date: date.toISOString(),
-      status: randomFrom(['paid', 'failed', 'refunded']),
-      email: randomFrom(sampleEmails),
-      amount: randomInt(100, 1000)
-    })
-  }
-
-  return sales.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  return response.items.map((order: any) => ({
+    id: order.id,
+    date: order.createdAt,
+    status: order.status.toLowerCase(),
+    email: order.customer.email,
+    amount: order.totalAmount
+  }))
 }, {
   watch: [() => props.period, () => props.range],
   default: () => []
@@ -65,10 +64,11 @@ const columns: TableColumn<Sale>[] = [
     header: 'Status',
     cell: ({ row }) => {
       const color = {
-        paid: 'success' as const,
-        failed: 'error' as const,
-        refunded: 'neutral' as const
-      }[row.getValue('status') as string]
+        pending: 'warning' as const,
+        shipping: 'primary' as const,
+        delivered: 'success' as const,
+        cancelled: 'error' as const
+      }[row.getValue('status') as string] || 'neutral'
 
       return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () =>
         row.getValue('status')

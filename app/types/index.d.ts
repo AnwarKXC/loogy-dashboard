@@ -51,12 +51,36 @@ export interface Member {
   avatar: AvatarProps
 }
 
+export type OrderStatus = 'PENDING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED'
+
+export interface OrderListItem {
+  id: number
+  orderNumber: string
+  customerName: string
+  status: OrderStatus
+  paymentMethod: string
+  totalAmount: number
+  createdAt: string
+}
+
+export interface OrderListResponse {
+  items: OrderListItem[]
+  pagination: {
+    page: number
+    pageSize: number
+    totalItems: number
+    totalPages: number
+  }
+}
+
 export interface Stat {
   title: string
   icon: string
   value: number | string
   variation: number
   formatter?: (value: number) => string
+  link?: string
+  label?: string
 }
 
 export interface Sale {
@@ -232,58 +256,4 @@ export interface BrandEditorValues {
   nameEn: string
   nameAr?: string
   logo?: string | null
-}
-
-export type OrderStatus = 'PENDING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED'
-
-export interface OrderListItem {
-  id: number
-  orderNumber: string
-  customerName: string
-  customerEmail?: string | null
-  status: OrderStatus
-  paymentMethod: string
-  totalAmount: number
-  createdAt: string
-}
-
-export interface OrderListResponse {
-  items: OrderListItem[]
-  pagination: {
-    page: number
-    pageSize: number
-    totalItems: number
-    totalPages: number
-  }
-}
-
-export interface OrderItem {
-  id: number
-  productName?: string | null
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-  status?: string | null
-}
-
-export interface OrderDetail {
-  id: number
-  orderNumber: string
-  customerName: string
-  customerEmail?: string | null
-  status: OrderStatus
-  paymentMethod: string
-  totalAmount: number
-  shippingCost: number
-  shippingPhone?: string | null
-  shippingWhatsapp?: string | null
-  shippingStreet?: string | null
-  shippingCity?: string | null
-  shippingCountry?: string | null
-  items: OrderItem[]
-  createdAt: string
-}
-
-export interface OrderDetailResponse {
-  order: OrderDetail
 }

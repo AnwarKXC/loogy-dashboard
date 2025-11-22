@@ -26,7 +26,7 @@ export default eventHandler(async (event) => {
           gte: startDate
         },
         status: {
-          notIn: ['CANCELLED', 'REFUNDED']
+          in: ['PENDING', 'SHIPPING', 'DELIVERED']
         }
       }
     },

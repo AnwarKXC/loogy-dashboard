@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { format } from 'date-fns'
-import { computed, h, ref, watch } from 'vue'
+import { computed, h, ref, watch, onMounted, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
 import type { OrderListItem, OrderListResponse } from '~/types'
@@ -10,6 +10,7 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UBadge = resolveComponent('UBadge')
 
 const toast = useToast()
+const { $socket } = useNuxtApp()
 
 const page = ref(1)
 const pageSize = ref(10)
@@ -30,6 +31,14 @@ const query = computed(() => ({
 const { data, status, error, refresh } = await useFetch<OrderListResponse>('/api/orders', {
   query,
   watch: [query]
+})
+
+onMounted(() => {
+  if ($socket) {
+    $socket.on('order:new', () => {
+      refresh()
+    })
+  }
 })
 
 watch([statusFilter, paymentFilter, sort, pageSize], () => {
@@ -297,7 +306,7 @@ function handleRefresh() {
           :page="page"
           :items-per-page="pageSize"
           :total="totalItems"
-          @update:page="(next) => (page = next)"
+          @update:page="(next: number) => (page = next)"
         />
       </div>
     </template>

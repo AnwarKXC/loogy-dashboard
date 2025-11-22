@@ -3,10 +3,6 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import type { Conversation } from '~/composables/useChat'
 import type { SuperAdminSessionUser } from '~/composables/useSuperAdmin'
 
-// definePageMeta({
-//   middleware: 'superadmin'
-// })
-
 const route = useRoute()
 const { connect, conversations, messages, sendMessage, startTyping, stopTyping, openConversation, connected, isTyping } = useChat()
 const session = useSessionUser()

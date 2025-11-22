@@ -1,7 +1,49 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
+const toast = useToast()
+const { $socket } = useNuxtApp()
+const user = useSessionUser()
 
 const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
+
+onMounted(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then((registration) => {
+        console.log('Service Worker registered with scope:', registration.scope)
+      })
+      .catch((error) => {
+        console.error('Service Worker registration failed:', error)
+      })
+  }
+
+  // Listen for new orders
+  if ($socket) {
+    $socket.on('connect', () => {
+      if (user.value) {
+        $socket.emit('join', { userId: user.value.id, isAdmin: true })
+      }
+    })
+
+    // If already connected
+    if ($socket.connected && user.value) {
+      $socket.emit('join', { userId: user.value.id, isAdmin: true })
+    }
+
+    $socket.on('order:new', (data: any) => {
+      toast.add({
+        title: 'New Order Received',
+        description: `Order #${data.id} from ${data.customerName}`,
+        icon: 'i-lucide-shopping-bag',
+        color: 'primary',
+        actions: [{
+          label: 'View',
+          click: () => navigateTo(`/orders/${data.id}`)
+        }]
+      })
+    })
+  }
+})
 
 useHead({
   meta: [

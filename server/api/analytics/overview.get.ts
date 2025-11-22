@@ -1,151 +1,127 @@
-import { eventHandler } from 'h3'
-import { startOfDay, subDays } from 'date-fns'
+import { eventHandler, getQuery } from 'h3'
+import { subDays, differenceInDays, sub } from 'date-fns'
+import { z } from 'zod'
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
+
+const querySchema = z.object({
+  start: z.string().optional(),
+  end: z.string().optional()
+})
 
 export default eventHandler(async (event) => {
   await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
-  const today = startOfDay(new Date())
-  const yesterday = subDays(today, 1)
-  const lastWeek = subDays(today, 7)
+  const query = getQuery(event)
+  const { start, end } = querySchema.parse(query)
 
-  // Get total orders and revenue
-  const [totalOrders, totalRevenue] = await Promise.all([
-    prisma.order.count(),
-    prisma.order.aggregate({
-      _sum: {
-        totalAmount: true
-      }
-    })
-  ])
+  const endDate = end ? new Date(end) : new Date()
+  const startDate = start ? new Date(start) : subDays(endDate, 30)
 
-  // Get today's orders and revenue
-  const [todayOrders, todayRevenue] = await Promise.all([
+  const daysDiff = differenceInDays(endDate, startDate) || 1
+  const previousStartDate = sub(startDate, { days: daysDiff })
+  const previousEndDate = startDate
+
+  // Get stats for current period
+  const [orders, revenue, newCustomers] = await Promise.all([
     prisma.order.count({
       where: {
         createdAt: {
-          gte: today
+          gte: startDate,
+          lte: endDate
         }
       }
     }),
     prisma.order.aggregate({
       where: {
         createdAt: {
-          gte: today
+          gte: startDate,
+          lte: endDate
         }
       },
       _sum: {
         totalAmount: true
-      }
-    })
-  ])
-
-  // Get yesterday's orders and revenue for comparison
-  const [yesterdayOrders, yesterdayRevenue] = await Promise.all([
-    prisma.order.count({
-      where: {
-        createdAt: {
-          gte: yesterday,
-          lt: today
-        }
-      }
-    }),
-    prisma.order.aggregate({
-      where: {
-        createdAt: {
-          gte: yesterday,
-          lt: today
-        }
-      },
-      _sum: {
-        totalAmount: true
-      }
-    })
-  ])
-
-  // Get last week's data
-  const [lastWeekOrders, lastWeekRevenue] = await Promise.all([
-    prisma.order.count({
-      where: {
-        createdAt: {
-          gte: lastWeek
-        }
-      }
-    }),
-    prisma.order.aggregate({
-      where: {
-        createdAt: {
-          gte: lastWeek
-        }
-      },
-      _sum: {
-        totalAmount: true
-      }
-    })
-  ])
-
-  // Get customer statistics
-  const [totalCustomers, newCustomersToday, newCustomersThisWeek] = await Promise.all([
-    prisma.user.count({
-      where: {
-        role: 'CUSTOMER'
       }
     }),
     prisma.user.count({
       where: {
         role: 'CUSTOMER',
         createdAt: {
-          gte: today
+          gte: startDate,
+          lte: endDate
         }
+      }
+    })
+  ])
+
+  // Optimized product stats query
+  const productStats = await prisma.$queryRaw<[{ total: bigint, available: bigint }]>`
+    SELECT 
+      COUNT(*)::int as total, 
+      COUNT(CASE WHEN stock > 0 THEN 1 END)::int as available 
+    FROM "Product" 
+    WHERE "isArchived" = false
+  `
+  const totalProducts = Number(productStats[0]?.total || 0)
+  const availableProducts = Number(productStats[0]?.available || 0)
+
+  // Get stats for previous period
+  const [prevOrders, prevRevenue, prevNewCustomers] = await Promise.all([
+    prisma.order.count({
+      where: {
+        createdAt: {
+          gte: previousStartDate,
+          lt: previousEndDate
+        }
+      }
+    }),
+    prisma.order.aggregate({
+      where: {
+        createdAt: {
+          gte: previousStartDate,
+          lt: previousEndDate
+        }
+      },
+      _sum: {
+        totalAmount: true
       }
     }),
     prisma.user.count({
       where: {
         role: 'CUSTOMER',
         createdAt: {
-          gte: lastWeek
+          gte: previousStartDate,
+          lt: previousEndDate
         }
       }
     })
   ])
 
-  // Get product statistics
-  const [totalProducts, activeProducts] = await Promise.all([
-    prisma.product.count(),
-    prisma.product.count({
-      where: {
-        isArchived: false
-      }
-    })
-  ])
+  // Calculate variations
+  const calculateVariation = (current: number, previous: number) => {
+    if (previous === 0) return current > 0 ? 100 : 0
+    return ((current - previous) / previous) * 100
+  }
 
-  // Calculate percentages
-  const ordersChange = yesterdayOrders > 0
-    ? ((todayOrders - yesterdayOrders) / yesterdayOrders) * 100
-    : todayOrders > 0 ? 100 : 0
-
-  const revenueChange = yesterdayRevenue._sum.totalAmount
-    ? ((Number(todayRevenue._sum.totalAmount || 0) - Number(yesterdayRevenue._sum.totalAmount)) / Number(yesterdayRevenue._sum.totalAmount)) * 100
-    : todayRevenue._sum.totalAmount ? 100 : 0
+  const currentRevenue = Number(revenue._sum.totalAmount || 0)
+  const previousRevenueVal = Number(prevRevenue._sum.totalAmount || 0)
 
   return {
-    overview: {
-      totalOrders,
-      totalRevenue: Number(totalRevenue._sum.totalAmount || 0),
-      todayOrders,
-      todayRevenue: Number(todayRevenue._sum.totalAmount || 0),
-      ordersChange: Math.round(ordersChange * 100) / 100,
-      revenueChange: Math.round(revenueChange * 100) / 100,
-      totalCustomers,
-      newCustomersToday,
-      newCustomersThisWeek,
-      totalProducts,
-      activeProducts
+    revenue: {
+      value: currentRevenue,
+      variation: calculateVariation(currentRevenue, previousRevenueVal)
     },
-    weekly: {
-      orders: lastWeekOrders,
-      revenue: Number(lastWeekRevenue._sum.totalAmount || 0)
+    orders: {
+      value: orders,
+      variation: calculateVariation(orders, prevOrders)
+    },
+    customers: {
+      value: newCustomers,
+      variation: calculateVariation(newCustomers, prevNewCustomers)
+    },
+    products: {
+      total: totalProducts,
+      available: availableProducts
     }
   }
 })

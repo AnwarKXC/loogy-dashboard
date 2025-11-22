@@ -5,7 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { OrderDetail, OrderDetailResponse } from '~/types'
 
 type OrderUpdatePayload = Partial<Pick<OrderDetail,
-  'status' | 'paymentMethod' | 'shippingPhone' | 'shippingWhatsapp' | 'shippingStreet' | 'shippingCity' | 'shippingCountry'
+  'status' | 'paymentMethod' | 'shippingPhone' | 'shippingStreet' | 'shippingCity' | 'shippingCountry'
 >>
 
 const route = useRoute()
@@ -36,7 +36,6 @@ watch(orderResponse, (value) => {
 
 const shippingFields = reactive({
   phone: '',
-  whatsapp: '',
   street: '',
   city: '',
   country: ''
@@ -44,7 +43,6 @@ const shippingFields = reactive({
 
 watch(order, (value) => {
   shippingFields.phone = value?.shippingPhone ?? ''
-  shippingFields.whatsapp = value?.shippingWhatsapp ?? ''
   shippingFields.street = value?.shippingStreet ?? ''
   shippingFields.city = value?.shippingCity ?? ''
   shippingFields.country = value?.shippingCountry ?? ''
@@ -145,20 +143,6 @@ async function handleShippingPhoneBlur() {
   }
 
   await updateOrder({ shippingPhone: next })
-}
-
-async function handleShippingWhatsappBlur() {
-  if (!order.value) {
-    return
-  }
-
-  const next = shippingFields.whatsapp.trim()
-
-  if ((order.value.shippingWhatsapp ?? '') === next) {
-    return
-  }
-
-  await updateOrder({ shippingWhatsapp: next })
 }
 
 async function handleShippingStreetBlur() {
@@ -352,11 +336,6 @@ async function handleShippingCountryBlur() {
                 v-model="shippingFields.phone"
                 placeholder="Shipping phone"
                 @blur="handleShippingPhoneBlur"
-              />
-              <UInput
-                v-model="shippingFields.whatsapp"
-                placeholder="Whatsapp number"
-                @blur="handleShippingWhatsappBlur"
               />
               <UInput
                 v-model="shippingFields.street"

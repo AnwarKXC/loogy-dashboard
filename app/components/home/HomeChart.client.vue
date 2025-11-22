@@ -19,17 +19,25 @@ const { width } = useElementSize(cardRef)
 
 const data = ref<DataRecord[]>([])
 
-watch([() => props.period, () => props.range], () => {
-  const dates = ({
-    daily: eachDayOfInterval,
-    weekly: eachWeekOfInterval,
-    monthly: eachMonthOfInterval
-  } as Record<Period, typeof eachDayOfInterval>)[props.period](props.range)
+watch([() => props.period, () => props.range], async () => {
+  try {
+    const response = await $fetch<any[]>('/api/analytics/sales-chart', {
+      query: {
+        start: props.range.start.toISOString(),
+        end: props.range.end.toISOString(),
+        period: props.period
+      },
+      headers: useRequestHeaders(['cookie'])
+    })
 
-  const min = 1000
-  const max = 10000
-
-  data.value = dates.map(date => ({ date, amount: Math.floor(Math.random() * (max - min + 1)) + min }))
+    data.value = response.map((d: any) => ({
+      date: new Date(d.date),
+      amount: d.revenue
+    }))
+  } catch (e) {
+    console.error('Failed to fetch chart data', e)
+    data.value = []
+  }
 }, { immediate: true })
 
 const x = (_: DataRecord, i: number) => i

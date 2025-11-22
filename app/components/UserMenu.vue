@@ -8,6 +8,7 @@ const appConfig = useAppConfig()
 const { setPrimaryColor, setNeutralColor } = useTheme()
 const router = useRouter()
 const superAdmin = useSuperAdminState()
+const { isSupported, isSubscribed, subscribe, unsubscribe } = usePushNotifications()
 
 const colors = [
   'red',
@@ -168,6 +169,19 @@ const items = computed<DropdownMenuItem[][]>(() => [
       label: 'Settings',
       icon: 'i-lucide-settings',
       to: '/settings'
+    },
+    {
+      label: isSubscribed.value ? 'Disable Notifications' : 'Enable Notifications',
+      icon: isSubscribed.value ? 'i-lucide-bell-off' : 'i-lucide-bell',
+      disabled: !isSupported.value,
+      onSelect: (e: Event) => {
+        e.preventDefault()
+        if (isSubscribed.value) {
+          unsubscribe()
+        } else {
+          subscribe()
+        }
+      }
     }
   ],
   [
