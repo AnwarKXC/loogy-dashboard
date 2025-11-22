@@ -1,4 +1,4 @@
-import { prisma } from '../utils/prisma'
+import prisma from '../db'
 import { hashPassword } from '../utils/superadmin-session'
 
 export default async function ensureOwnerPlugin() {
@@ -6,12 +6,7 @@ export default async function ensureOwnerPlugin() {
   const ownerPassword = process.env.SUPERADMIN_OWNER_PASSWORD
   const ownerName = process.env.SUPERADMIN_OWNER_NAME?.trim() || 'Owner'
 
-  if (!ownerEmail || !ownerPassword) {
-    if (import.meta.dev) {
-      console.warn('[superadmin] SUPERADMIN_OWNER_EMAIL or SUPERADMIN_OWNER_PASSWORD is missing; default owner seeding skipped.')
-    }
-    return
-  }
+  if (!ownerEmail || !ownerPassword) return
 
   const normalizedEmail = ownerEmail.toLowerCase()
 

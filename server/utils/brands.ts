@@ -1,4 +1,4 @@
-import { prisma } from './prisma'
+import prisma from '../db'
 
 export type BrandRecord = {
   id: number

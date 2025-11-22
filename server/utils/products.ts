@@ -1,4 +1,5 @@
-import type { Prisma, Product } from '@prisma/client'
+import type { Prisma, Product } from '../../shared/generated/prisma/client'
+import prisma from '../db'
 
 export type InventoryStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'archived'
 

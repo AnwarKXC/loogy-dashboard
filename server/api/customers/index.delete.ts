@@ -1,7 +1,7 @@
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 
-import { prisma } from '../../utils/prisma'
+import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 
 const deleteCustomersSchema = z.object({

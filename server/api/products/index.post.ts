@@ -1,8 +1,8 @@
 import { eventHandler, readBody, setResponseStatus } from 'h3'
 import { z } from 'zod'
 
-import { Prisma } from '@prisma/client'
-import { prisma } from '../../utils/prisma'
+import { Prisma } from '../../../shared/generated/prisma/client'
+import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getProductInclude, mapProductToDetail } from '../../utils/products'
 import type { ProductWithRelations } from '../../utils/products'

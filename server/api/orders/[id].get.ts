@@ -1,6 +1,6 @@
 import { eventHandler, createError } from 'h3'
 
-import { prisma } from '../../utils/prisma'
+import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getOrderInclude, mapOrderToDetail } from './utils'
 import type { OrderWithRelations } from './utils'

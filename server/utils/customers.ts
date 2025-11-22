@@ -1,4 +1,5 @@
-import type { Prisma } from '@prisma/client'
+import type { Prisma } from '../../shared/generated/prisma/client'
+import prisma from '../db'
 
 export const customerListInclude = {
   _count: {
