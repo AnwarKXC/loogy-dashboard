@@ -1,11 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
+import type { Conversation } from '~/composables/useChat'
+import type { SuperAdminSessionUser } from '~/composables/useSuperAdmin'
 
-definePageMeta({
-  middleware: 'superadmin'
-})
+// definePageMeta({
+//   middleware: 'superadmin'
+// })
 
-const { connect, disconnect, conversations, messages, sendMessage, startTyping, stopTyping, openConversation, connected, isTyping } = useChat()
+const route = useRoute()
+const { connect, conversations, messages, sendMessage, startTyping, stopTyping, openConversation, connected, isTyping } = useChat()
 const session = useSessionUser()
 const selectedConversation = ref<string | null>(null)
 const messageInput = ref('')
@@ -17,7 +20,7 @@ const filteredConversations = computed(() => {
   if (!searchQuery.value) return conversations.value
 
   const query = searchQuery.value.toLowerCase()
-  return conversations.value.filter(conv =>
+  return conversations.value.filter((conv: Conversation) =>
     conv.user.name.toLowerCase().includes(query)
     || conv.user.email.toLowerCase().includes(query)
     || conv.lastMessageContent?.toLowerCase().includes(query)
@@ -26,12 +29,12 @@ const filteredConversations = computed(() => {
 
 // Get selected conversation data
 const activeConversation = computed(() => {
-  return conversations.value.find(c => c.id === selectedConversation.value)
+  return conversations.value.find((c: Conversation) => c.id === selectedConversation.value)
 })
 
 // Total unread count
 const totalUnread = computed(() => {
-  return conversations.value.reduce((sum, conv) => sum + conv.unreadCount, 0)
+  return conversations.value.reduce((sum: number, conv: Conversation) => sum + conv.unreadCount, 0)
 })
 
 // Connect to chat on mount
@@ -41,15 +44,28 @@ onMounted(() => {
   }
 })
 
-// Disconnect on unmount
-onUnmounted(() => {
-  disconnect()
+// Watch for session changes (e.g. hydration)
+watch(() => session.value, (newSession: SuperAdminSessionUser | null) => {
+  if (newSession) {
+    connect(newSession.id, true)
+  }
 })
+
+// Handle query param selection
+watch(() => conversations.value, (newConversations) => {
+  const queryId = route.query.id as string
+  if (queryId && newConversations.length > 0 && !selectedConversation.value) {
+    const conv = newConversations.find((c: Conversation) => c.id === queryId)
+    if (conv) {
+      selectConversation(queryId)
+    }
+  }
+}, { immediate: true })
 
 // Select conversation
 const selectConversation = (conversationId: string) => {
   selectedConversation.value = conversationId
-  const conv = conversations.value.find(c => c.id === conversationId)
+  const conv = conversations.value.find((c: Conversation) => c.id === conversationId)
   if (conv) {
     openConversation(conversationId, conv.userId, true)
     scrollToBottom()
@@ -62,7 +78,7 @@ const handleSendMessage = () => {
 
   sendMessage(selectedConversation.value, messageInput.value, activeConversation.value.userId, true)
   messageInput.value = ''
-  nextTick(() => scrollToBottom())
+  scrollToBottom()
 }
 
 // Typing indicator
@@ -83,7 +99,11 @@ const handleTyping = () => {
 // Scroll to bottom
 const scrollToBottom = () => {
   if (messagesContainer.value) {
-    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    nextTick(() => {
+      if (messagesContainer.value) {
+        messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+      }
+    })
   }
 }
 
@@ -105,12 +125,12 @@ const formatTime = (dateString: string) => {
 
 // Auto-scroll when new messages arrive
 watch(() => messages.value.length, () => {
-  nextTick(() => scrollToBottom())
+  scrollToBottom()
 })
 </script>
 
 <template>
-  <UDashboardLayout>
+  <UDashboardLayout class="w-full">
     <UDashboardPanel grow>
       <UDashboardNavbar title="Live Chat">
         <template #trailing>
@@ -178,7 +198,7 @@ watch(() => messages.value.length, () => {
         </div>
 
         <!-- Chat Area -->
-        <div v-if="activeConversation" class="flex-1 flex flex-col">
+        <div v-if="activeConversation" class="flex-1  flex flex-col">
           <!-- Chat Header -->
           <div class="p-4 border-b border-gray-200 dark:border-gray-800">
             <div class="flex items-center gap-3">
@@ -259,7 +279,7 @@ watch(() => messages.value.length, () => {
         </div>
 
         <!-- Empty State -->
-        <div v-else class="flex-1 flex items-center justify-center">
+        <div v-else class="flex-1 w-full flex items-center justify-center">
           <div class="text-center">
             <UIcon name="i-lucide-message-circle" class="size-24 mx-auto mb-4 text-gray-300 dark:text-gray-700" />
             <h3 class="text-lg font-semibold mb-2">

@@ -25,6 +25,12 @@ interface MessageStatus {
 // Track typing states
 const typingUsers = new Map<string, Set<number>>()
 
+let ioInstance: SocketServer | null = null
+
+export function getIO() {
+  return ioInstance
+}
+
 export function initializeSocketServer(httpServer: HttpServer) {
   const io = new SocketServer(httpServer, {
     cors: {
@@ -34,6 +40,8 @@ export function initializeSocketServer(httpServer: HttpServer) {
     },
     transports: ['websocket', 'polling']
   })
+
+  ioInstance = io
 
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id)
@@ -154,9 +162,15 @@ export function initializeSocketServer(httpServer: HttpServer) {
         })
 
         // Update conversation
-        const updateData: any = {
+        const updateData: {
+          lastMessageAt: Date
+          lastMessageContent: string
+          adminLastRepliedAt?: Date
+          unreadCount: number | { increment: number }
+        } = {
           lastMessageAt: new Date(),
-          lastMessageContent: content
+          lastMessageContent: content,
+          unreadCount: 0 // Default value, will be overwritten
         }
 
         if (isFromAdmin) {
@@ -164,6 +178,17 @@ export function initializeSocketServer(httpServer: HttpServer) {
           updateData.unreadCount = 0 // Reset unread when admin replies
           // Reset WhatsApp throttle when admin replies
           whatsappService.resetThrottle(userId)
+
+          // Send WhatsApp message to user
+          // We need to get user's phone number
+          if (conversation.user.phoneNumber) {
+            await whatsappService.sendMessage({
+              to: conversation.user.phoneNumber,
+              message: content,
+              userId: conversation.user.id,
+              messageId: message.id
+            })
+          }
         } else {
           updateData.unreadCount = { increment: 1 }
         }
@@ -174,7 +199,14 @@ export function initializeSocketServer(httpServer: HttpServer) {
         })
 
         // Update analytics
-        const analyticsUpdate: any = {
+        const analyticsUpdate: {
+          totalMessages: { increment: number }
+          adminMessages?: { increment: number }
+          userMessages?: { increment: number }
+          lastResponseTimeMs?: number
+          firstResponseTimeMs?: number
+          avgResponseTimeMs?: number
+        } = {
           totalMessages: { increment: 1 }
         }
 

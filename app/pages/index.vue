@@ -8,7 +8,7 @@ const { isNotificationsSlideoverOpen } = useDashboard()
 const items = [[{
   label: 'New mail',
   icon: 'i-lucide-send',
-  to: '/inbox'
+  to: '/chat'
 }, {
   label: 'New customer',
   icon: 'i-lucide-user-plus',

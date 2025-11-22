@@ -1,7 +1,7 @@
 import type { Socket } from 'socket.io-client'
 import { io } from 'socket.io-client'
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string
   conversationId: string
   userId: number | null
@@ -17,7 +17,7 @@ interface ChatMessage {
   }
 }
 
-interface Conversation {
+export interface Conversation {
   id: string
   userId: number
   user: {
@@ -39,18 +39,21 @@ interface TypingState {
   isAdmin: boolean
 }
 
-export const useChat = () => {
-  const socket = ref<Socket | null>(null)
-  const connected = ref(false)
-  const currentConversation = ref<Conversation | null>(null)
-  const conversations = ref<Conversation[]>([])
-  const messages = ref<ChatMessage[]>([])
-  const typingUsers = ref<Map<string, boolean>>(new Map())
-  const isTyping = ref(false)
+// Global state for singleton pattern
+const socket = ref<Socket | null>(null)
+const connected = ref(false)
+const currentConversation = ref<Conversation | null>(null)
+const conversations = ref<Conversation[]>([])
+const messages = ref<ChatMessage[]>([])
+const typingUsers = ref<Map<string, boolean>>(new Map())
+const isTyping = ref(false)
 
+export const useChat = () => {
   let typingTimeout: NodeJS.Timeout | null = null
 
   const connect = (userId: number, isAdmin: boolean = false) => {
+    if (connected.value && socket.value) return // Already connected
+
     const config = useRuntimeConfig()
     const socketUrl = config.public.socketUrl || 'http://localhost:3000'
 
@@ -89,17 +92,46 @@ export const useChat = () => {
     })
 
     // New message received
-    socket.value.on('message:new', (message: ChatMessage) => {
-      messages.value.push(message)
+    socket.value.on('message:new', (message: any) => {
+      // Only add to messages if it belongs to current conversation
+      if (currentConversation.value && currentConversation.value.id === message.conversationId) {
+        messages.value.push(message)
+      }
 
       // Update conversation last message
-      if (isAdmin && conversations.value.length > 0) {
-        const conv = conversations.value.find(c => c.id === message.conversationId)
-        if (conv) {
+      if (isAdmin) {
+        let conv = conversations.value.find(c => c.id === message.conversationId)
+
+        if (!conv && message.userName) {
+          // Create new conversation entry for new user
+          conv = {
+            id: message.conversationId,
+            userId: message.userId,
+            user: {
+              id: message.userId,
+              name: message.userName,
+              email: message.userEmail || '',
+              phoneNumber: null // Not sent in event yet
+            },
+            lastMessageAt: message.createdAt,
+            lastMessageContent: message.content,
+            unreadCount: 1,
+            isActive: true,
+            messages: [message]
+          }
+          conversations.value.unshift(conv)
+        } else if (conv) {
           conv.lastMessageContent = message.content
           conv.lastMessageAt = message.createdAt
           if (!message.isFromAdmin) {
             conv.unreadCount++
+          }
+
+          // Move conversation to top
+          const index = conversations.value.indexOf(conv)
+          if (index > 0) {
+            conversations.value.splice(index, 1)
+            conversations.value.unshift(conv)
           }
         }
       }
@@ -255,14 +287,6 @@ export const useChat = () => {
       })
     }
   }
-
-  // Cleanup on unmount
-  onUnmounted(() => {
-    disconnect()
-    if (typingTimeout) {
-      clearTimeout(typingTimeout)
-    }
-  })
 
   return {
     // State

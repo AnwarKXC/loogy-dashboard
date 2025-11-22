@@ -129,7 +129,7 @@ class WhatsAppService {
 
       console.log('WhatsApp message sent successfully:', response.data)
       return true
-    } catch (error: any) {
+    } catch (error: Error) {
       const errorMessage = error.response?.data?.error?.message || error.message
       console.error('Failed to send WhatsApp message:', errorMessage)
 
@@ -168,7 +168,7 @@ class WhatsAppService {
       return false
     }
 
-    const message = `🔔 New Message from ${userName}\n\n${messageContent}\n\n📱 View conversation: ${process.env.DASHBOARD_URL || 'http://localhost:3000'}/inbox?conversation=${conversationId}`
+    const message = `🔔 New Message from ${userName}\n\n${messageContent}\n\n📱 View conversation: ${process.env.DASHBOARD_URL || 'http://localhost:3000'}/chat?id=${conversationId}`
 
     return await this.sendMessage({
       to: adminPhone,
