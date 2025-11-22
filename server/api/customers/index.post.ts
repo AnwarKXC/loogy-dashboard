@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 
-import { Prisma } from '~prisma/client'
+import { Prisma } from '@prisma/client'
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 

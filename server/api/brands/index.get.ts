@@ -1,7 +1,7 @@
 import { eventHandler, getQuery } from 'h3'
 import { z } from 'zod'
 
-import type { Prisma } from '~prisma/client'
+import type { Prisma } from '@prisma/client'
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getLocalizedString } from '../products/utils'

@@ -1,7 +1,7 @@
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 
-import { Prisma } from '~prisma/client'
+import { Prisma } from '@prisma/client'
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getProductInclude, mapProductToDetail } from '../../utils/products'

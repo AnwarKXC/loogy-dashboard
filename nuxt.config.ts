@@ -1,5 +1,4 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import { fileURLToPath } from 'url'
 
 export default defineNuxtConfig({
 
@@ -19,8 +18,6 @@ export default defineNuxtConfig({
     s3Bucket: process.env.S3_BUCKET_NAME,
     public: {
     }
-  }, alias: {
-    '~prisma': fileURLToPath(new URL('./shared/generated/prisma', import.meta.url))
   },
 
   routeRules: {
@@ -36,12 +33,6 @@ export default defineNuxtConfig({
       options: {
         target: 'esnext'
       }
-    },
-    alias: {
-      '~prisma': fileURLToPath(new URL('./shared/generated/prisma', import.meta.url))
-    },
-    externals: {
-      external: ['~prisma/client', '@prisma/client']
     }
   },
 
