@@ -37,8 +37,11 @@ export default defineNuxtConfig({
         target: 'esnext'
       }
     },
-    rollupConfig: {
-      external: ['~prisma/client']
+    alias: {
+      '~prisma': fileURLToPath(new URL('./shared/generated/prisma', import.meta.url))
+    },
+    externals: {
+      external: ['~prisma/client', '@prisma/client']
     }
   },
 
