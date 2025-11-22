@@ -1,71 +1,86 @@
 <script setup lang="ts">
-const state = reactive<{ [key: string]: boolean }>({
-  email: true,
-  desktop: false,
-  product_updates: true,
-  weekly_digest: false,
-  important_updates: true
+const toast = useToast()
+const { isSupported, isSubscribed, subscribe, unsubscribe } = usePushNotifications()
+
+const { data: preferences, refresh } = await useFetch('/api/settings/notifications')
+
+const state = reactive({
+  notifyOrders: preferences.value?.notifyOrders ?? true,
+  notifyMessages: preferences.value?.notifyMessages ?? true
 })
 
-const sections = [{
-  title: 'Notification channels',
-  description: 'Where can we notify you?',
-  fields: [{
-    name: 'email',
-    label: 'Email',
-    description: 'Receive a daily email digest.'
-  }, {
-    name: 'desktop',
-    label: 'Desktop',
-    description: 'Receive desktop notifications.'
-  }]
-}, {
-  title: 'Account updates',
-  description: 'Receive updates about Nuxt UI.',
-  fields: [{
-    name: 'weekly_digest',
-    label: 'Weekly digest',
-    description: 'Receive a weekly digest of news.'
-  }, {
-    name: 'product_updates',
-    label: 'Product updates',
-    description: 'Receive a monthly email with all new features and updates.'
-  }, {
-    name: 'important_updates',
-    label: 'Important updates',
-    description: 'Receive emails about important updates like security fixes, maintenance, etc.'
-  }]
-}]
-
 async function onChange() {
-  // Do something with data
-  console.log(state)
+  try {
+    await $fetch('/api/settings/notifications', {
+      method: 'POST',
+      body: state
+    })
+    toast.add({ title: 'Preferences updated', color: 'success' })
+  } catch (error) {
+    toast.add({ title: 'Failed to update preferences', color: 'error' })
+  }
+}
+
+async function togglePush() {
+  if (isSubscribed.value) {
+    await unsubscribe()
+  } else {
+    await subscribe()
+  }
 }
 </script>
 
 <template>
-  <div v-for="(section, index) in sections" :key="index">
+  <div class="space-y-8">
     <UPageCard
-      :title="section.title"
-      :description="section.description"
-      variant="naked"
-      class="mb-4"
-    />
-
-    <UPageCard variant="subtle" :ui="{ container: 'divide-y divide-default' }">
-      <UFormField
-        v-for="field in section.fields"
-        :key="field.name"
-        :name="field.name"
-        :label="field.label"
-        :description="field.description"
-        class="flex items-center justify-between not-last:pb-4 gap-2"
-      >
+      title="Browser Notifications"
+      variant="subtle"
+    >
+      <div class="flex items-center justify-between p-4 bg-  rounded">
+        <div class="flex flex-col  ">
+          <span class="text-sm font-medium text-gray-900 dark:text-white">Push Notifications</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            {{ isSubscribed ? 'Notifications are enabled on this device.' : 'Enable notifications to receive updates.' }}
+          </span>
+        </div>
         <USwitch
-          v-model="state[field.name]"
-          @update:model-value="onChange"
+          :model-value="isSubscribed"
+          :disabled="!isSupported"
+          @update:model-value="togglePush"
         />
-      </UFormField>
+      </div>
+    </UPageCard>
+
+    <UPageCard
+      title="Notification Preferences"
+      variant="subtle"
+    >
+      <div class="space-y-8 p-4   rounded">
+        <div class="flex items-center justify-between w-full">
+          <div class="flex flex-col flex-grow">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">New Orders</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">Receive notifications when a new order is placed.</span>
+          </div>
+          <USwitch
+            v-model="state.notifyOrders"
+            @update:model-value="onChange"
+          />
+        </div>
+
+        <UDivider />
+        <UDivider />
+
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col">
+            <span class="text-sm font-medium text-gray-900 dark:text-white">New Messages</span>
+            <span class="text-sm text-gray-500 dark:text-gray-400">Receive notifications when a customer sends a message.</span>
+          </div>
+          <USwitch
+            v-model="state.notifyMessages"
+            @update:model-value="onChange"
+          />
+        </div>
+      </div>
     </UPageCard>
   </div>
 </template>

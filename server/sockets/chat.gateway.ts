@@ -249,7 +249,8 @@ export function initializeSocketServer(httpServer: HttpServer) {
           await notifyAdmins(
             `New Message from ${conversation.user.name}`,
             content,
-            `/chat?id=${conversationId}`
+            `/chat?id=${conversationId}`,
+            'MESSAGE'
           )
         }
 

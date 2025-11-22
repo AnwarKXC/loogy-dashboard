@@ -396,6 +396,9 @@ model SuperAdmin {
   sessions           SuperAdminSession[]
   pushSubscriptions  PushSubscription[]
 
+  notifyOrders   Boolean @default(true)
+  notifyMessages Boolean @default(true)
+
   @@index([role])
 }
 

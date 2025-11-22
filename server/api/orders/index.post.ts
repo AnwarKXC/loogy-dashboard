@@ -105,7 +105,8 @@ export default defineEventHandler(async (event) => {
   await notifyAdmins(
     'New Order Received',
     `Order #${order.id} from ${order.customerName} - ${totalAmount} EGP`,
-    `/orders/${order.id}`
+    `/orders/${order.id}`,
+    'ORDER'
   )
 
   // Emit WebSocket event

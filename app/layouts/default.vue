@@ -44,6 +44,13 @@ const links = computed(() => [[{
     open.value = false
   }
 }, {
+  label: 'Orders',
+  icon: 'i-lucide-shopping-cart',
+  to: '/orders',
+  onSelect: () => {
+    open.value = false
+  }
+}, {
   label: 'Products',
   icon: 'i-lucide-box',
   to: '/products',

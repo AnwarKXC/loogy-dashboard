@@ -24,9 +24,19 @@ export const sendPushNotification = async (subscription: any, payload: any) => {
   }
 }
 
-export const notifyAdmins = async (title: string, body: string, url?: string) => {
+export const notifyAdmins = async (title: string, body: string, url?: string, type: 'ORDER' | 'MESSAGE' = 'ORDER') => {
   try {
-    const subscriptions = await prisma.pushSubscription.findMany()
+    const subscriptions = await prisma.pushSubscription.findMany({
+      include: {
+        superAdmin: true
+      }
+    })
+
+    const filteredSubscriptions = subscriptions.filter((sub) => {
+      if (type === 'ORDER') return sub.superAdmin.notifyOrders
+      if (type === 'MESSAGE') return sub.superAdmin.notifyMessages
+      return true
+    })
 
     const payload = {
       title,
@@ -37,7 +47,7 @@ export const notifyAdmins = async (title: string, body: string, url?: string) =>
     }
 
     const results = await Promise.allSettled(
-      subscriptions.map(sub =>
+      filteredSubscriptions.map(sub =>
         sendPushNotification({
           endpoint: sub.endpoint,
           keys: {
@@ -49,7 +59,7 @@ export const notifyAdmins = async (title: string, body: string, url?: string) =>
     )
 
     const successCount = results.filter(r => r.status === 'fulfilled' && r.value === true).length
-    console.log(`Sent push notifications to ${successCount}/${subscriptions.length} admins`)
+    console.log(`Sent push notifications to ${successCount}/${filteredSubscriptions.length} admins`)
 
     return successCount > 0
   } catch (error) {

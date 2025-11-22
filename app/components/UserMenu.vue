@@ -171,17 +171,9 @@ const items = computed<DropdownMenuItem[][]>(() => [
       to: '/settings'
     },
     {
-      label: isSubscribed.value ? 'Disable Notifications' : 'Enable Notifications',
-      icon: isSubscribed.value ? 'i-lucide-bell-off' : 'i-lucide-bell',
-      disabled: !isSupported.value,
-      onSelect: (e: Event) => {
-        e.preventDefault()
-        if (isSubscribed.value) {
-          unsubscribe()
-        } else {
-          subscribe()
-        }
-      }
+      label: 'Notification Settings',
+      icon: 'i-lucide-bell',
+      to: '/settings/notifications'
     }
   ],
   [
