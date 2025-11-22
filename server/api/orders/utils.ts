@@ -1,4 +1,4 @@
-import type { Prisma } from '~/generated/prisma'
+import type { Prisma } from '@prisma/client'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 
 export type OrderWithRelations = Prisma.OrderGetPayload<{

@@ -26,6 +26,19 @@ export default defineNuxtConfig({
 
   compatibilityDate: '2024-07-11',
 
+  nitro: {
+    moduleSideEffects: ['@prisma/client/runtime/index.js'],
+    rollupConfig: {
+      external: [
+        '@prisma/client',
+        '.prisma/client/index-browser.js',
+        '.prisma/client/index-browser',
+        '.prisma/client/index.js',
+        '.prisma/client'
+      ]
+    }
+  },
+
   eslint: {
     config: {
       stylistic: {

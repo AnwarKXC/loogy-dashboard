@@ -1,7 +1,7 @@
 import { eventHandler, readBody, setResponseStatus } from 'h3'
 import { z } from 'zod'
 
-import { Prisma } from '../../../app/generated/prisma'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../../utils/prisma'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getProductInclude, mapProductToDetail } from '../../utils/products'
