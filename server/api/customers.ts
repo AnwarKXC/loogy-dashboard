@@ -1,8 +1,8 @@
 import { eventHandler, getQuery } from 'h3'
 import { z } from 'zod'
 
-import type { Prisma } from '../../shared/generated/prisma/client'
-import { prisma } from '../db'
+import type { Prisma } from '~prisma/client'
+import prisma from '../db'
 import { requireSuperAdmin } from '../utils/superadmin-session'
 
 const querySchema = z.object({

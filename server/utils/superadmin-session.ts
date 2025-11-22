@@ -4,7 +4,7 @@ import process from 'process'
 import type { H3Event } from 'h3'
 import { createError, deleteCookie, getCookie, getRequestIP, getRequestHeader, setCookie } from 'h3'
 
-import type { SuperAdmin, SuperAdminRole } from '../../shared/generated/prisma/client'
+import type { SuperAdmin, SuperAdminRole } from '~prisma/client'
 import prisma from '../db'
 
 export const SUPERADMIN_SESSION_COOKIE = 'superadmin_session'

@@ -1,5 +1,4 @@
-import type { Prisma } from '../../../shared/generated/prisma/client'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import { Prisma } from '~prisma/client'
 
 export type OrderWithRelations = Prisma.OrderGetPayload<{
   include: {
@@ -83,6 +82,6 @@ function extractLocalizedName(json: Record<string, unknown>) {
   return typeof firstString === 'string' ? firstString : null
 }
 
-export function isKnownPrismaError(error: unknown): error is PrismaClientKnownRequestError {
-  return error instanceof PrismaClientKnownRequestError
+export function isKnownPrismaError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
+  return error instanceof Prisma.PrismaClientKnownRequestError
 }

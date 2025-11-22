@@ -1,6 +1,11 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
   "files": [ "./types.d.ts" ],
+  "compilerOptions": {
+    "paths": {
+      "~prisma/*": [ "./shared/generated/prisma/*" ]
+    }
+  },
   // Project references to generated Nuxt tsconfigs cause strict project settings
   // errors in some environments (composite/emit). Removing them keeps a simple
   // editor-friendly tsconfig. Nuxt will still generate and use its own configs.

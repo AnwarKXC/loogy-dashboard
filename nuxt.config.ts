@@ -1,6 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from 'url'
 
 export default defineNuxtConfig({
+
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
@@ -17,6 +19,8 @@ export default defineNuxtConfig({
     s3Bucket: process.env.S3_BUCKET_NAME,
     public: {
     }
+  }, alias: {
+    '~prisma': fileURLToPath(new URL('./shared/generated/prisma', import.meta.url))
   },
 
   routeRules: {
@@ -26,6 +30,17 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2024-07-11',
+
+  nitro: {
+    esbuild: {
+      options: {
+        target: 'esnext'
+      }
+    },
+    rollupConfig: {
+      external: ['~prisma/client']
+    }
+  },
 
   eslint: {
     config: {

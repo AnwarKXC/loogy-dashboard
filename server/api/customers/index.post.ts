@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import { Prisma } from '~prisma/client'
 import { createError, eventHandler, readBody } from 'h3'
 import { z } from 'zod'
 
@@ -38,7 +38,7 @@ export default eventHandler(async (event) => {
       customer: mapCustomerToListItem(customer)
     }
   } catch (error) {
-    if (error instanceof PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       throw createError({ statusCode: 409, statusMessage: 'Email already exists' })
     }
 
