@@ -28,7 +28,7 @@ const query = computed(() => ({
   sort: sort.value
 }))
 
-const { data, status, error, refresh } = await useFetch<CustomerListResponse>('/api/customers', {
+const { data, status, error, refresh } = await useFetch<CustomerListResponse>('/api/users', {
   lazy: true,
   query,
   watch: [query]
@@ -243,7 +243,7 @@ async function toggleStatus(customer: CustomerListItem) {
   try {
     const nextStatus = customer.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
-    await $fetch(`/api/customers/${customer.id}`, {
+    await $fetch(`/api/users/${customer.id}`, {
       method: 'PATCH',
       body: { status: nextStatus }
     })

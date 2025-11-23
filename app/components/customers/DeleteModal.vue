@@ -23,7 +23,7 @@ async function onSubmit() {
   try {
     isDeleting.value = true
 
-    const { deleted } = await $fetch<{ deleted: number }>('/api/customers', {
+    const { deleted } = await $fetch<{ deleted: number }>('/api/users', {
       method: 'DELETE',
       body: {
         // Ensure numeric ids are sent to the API

@@ -576,24 +576,24 @@ export class PrismaClient<
   get userBehavior(): Prisma.UserBehaviorDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.superAdmin`: Exposes CRUD operations for the **SuperAdmin** model.
+   * `prisma.admin`: Exposes CRUD operations for the **SuperAdmin** model.
     * Example usage:
     * ```ts
     * // Fetch zero or more SuperAdmins
-    * const superAdmins = await prisma.superAdmin.findMany()
+    * const superAdmins = await prisma.admin.findMany()
     * ```
     */
-  get superAdmin(): Prisma.SuperAdminDelegate<ExtArgs, ClientOptions>;
+  get superAdmin(): prisma.adminDelegate<ExtArgs, ClientOptions>;
 
   /**
-   * `prisma.superAdminSession`: Exposes CRUD operations for the **SuperAdminSession** model.
+   * `prisma.adminSession`: Exposes CRUD operations for the **SuperAdminSession** model.
     * Example usage:
     * ```ts
     * // Fetch zero or more SuperAdminSessions
-    * const superAdminSessions = await prisma.superAdminSession.findMany()
+    * const superAdminSessions = await prisma.adminSession.findMany()
     * ```
     */
-  get superAdminSession(): Prisma.SuperAdminSessionDelegate<ExtArgs, ClientOptions>;
+  get superAdminSession(): prisma.adminSessionDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.userPreference`: Exposes CRUD operations for the **UserPreference** model.
@@ -2606,148 +2606,148 @@ export namespace Prisma {
       }
       SuperAdmin: {
         payload: Prisma.$SuperAdminPayload<ExtArgs>
-        fields: Prisma.SuperAdminFieldRefs
+        fields: prisma.adminFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.SuperAdminFindUniqueArgs<ExtArgs>
+            args: prisma.adminFindUniqueArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.SuperAdminFindUniqueOrThrowArgs<ExtArgs>
+            args: prisma.adminFindUniqueOrThrowArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>
           }
           findFirst: {
-            args: Prisma.SuperAdminFindFirstArgs<ExtArgs>
+            args: prisma.adminFindFirstArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.SuperAdminFindFirstOrThrowArgs<ExtArgs>
+            args: prisma.adminFindFirstOrThrowArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>
           }
           findMany: {
-            args: Prisma.SuperAdminFindManyArgs<ExtArgs>
+            args: prisma.adminFindManyArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>[]
           }
           create: {
-            args: Prisma.SuperAdminCreateArgs<ExtArgs>
+            args: prisma.adminCreateArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>
           }
           createMany: {
-            args: Prisma.SuperAdminCreateManyArgs<ExtArgs>
+            args: prisma.adminCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.SuperAdminCreateManyAndReturnArgs<ExtArgs>
+            args: prisma.adminCreateManyAndReturnArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>[]
           }
           delete: {
-            args: Prisma.SuperAdminDeleteArgs<ExtArgs>
+            args: prisma.adminDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>
           }
           update: {
-            args: Prisma.SuperAdminUpdateArgs<ExtArgs>
+            args: prisma.adminUpdateArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>
           }
           deleteMany: {
-            args: Prisma.SuperAdminDeleteManyArgs<ExtArgs>
+            args: prisma.adminDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.SuperAdminUpdateManyArgs<ExtArgs>
+            args: prisma.adminUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateManyAndReturn: {
-            args: Prisma.SuperAdminUpdateManyAndReturnArgs<ExtArgs>
+            args: prisma.adminUpdateManyAndReturnArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>[]
           }
           upsert: {
-            args: Prisma.SuperAdminUpsertArgs<ExtArgs>
+            args: prisma.adminUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminPayload>
           }
           aggregate: {
-            args: Prisma.SuperAdminAggregateArgs<ExtArgs>
+            args: prisma.adminAggregateArgs<ExtArgs>
             result: $Utils.Optional<AggregateSuperAdmin>
           }
           groupBy: {
-            args: Prisma.SuperAdminGroupByArgs<ExtArgs>
+            args: prisma.adminGroupByArgs<ExtArgs>
             result: $Utils.Optional<SuperAdminGroupByOutputType>[]
           }
           count: {
-            args: Prisma.SuperAdminCountArgs<ExtArgs>
+            args: prisma.adminCountArgs<ExtArgs>
             result: $Utils.Optional<SuperAdminCountAggregateOutputType> | number
           }
         }
       }
       SuperAdminSession: {
         payload: Prisma.$SuperAdminSessionPayload<ExtArgs>
-        fields: Prisma.SuperAdminSessionFieldRefs
+        fields: prisma.adminSessionFieldRefs
         operations: {
           findUnique: {
-            args: Prisma.SuperAdminSessionFindUniqueArgs<ExtArgs>
+            args: prisma.adminSessionFindUniqueArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload> | null
           }
           findUniqueOrThrow: {
-            args: Prisma.SuperAdminSessionFindUniqueOrThrowArgs<ExtArgs>
+            args: prisma.adminSessionFindUniqueOrThrowArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>
           }
           findFirst: {
-            args: Prisma.SuperAdminSessionFindFirstArgs<ExtArgs>
+            args: prisma.adminSessionFindFirstArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload> | null
           }
           findFirstOrThrow: {
-            args: Prisma.SuperAdminSessionFindFirstOrThrowArgs<ExtArgs>
+            args: prisma.adminSessionFindFirstOrThrowArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>
           }
           findMany: {
-            args: Prisma.SuperAdminSessionFindManyArgs<ExtArgs>
+            args: prisma.adminSessionFindManyArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>[]
           }
           create: {
-            args: Prisma.SuperAdminSessionCreateArgs<ExtArgs>
+            args: prisma.adminSessionCreateArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>
           }
           createMany: {
-            args: Prisma.SuperAdminSessionCreateManyArgs<ExtArgs>
+            args: prisma.adminSessionCreateManyArgs<ExtArgs>
             result: BatchPayload
           }
           createManyAndReturn: {
-            args: Prisma.SuperAdminSessionCreateManyAndReturnArgs<ExtArgs>
+            args: prisma.adminSessionCreateManyAndReturnArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>[]
           }
           delete: {
-            args: Prisma.SuperAdminSessionDeleteArgs<ExtArgs>
+            args: prisma.adminSessionDeleteArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>
           }
           update: {
-            args: Prisma.SuperAdminSessionUpdateArgs<ExtArgs>
+            args: prisma.adminSessionUpdateArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>
           }
           deleteMany: {
-            args: Prisma.SuperAdminSessionDeleteManyArgs<ExtArgs>
+            args: prisma.adminSessionDeleteManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateMany: {
-            args: Prisma.SuperAdminSessionUpdateManyArgs<ExtArgs>
+            args: prisma.adminSessionUpdateManyArgs<ExtArgs>
             result: BatchPayload
           }
           updateManyAndReturn: {
-            args: Prisma.SuperAdminSessionUpdateManyAndReturnArgs<ExtArgs>
+            args: prisma.adminSessionUpdateManyAndReturnArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>[]
           }
           upsert: {
-            args: Prisma.SuperAdminSessionUpsertArgs<ExtArgs>
+            args: prisma.adminSessionUpsertArgs<ExtArgs>
             result: $Utils.PayloadToResult<Prisma.$SuperAdminSessionPayload>
           }
           aggregate: {
-            args: Prisma.SuperAdminSessionAggregateArgs<ExtArgs>
+            args: prisma.adminSessionAggregateArgs<ExtArgs>
             result: $Utils.Optional<AggregateSuperAdminSession>
           }
           groupBy: {
-            args: Prisma.SuperAdminSessionGroupByArgs<ExtArgs>
+            args: prisma.adminSessionGroupByArgs<ExtArgs>
             result: $Utils.Optional<SuperAdminSessionGroupByOutputType>[]
           }
           count: {
-            args: Prisma.SuperAdminSessionCountArgs<ExtArgs>
+            args: prisma.adminSessionCountArgs<ExtArgs>
             result: $Utils.Optional<SuperAdminSessionCountAggregateOutputType> | number
           }
         }
@@ -27754,7 +27754,7 @@ export namespace Prisma {
      * @param {SuperAdminFindUniqueArgs} args - Arguments to find a SuperAdmin
      * @example
      * // Get one SuperAdmin
-     * const superAdmin = await prisma.superAdmin.findUnique({
+     * const superAdmin = await prisma.admin.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -27768,7 +27768,7 @@ export namespace Prisma {
      * @param {SuperAdminFindUniqueOrThrowArgs} args - Arguments to find a SuperAdmin
      * @example
      * // Get one SuperAdmin
-     * const superAdmin = await prisma.superAdmin.findUniqueOrThrow({
+     * const superAdmin = await prisma.admin.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -27783,7 +27783,7 @@ export namespace Prisma {
      * @param {SuperAdminFindFirstArgs} args - Arguments to find a SuperAdmin
      * @example
      * // Get one SuperAdmin
-     * const superAdmin = await prisma.superAdmin.findFirst({
+     * const superAdmin = await prisma.admin.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -27799,7 +27799,7 @@ export namespace Prisma {
      * @param {SuperAdminFindFirstOrThrowArgs} args - Arguments to find a SuperAdmin
      * @example
      * // Get one SuperAdmin
-     * const superAdmin = await prisma.superAdmin.findFirstOrThrow({
+     * const superAdmin = await prisma.admin.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -27814,13 +27814,13 @@ export namespace Prisma {
      * @param {SuperAdminFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all SuperAdmins
-     * const superAdmins = await prisma.superAdmin.findMany()
+     * const superAdmins = await prisma.admin.findMany()
      * 
      * // Get first 10 SuperAdmins
-     * const superAdmins = await prisma.superAdmin.findMany({ take: 10 })
+     * const superAdmins = await prisma.admin.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const superAdminWithIdOnly = await prisma.superAdmin.findMany({ select: { id: true } })
+     * const superAdminWithIdOnly = await prisma.admin.findMany({ select: { id: true } })
      * 
      */
     findMany<T extends SuperAdminFindManyArgs>(args?: SelectSubset<T, SuperAdminFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SuperAdminPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -27830,7 +27830,7 @@ export namespace Prisma {
      * @param {SuperAdminCreateArgs} args - Arguments to create a SuperAdmin.
      * @example
      * // Create one SuperAdmin
-     * const SuperAdmin = await prisma.superAdmin.create({
+     * const SuperAdmin = await prisma.admin.create({
      *   data: {
      *     // ... data to create a SuperAdmin
      *   }
@@ -27844,7 +27844,7 @@ export namespace Prisma {
      * @param {SuperAdminCreateManyArgs} args - Arguments to create many SuperAdmins.
      * @example
      * // Create many SuperAdmins
-     * const superAdmin = await prisma.superAdmin.createMany({
+     * const superAdmin = await prisma.admin.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
@@ -27858,14 +27858,14 @@ export namespace Prisma {
      * @param {SuperAdminCreateManyAndReturnArgs} args - Arguments to create many SuperAdmins.
      * @example
      * // Create many SuperAdmins
-     * const superAdmin = await prisma.superAdmin.createManyAndReturn({
+     * const superAdmin = await prisma.admin.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
      * // Create many SuperAdmins and only return the `id`
-     * const superAdminWithIdOnly = await prisma.superAdmin.createManyAndReturn({
+     * const superAdminWithIdOnly = await prisma.admin.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -27882,7 +27882,7 @@ export namespace Prisma {
      * @param {SuperAdminDeleteArgs} args - Arguments to delete one SuperAdmin.
      * @example
      * // Delete one SuperAdmin
-     * const SuperAdmin = await prisma.superAdmin.delete({
+     * const SuperAdmin = await prisma.admin.delete({
      *   where: {
      *     // ... filter to delete one SuperAdmin
      *   }
@@ -27896,7 +27896,7 @@ export namespace Prisma {
      * @param {SuperAdminUpdateArgs} args - Arguments to update one SuperAdmin.
      * @example
      * // Update one SuperAdmin
-     * const superAdmin = await prisma.superAdmin.update({
+     * const superAdmin = await prisma.admin.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -27913,7 +27913,7 @@ export namespace Prisma {
      * @param {SuperAdminDeleteManyArgs} args - Arguments to filter SuperAdmins to delete.
      * @example
      * // Delete a few SuperAdmins
-     * const { count } = await prisma.superAdmin.deleteMany({
+     * const { count } = await prisma.admin.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -27929,7 +27929,7 @@ export namespace Prisma {
      * @param {SuperAdminUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
      * // Update many SuperAdmins
-     * const superAdmin = await prisma.superAdmin.updateMany({
+     * const superAdmin = await prisma.admin.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -27946,7 +27946,7 @@ export namespace Prisma {
      * @param {SuperAdminUpdateManyAndReturnArgs} args - Arguments to update many SuperAdmins.
      * @example
      * // Update many SuperAdmins
-     * const superAdmin = await prisma.superAdmin.updateManyAndReturn({
+     * const superAdmin = await prisma.admin.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -27956,7 +27956,7 @@ export namespace Prisma {
      * })
      * 
      * // Update zero or more SuperAdmins and only return the `id`
-     * const superAdminWithIdOnly = await prisma.superAdmin.updateManyAndReturn({
+     * const superAdminWithIdOnly = await prisma.admin.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
      *     // ... provide filter here
@@ -27976,7 +27976,7 @@ export namespace Prisma {
      * @param {SuperAdminUpsertArgs} args - Arguments to update or create a SuperAdmin.
      * @example
      * // Update or create a SuperAdmin
-     * const superAdmin = await prisma.superAdmin.upsert({
+     * const superAdmin = await prisma.admin.upsert({
      *   create: {
      *     // ... data to create a SuperAdmin
      *   },
@@ -27998,7 +27998,7 @@ export namespace Prisma {
      * @param {SuperAdminCountArgs} args - Arguments to filter SuperAdmins to count.
      * @example
      * // Count the number of SuperAdmins
-     * const count = await prisma.superAdmin.count({
+     * const count = await prisma.admin.count({
      *   where: {
      *     // ... the filter for the SuperAdmins we want to count
      *   }
@@ -28958,7 +28958,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionFindUniqueArgs} args - Arguments to find a SuperAdminSession
      * @example
      * // Get one SuperAdminSession
-     * const superAdminSession = await prisma.superAdminSession.findUnique({
+     * const superAdminSession = await prisma.adminSession.findUnique({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -28972,7 +28972,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionFindUniqueOrThrowArgs} args - Arguments to find a SuperAdminSession
      * @example
      * // Get one SuperAdminSession
-     * const superAdminSession = await prisma.superAdminSession.findUniqueOrThrow({
+     * const superAdminSession = await prisma.adminSession.findUniqueOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -28987,7 +28987,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionFindFirstArgs} args - Arguments to find a SuperAdminSession
      * @example
      * // Get one SuperAdminSession
-     * const superAdminSession = await prisma.superAdminSession.findFirst({
+     * const superAdminSession = await prisma.adminSession.findFirst({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -29003,7 +29003,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionFindFirstOrThrowArgs} args - Arguments to find a SuperAdminSession
      * @example
      * // Get one SuperAdminSession
-     * const superAdminSession = await prisma.superAdminSession.findFirstOrThrow({
+     * const superAdminSession = await prisma.adminSession.findFirstOrThrow({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -29018,13 +29018,13 @@ export namespace Prisma {
      * @param {SuperAdminSessionFindManyArgs} args - Arguments to filter and select certain fields only.
      * @example
      * // Get all SuperAdminSessions
-     * const superAdminSessions = await prisma.superAdminSession.findMany()
+     * const superAdminSessions = await prisma.adminSession.findMany()
      * 
      * // Get first 10 SuperAdminSessions
-     * const superAdminSessions = await prisma.superAdminSession.findMany({ take: 10 })
+     * const superAdminSessions = await prisma.adminSession.findMany({ take: 10 })
      * 
      * // Only select the `id`
-     * const superAdminSessionWithIdOnly = await prisma.superAdminSession.findMany({ select: { id: true } })
+     * const superAdminSessionWithIdOnly = await prisma.adminSession.findMany({ select: { id: true } })
      * 
      */
     findMany<T extends SuperAdminSessionFindManyArgs>(args?: SelectSubset<T, SuperAdminSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SuperAdminSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -29034,7 +29034,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionCreateArgs} args - Arguments to create a SuperAdminSession.
      * @example
      * // Create one SuperAdminSession
-     * const SuperAdminSession = await prisma.superAdminSession.create({
+     * const SuperAdminSession = await prisma.adminSession.create({
      *   data: {
      *     // ... data to create a SuperAdminSession
      *   }
@@ -29048,7 +29048,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionCreateManyArgs} args - Arguments to create many SuperAdminSessions.
      * @example
      * // Create many SuperAdminSessions
-     * const superAdminSession = await prisma.superAdminSession.createMany({
+     * const superAdminSession = await prisma.adminSession.createMany({
      *   data: [
      *     // ... provide data here
      *   ]
@@ -29062,14 +29062,14 @@ export namespace Prisma {
      * @param {SuperAdminSessionCreateManyAndReturnArgs} args - Arguments to create many SuperAdminSessions.
      * @example
      * // Create many SuperAdminSessions
-     * const superAdminSession = await prisma.superAdminSession.createManyAndReturn({
+     * const superAdminSession = await prisma.adminSession.createManyAndReturn({
      *   data: [
      *     // ... provide data here
      *   ]
      * })
      * 
      * // Create many SuperAdminSessions and only return the `id`
-     * const superAdminSessionWithIdOnly = await prisma.superAdminSession.createManyAndReturn({
+     * const superAdminSessionWithIdOnly = await prisma.adminSession.createManyAndReturn({
      *   select: { id: true },
      *   data: [
      *     // ... provide data here
@@ -29086,7 +29086,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionDeleteArgs} args - Arguments to delete one SuperAdminSession.
      * @example
      * // Delete one SuperAdminSession
-     * const SuperAdminSession = await prisma.superAdminSession.delete({
+     * const SuperAdminSession = await prisma.adminSession.delete({
      *   where: {
      *     // ... filter to delete one SuperAdminSession
      *   }
@@ -29100,7 +29100,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionUpdateArgs} args - Arguments to update one SuperAdminSession.
      * @example
      * // Update one SuperAdminSession
-     * const superAdminSession = await prisma.superAdminSession.update({
+     * const superAdminSession = await prisma.adminSession.update({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -29117,7 +29117,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionDeleteManyArgs} args - Arguments to filter SuperAdminSessions to delete.
      * @example
      * // Delete a few SuperAdminSessions
-     * const { count } = await prisma.superAdminSession.deleteMany({
+     * const { count } = await prisma.adminSession.deleteMany({
      *   where: {
      *     // ... provide filter here
      *   }
@@ -29133,7 +29133,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionUpdateManyArgs} args - Arguments to update one or more rows.
      * @example
      * // Update many SuperAdminSessions
-     * const superAdminSession = await prisma.superAdminSession.updateMany({
+     * const superAdminSession = await prisma.adminSession.updateMany({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -29150,7 +29150,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionUpdateManyAndReturnArgs} args - Arguments to update many SuperAdminSessions.
      * @example
      * // Update many SuperAdminSessions
-     * const superAdminSession = await prisma.superAdminSession.updateManyAndReturn({
+     * const superAdminSession = await prisma.adminSession.updateManyAndReturn({
      *   where: {
      *     // ... provide filter here
      *   },
@@ -29160,7 +29160,7 @@ export namespace Prisma {
      * })
      * 
      * // Update zero or more SuperAdminSessions and only return the `id`
-     * const superAdminSessionWithIdOnly = await prisma.superAdminSession.updateManyAndReturn({
+     * const superAdminSessionWithIdOnly = await prisma.adminSession.updateManyAndReturn({
      *   select: { id: true },
      *   where: {
      *     // ... provide filter here
@@ -29180,7 +29180,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionUpsertArgs} args - Arguments to update or create a SuperAdminSession.
      * @example
      * // Update or create a SuperAdminSession
-     * const superAdminSession = await prisma.superAdminSession.upsert({
+     * const superAdminSession = await prisma.adminSession.upsert({
      *   create: {
      *     // ... data to create a SuperAdminSession
      *   },
@@ -29202,7 +29202,7 @@ export namespace Prisma {
      * @param {SuperAdminSessionCountArgs} args - Arguments to filter SuperAdminSessions to count.
      * @example
      * // Count the number of SuperAdminSessions
-     * const count = await prisma.superAdminSession.count({
+     * const count = await prisma.adminSession.count({
      *   where: {
      *     // ... the filter for the SuperAdminSessions we want to count
      *   }

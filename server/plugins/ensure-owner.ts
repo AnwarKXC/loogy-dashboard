@@ -10,7 +10,7 @@ export default async function ensureOwnerPlugin() {
 
   const normalizedEmail = ownerEmail.toLowerCase()
 
-  const existingOwner = await prisma.superAdmin.findFirst({
+  const existingOwner = await prisma.admin.findFirst({
     where: { role: 'OWNER' }
   })
 
@@ -18,14 +18,14 @@ export default async function ensureOwnerPlugin() {
     return
   }
 
-  const existingAccount = await prisma.superAdmin.findUnique({
+  const existingAccount = await prisma.admin.findUnique({
     where: { email: normalizedEmail }
   })
 
   const passwordHash = await hashPassword(ownerPassword)
 
   if (existingAccount) {
-    await prisma.superAdmin.update({
+    await prisma.admin.update({
       where: { id: existingAccount.id },
       data: {
         name: ownerName,
@@ -37,7 +37,7 @@ export default async function ensureOwnerPlugin() {
     return
   }
 
-  await prisma.superAdmin.create({
+  await prisma.admin.create({
     data: {
       email: normalizedEmail,
       name: ownerName,

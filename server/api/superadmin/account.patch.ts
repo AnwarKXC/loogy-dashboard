@@ -34,7 +34,7 @@ export default eventHandler(async (event) => {
   if (payload.email !== undefined) {
     const normalizedEmail = payload.email.toLowerCase()
     if (normalizedEmail !== superAdmin.email) {
-      const exists = await prisma.superAdmin.findUnique({ where: { email: normalizedEmail } })
+      const exists = await prisma.admin.findUnique({ where: { email: normalizedEmail } })
       if (exists) {
         throw createError({ statusCode: 409, statusMessage: 'An account with this email already exists' })
       }
@@ -56,7 +56,7 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Nothing to update' })
   }
 
-  const updated = await prisma.superAdmin.update({
+  const updated = await prisma.admin.update({
     where: { id: superAdmin.id },
     data: updates
   })

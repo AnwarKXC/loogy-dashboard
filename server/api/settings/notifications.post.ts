@@ -20,7 +20,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const admin = await prisma.superAdmin.update({
+  const admin = await prisma.admin.update({
     where: { id: session.id },
     data: {
       notifyOrders: result.data.notifyOrders,

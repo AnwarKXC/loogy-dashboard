@@ -17,7 +17,7 @@ export default eventHandler(async (event) => {
   const payload = createSuperAdminSchema.parse(body)
 
   const normalizedEmail = payload.email.toLowerCase()
-  const existing = await prisma.superAdmin.findUnique({ where: { email: normalizedEmail } })
+  const existing = await prisma.admin.findUnique({ where: { email: normalizedEmail } })
 
   if (existing) {
     throw createError({ statusCode: 409, statusMessage: 'An account with this email already exists' })
@@ -25,7 +25,7 @@ export default eventHandler(async (event) => {
 
   const passwordHash = await hashPassword(payload.password)
 
-  const account = await prisma.superAdmin.create({
+  const account = await prisma.admin.create({
     data: {
       email: normalizedEmail,
       name: payload.name?.trim() || null,

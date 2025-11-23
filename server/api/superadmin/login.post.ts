@@ -14,7 +14,7 @@ export default eventHandler(async (event) => {
   const { email, password } = loginSchema.parse(body)
   const normalizedEmail = email.toLowerCase()
 
-  const superAdmin = await prisma.superAdmin.findUnique({ where: { email: normalizedEmail } })
+  const superAdmin = await prisma.admin.findUnique({ where: { email: normalizedEmail } })
 
   if (!superAdmin) {
     throw createError({ statusCode: 401, statusMessage: 'Invalid credentials' })

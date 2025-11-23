@@ -162,9 +162,9 @@ server/api/analytics/overview.get.ts   # Revenue, orders count, etc.
 Update existing `app/pages/customers.vue` to use real User data:
 
 ```bash
-server/api/customers/index.get.ts      # Already exists, adapt to schema
-server/api/customers/[id].get.ts       # Customer details
-server/api/customers/[id]/orders.get.ts # Customer order history
+server/api/users/index.get.ts      # Already exists, adapt to schema
+server/api/users/[id].get.ts       # Customer details
+server/api/users/[id]/orders.get.ts # Customer order history
 ```
 
 ---

@@ -158,14 +158,14 @@ POST   /api/orders/export         - Export orders to CSV
 ### 2.2 Customer Management
 **Priority: HIGH**
 
-#### Backend APIs (Adapt existing `/api/customers`)
+#### Backend APIs (Adapt existing `/api/users`)
 ```
-GET    /api/customers             - List customers with filters
-GET    /api/customers/:id         - Get customer details
-PATCH  /api/customers/:id         - Update customer (OWNER/MANAGER)
-DELETE /api/customers/:id         - Delete customer (OWNER only)
-GET    /api/customers/:id/orders  - Customer order history
-GET    /api/customers/:id/behavior - Customer behavior analytics
+GET    /api/users             - List customers with filters
+GET    /api/users/:id         - Get customer details
+PATCH  /api/users/:id         - Update customer (OWNER/MANAGER)
+DELETE /api/users/:id         - Delete customer (OWNER only)
+GET    /api/users/:id/orders  - Customer order history
+GET    /api/users/:id/behavior - Customer behavior analytics
 ```
 
 #### Frontend Pages

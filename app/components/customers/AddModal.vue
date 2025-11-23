@@ -31,7 +31,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   try {
     isSubmitting.value = true
 
-    const { customer } = await $fetch<{ customer: { name: string } }>('/api/customers', {
+    const { customer } = await $fetch<{ customer: { name: string } }>('/api/user', {
       method: 'POST',
       body: {
         name: event.data.name,

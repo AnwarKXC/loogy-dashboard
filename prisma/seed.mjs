@@ -250,7 +250,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 45,
     createdDaysAgo: 30,
-    authProvider: 'seed-customer-1'
+    authProviderId: 'seed-customer-1'
   },
   {
     name: 'Jordan Brown',
@@ -259,7 +259,7 @@ const customers = [
     isActive: false,
     lastSessionMinutesAgo: 60 * 24 * 3,
     createdDaysAgo: 90,
-    authProvider: 'seed-customer-2'
+    authProviderId: 'seed-customer-2'
   },
   {
     name: 'Taylor Green',
@@ -268,7 +268,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 6,
     createdDaysAgo: 14,
-    authProvider: 'seed-customer-3'
+    authProviderId: 'seed-customer-3'
   },
   {
     name: 'Morgan White',
@@ -277,7 +277,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 20,
     createdDaysAgo: 7,
-    authProvider: 'seed-customer-4'
+    authProviderId: 'seed-customer-4'
   },
   {
     name: 'Casey Gray',
@@ -286,7 +286,7 @@ const customers = [
     isActive: false,
     lastSessionMinutesAgo: 60 * 24 * 14,
     createdDaysAgo: 120,
-    authProvider: 'seed-customer-5'
+    authProviderId: 'seed-customer-5'
   },
   {
     name: 'Jamie Johnson',
@@ -295,7 +295,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 2,
     createdDaysAgo: 3,
-    authProvider: 'seed-customer-6'
+    authProviderId: 'seed-customer-6'
   },
   {
     name: 'Riley Davis',
@@ -304,7 +304,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 24,
     createdDaysAgo: 45,
-    authProvider: 'seed-customer-7'
+    authProviderId: 'seed-customer-7'
   },
   {
     name: 'Kelly Wilson',
@@ -313,7 +313,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 15,
     createdDaysAgo: 2,
-    authProvider: 'seed-customer-8'
+    authProviderId: 'seed-customer-8'
   },
   {
     name: 'Drew Moore',
@@ -322,7 +322,7 @@ const customers = [
     isActive: false,
     lastSessionMinutesAgo: 60 * 24 * 21,
     createdDaysAgo: 200,
-    authProvider: 'seed-customer-9'
+    authProviderId: 'seed-customer-9'
   },
   {
     name: 'Jordan Taylor',
@@ -331,7 +331,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 12,
     createdDaysAgo: 60,
-    authProvider: 'seed-customer-10'
+    authProviderId: 'seed-customer-10'
   }
 ]
 
@@ -363,7 +363,7 @@ async function seedCustomers() {
         isActive: customer.isActive,
         lastSession,
         createdAt,
-        authProvider: customer.authProvider,
+        authProviderId: customer.authProviderId,
         role: 'CUSTOMER'
       }
     })

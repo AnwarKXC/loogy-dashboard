@@ -4,7 +4,7 @@ import prisma from '../../db'
 export default defineEventHandler(async (event) => {
   const session = await requireSuperAdmin(event)
 
-  const admin = await prisma.superAdmin.findUnique({
+  const admin = await prisma.admin.findUnique({
     where: { id: session.id },
     select: {
       notifyOrders: true,

@@ -6,7 +6,7 @@ import { requireSuperAdmin } from '../../utils/superadmin-session'
 export default eventHandler(async (event) => {
   await requireSuperAdmin(event)
 
-  const accounts = await prisma.superAdmin.findMany({
+  const accounts = await prisma.admin.findMany({
     orderBy: { createdAt: 'asc' },
     select: {
       id: true,

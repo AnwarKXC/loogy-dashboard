@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Optimized schema for 50k daily traffic e-commerce
+// Based on Schema 2 with improvements
 
 generator client {
   provider = "prisma-client-js"
@@ -12,6 +9,11 @@ datasource db {
   provider = "postgresql"
 }
 
+/**
+ * ------------------------------
+ * Enums
+ * ------------------------------
+ */
 enum Role {
   CUSTOMER
   ADMIN
@@ -19,8 +21,11 @@ enum Role {
 
 enum OrderStatus {
   PENDING
+  PROCESSING
   SHIPPING
   DELIVERED
+  CANCELLED
+  RETURNED
 }
 
 enum PaymentMethod {
@@ -30,23 +35,9 @@ enum PaymentMethod {
   VISA
 }
 
-enum PricingRuleType {
-  FEE
-  DISCOUNT
-  PROMO
-}
-
 enum PricingApplicationType {
   PERCENTAGE
   FIXED
-}
-
-enum BehaviorType {
-  VIEW
-  PURCHASE
-  CART
-  WISHLIST
-  RATING
 }
 
 enum Language {
@@ -54,34 +45,48 @@ enum Language {
   AR
 }
 
-enum SuperAdminRole {
+enum AdminRole {
   OWNER
   MANAGER
   SALES
 }
 
-model User {
-  id               Int           @id @default(autoincrement())
-  name             String
-  email            String        @unique
-  authProvider     String        @unique
-  phoneNumber      String?
-  isActive         Boolean       @default(true)
-  role             Role          @default(CUSTOMER)
-  lastSession      DateTime      @default(now())
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  defaultAddressId Int?
-  addresses        Address[]
-  defaultAddress   Address?      @relation("DefaultAddress", fields: [defaultAddressId], references: [id])
-  cart             Cart?
-  wishlist         Wishlist?
-  orders           Order[]
-  conversation     Conversation?
-  chats            Chat[]
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
 
-  @@index([role])
-  @@index([isActive])
+/**
+ * ------------------------------
+ * Users & Addresses
+ * ------------------------------
+ */
+model User {
+  id               Int      @id @default(autoincrement())
+  authProviderId   String   @unique // Links to auth.users.id
+  name             String?
+  email            String   @unique
+  avatar           String? // From OAuth provider
+  authProvider     String? // 'google', 'github', 'email', etc.
+  phoneNumber      String?
+  isActive         Boolean  @default(true)
+  role             Role     @default(CUSTOMER)
+  lastSession      DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  defaultAddressId Int?
+
+  addresses      Address[]
+  defaultAddress Address?      @relation("DefaultAddress", fields: [defaultAddressId], references: [id], onDelete: SetNull)
+  cart           Cart?
+  wishlist       Wishlist?
+  orders         Order[]
+  conversation   Conversation?
+
+  @@index([authProviderId]) // Fast lookup by Supabase auth ID
+  @@index([role, isActive])
+  @@index([email])
   @@index([lastSession])
 }
 
@@ -103,66 +108,147 @@ model Address {
   @@index([userId])
 }
 
+/**
+ * ------------------------------
+ * Categories & Brands
+ * ------------------------------
+ */
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      Json
-  slug      String   @unique
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
   parentId  Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
-  products Product[]
+  parent       Category?             @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]            @relation("CategoryHierarchy")
+  products     Product[]
+  translations CategoryTranslation[]
 
   @@index([parentId])
+  @@index([deletedAt]) // For filtering active categories
+}
+
+model CategoryTranslation {
+  id          Int      @id @default(autoincrement())
+  categoryId  Int
+  lang        Language
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, lang])
+  @@index([categoryId, lang]) // Composite for queries
 }
 
 model Brand {
-  id          Int      @id @default(autoincrement())
-  name        Json
-  slug        String   @unique
-  logo        String?
-  description Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
+  logo      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  products Product[]
+  products     Product[]
+  translations BrandTranslation[]
+
+  @@index([deletedAt])
 }
 
+model BrandTranslation {
+  id          Int      @id @default(autoincrement())
+  brandId     Int
+  lang        Language
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, lang])
+  @@index([brandId, lang])
+}
+
+/**
+ * ------------------------------
+ * Products & Variants
+ * ------------------------------
+ */
 model Product {
-  id                 Int      @id @default(autoincrement())
-  name               Json
-  description        Json?
-  shortDescription   Json?
-  price              Decimal  @db.Decimal(10, 2)
-  salePrice          Decimal? @db.Decimal(10, 2)
-  discountPercentage Decimal? @db.Decimal(5, 2)
-  quantity           Int      @default(0)
-  stock              Int?
-  isArchived         Boolean  @default(false)
-  slug               String   @unique
-  images             String[]
-  rating             Decimal? @db.Decimal(3, 2)
-  categoryName       Json?
-  brandName          Json?
-  seo                Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                 Int       @id @default(autoincrement())
+  slug               String    @unique
+  price              Decimal   @db.Decimal(10, 2)
+  salePrice          Decimal?  @db.Decimal(10, 2)
+  discountPercentage Decimal?  @db.Decimal(5, 2)
+  stock              Int       @default(0)
+  isPublished        Boolean   @default(false) // Draft vs Live
+  isArchived         Boolean   @default(false) // Soft delete
+  images             String[]  @default([])
+  rating             Decimal?  @db.Decimal(3, 2)
   categoryId         Int?
   brandId            Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
 
-  category          Category?      @relation(fields: [categoryId], references: [id])
-  brand             Brand?         @relation(fields: [brandId], references: [id])
-  cartItems         CartItem[]
-  wishlistItems     WishlistItem[]
-  orderItems        OrderItem[]    @relation("ProductOrder")
-  variantOrderItems OrderItem[]    @relation("VariantOrder")
+  category      Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brand         Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  variants      ProductVariant[]
+  translations  ProductTranslation[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
 
-  @@index([categoryId])
-  @@index([brandId])
+  @@index([categoryId, isPublished, isArchived, deletedAt]) // Common filter combo
+  @@index([brandId, isPublished, isArchived, deletedAt])
+  @@index([isPublished, createdAt]) // For "new arrivals"
+  @@index([isPublished, rating]) // For "top rated"
 }
 
+model ProductTranslation {
+  id               Int      @id @default(autoincrement())
+  productId        Int
+  lang             Language
+  name             String
+  shortDescription String?  @db.Text
+  description      String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, lang])
+  @@index([productId, lang])
+}
+
+model ProductVariant {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  sku        String?  @unique
+  attributes Json? // {"color": "red", "size": "M"}
+  price      Decimal  @db.Decimal(10, 2)
+  salePrice  Decimal? @db.Decimal(10, 2)
+  stock      Int      @default(0)
+  images     String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+/**
+ * ------------------------------
+ * Cart & Wishlist
+ * ------------------------------
+ */
 model Cart {
   id        Int      @id @default(autoincrement())
   userId    Int      @unique
@@ -177,15 +263,19 @@ model CartItem {
   id        Int      @id @default(autoincrement())
   cartId    Int
   productId Int
+  variantId Int?
   quantity  Int      @default(1)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([cartId, productId])
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
   @@index([productId])
+  @@index([variantId])
 }
 
 model Wishlist {
@@ -202,17 +292,25 @@ model WishlistItem {
   id         Int      @id @default(autoincrement())
   wishlistId Int
   productId  Int
-  quantity   Int      @default(1)
+  variantId  Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id])
+  wishlist Wishlist        @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
 
-  @@unique([wishlistId, productId])
+  @@unique([wishlistId, productId, variantId])
+  @@index([wishlistId])
   @@index([productId])
+  @@index([variantId])
 }
 
+/**
+ * ------------------------------
+ * Orders
+ * ------------------------------
+ */
 model Order {
   id              Int           @id @default(autoincrement())
   userId          Int?
@@ -230,107 +328,103 @@ model Order {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  user  User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items OrderItem[]
+  user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  timeline OrderTimeline[]
 
   @@index([userId])
-  @@index([status])
+  @@index([status, createdAt]) // Admin dashboard queries
+  @@index([createdAt])
   @@index([paymentMethod])
 }
 
 model OrderItem {
-  id          Int         @id @default(autoincrement())
-  orderId     Int
-  productId   Int?
-  variantId   Int?
-  quantity    Int
-  status      OrderStatus @default(PENDING)
-  price       Decimal     @db.Decimal(12, 2)
-  totalPrice  Decimal     @db.Decimal(12, 2)
-  productName Json?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  variantId  Int?
+  quantity   Int
+  price      Decimal  @db.Decimal(12, 2)
+  totalPrice Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product? @relation("ProductOrder", fields: [productId], references: [id])
-  variant Product? @relation("VariantOrder", fields: [variantId], references: [id])
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([productId])
   @@index([variantId])
 }
 
-model CartPricingRule {
-  id              Int                    @id @default(autoincrement())
-  name            String
-  type            PricingRuleType
-  applicationType PricingApplicationType
-  value           Decimal                @db.Decimal(12, 2)
-  minOrderValue   Decimal?               @db.Decimal(12, 2)
-  maxDiscount     Decimal?               @db.Decimal(12, 2)
-  startDate       DateTime?
-  endDate         DateTime?
-  isActive        Boolean                @default(true)
-  code            String?                @unique
-  description     String?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
+model OrderTimeline {
+  id          Int         @id @default(autoincrement())
+  orderId     Int
+  status      OrderStatus
+  changedById Int? // Admin who changed status
+  note        String?     @db.Text
+  createdAt   DateTime    @default(now())
 
-  @@index([type])
-  @@index([isActive])
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@index([changedById])
 }
 
-model PriceSettings {
+/**
+ * ------------------------------
+ * Pricing & Promo Codes
+ * ------------------------------
+ */
+model PricingSettings {
   id                     Int      @id @default(autoincrement())
-  chargeFee              Decimal? @db.Decimal(12, 2)
   shippingFee            Decimal? @db.Decimal(12, 2)
-  currency               String   @default("EGP")
   minOrderValue          Decimal? @db.Decimal(12, 2)
   maxOrderValue          Decimal? @db.Decimal(12, 2)
   bulkDiscountThreshold  Decimal? @db.Decimal(12, 2)
   bulkDiscountPercentage Decimal? @db.Decimal(5, 2)
+  currency               String   @default("EGP")
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
-  discounts  PriceDiscount[]
   promoCodes PricePromoCode[]
 }
 
-model PriceDiscount {
-  id              Int       @id @default(autoincrement())
-  priceSettingsId Int
-  name            String
-  percentage      Decimal   @db.Decimal(5, 2)
-  validFrom       DateTime?
-  validTo         DateTime?
-
-  priceSettings PriceSettings @relation(fields: [priceSettingsId], references: [id], onDelete: Cascade)
-
-  @@index([priceSettingsId])
-}
-
 model PricePromoCode {
-  id              Int       @id @default(autoincrement())
-  priceSettingsId Int
-  code            String    @unique
-  discount        Decimal   @db.Decimal(5, 2)
-  validFrom       DateTime?
-  validTo         DateTime?
-  usageLimit      Int?
-  usageCount      Int       @default(0)
+  id                Int                    @id @default(autoincrement())
+  pricingSettingsId Int?
+  code              String                 @unique
+  applicationType   PricingApplicationType
+  value             Decimal                @db.Decimal(12, 2)
+  validFrom         DateTime?
+  validTo           DateTime?
+  usageLimit        Int?
+  usageCount        Int                    @default(0)
+  isActive          Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
 
-  priceSettings PriceSettings @relation(fields: [priceSettingsId], references: [id], onDelete: Cascade)
+  pricingSettings PricingSettings? @relation(fields: [pricingSettingsId], references: [id], onDelete: SetNull)
 
-  @@index([priceSettingsId])
+  @@index([code, isActive]) // Quick promo validation
+  @@index([validFrom, validTo])
 }
 
-model SocialSettings {
-  id            Int      @id @default(autoincrement())
-  facebookGroup String?
-  facebookPage  String?
-  instagramPage String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+/**
+ * ------------------------------
+ * Settings
+ * ------------------------------
+ */
+model AppSettings {
+  id               Int      @id @default(autoincrement())
+  storeName        String
+  storeDescription String?  @db.Text
+  currency         String   @default("EGP")
+  languageOptions  String[] @default(["en", "ar"])
+  defaultLanguage  String   @default("en")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model ContactSettings {
@@ -344,127 +438,109 @@ model ContactSettings {
   updatedAt          DateTime @updatedAt
 }
 
-model GeneralSettings {
-  id               Int      @id @default(autoincrement())
-  storeName        String
-  storeDescription String?
-  currency         String   @default("EGP")
-  languageOptions  String[] @default([])
-  defaultLanguage  String   @default("en")
-  seo              Json?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+model SocialSettings {
+  id            Int      @id @default(autoincrement())
+  facebookGroup String?
+  facebookPage  String?
+  instagramPage String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
-model SuperAdmin {
-  id           Int            @id @default(autoincrement())
+/**
+ * ------------------------------
+ * Admin Management
+ * ------------------------------
+ */
+model Admin {
+  id           Int       @id @default(autoincrement())
   name         String?
-  email        String         @unique
+  email        String    @unique
   passwordHash String
-  role         SuperAdminRole @default(MANAGER)
+  role         AdminRole @default(SALES)
+  isActive     Boolean   @default(true)
   createdById  Int?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  createdBy          SuperAdmin?         @relation("SuperAdminCreatedBy", fields: [createdById], references: [id])
-  createdSuperAdmins SuperAdmin[]        @relation("SuperAdminCreatedBy")
-  sessions           SuperAdminSession[]
-  pushSubscriptions  PushSubscription[]
+  createdBy         Admin?             @relation("AdminCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAdmins     Admin[]            @relation("AdminCreatedBy")
+  sessions          AdminSession[]
+  pushSubscriptions PushSubscription[]
 
   notifyOrders   Boolean @default(true)
   notifyMessages Boolean @default(true)
 
-  @@index([role])
+  @@index([email])
+  @@index([role, isActive])
+}
+
+model AdminSession {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  adminId   Int
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([token, expiresAt]) // Session validation
 }
 
 model PushSubscription {
-  id           Int      @id @default(autoincrement())
-  endpoint     String   @unique
-  p256dh       String
-  auth         String
-  superAdminId Int
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  adminId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  superAdmin SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
-  @@index([superAdminId])
+  @@index([adminId])
 }
 
-model SuperAdminSession {
-  id           Int      @id @default(autoincrement())
-  token        String   @unique
-  superAdminId Int
-  userAgent    String?
-  ipAddress    String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  expiresAt    DateTime
-
-  superAdmin SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
-
-  @@index([superAdminId])
-  @@index([token])
-}
-
-enum MessageStatus {
-  SENT
-  DELIVERED
-  SEEN
-}
-
-model Chat {
-  id          String        @id @default(uuid())
-  userId      Int?
-  isFromAdmin Boolean       @default(false)
-  content     String
-  status      MessageStatus @default(SENT)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  conversationId String
-
-  @@index([userId])
-  @@index([conversationId])
-  @@index([isFromAdmin])
-  @@index([createdAt])
-}
-
+/**
+ * ------------------------------
+ * Chat/Support
+ * ------------------------------
+ */
 model Conversation {
   id                 String    @id @default(uuid())
   userId             Int       @unique
   lastMessageAt      DateTime  @default(now())
-  lastMessageContent String?
+  lastMessageContent String?   @db.Text
   unreadCount        Int       @default(0)
   isActive           Boolean   @default(true)
   adminLastRepliedAt DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages  Chat[]
-  analytics ConversationAnalytics?
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Chat[]
 
   @@index([userId])
   @@index([lastMessageAt])
-  @@index([isActive])
+  @@index([isActive, unreadCount]) // Active conversations with unread
 }
 
-model ConversationAnalytics {
-  id                  String   @id @default(uuid())
-  conversationId      String   @unique
-  totalMessages       Int      @default(0)
-  userMessages        Int      @default(0)
-  adminMessages       Int      @default(0)
-  avgResponseTimeMs   Int?
-  firstResponseTimeMs Int?
-  lastResponseTimeMs  Int?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+model Chat {
+  id             String        @id @default(uuid())
+  conversationId String
+  userId         Int?
+  isFromAdmin    Boolean       @default(false)
+  content        String        @db.Text
+  status         MessageStatus @default(SENT)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
+  @@index([conversationId, createdAt])
+  @@index([userId])
 }

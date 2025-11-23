@@ -27,7 +27,7 @@ export async function createSuperAdminSession(event: H3Event, superAdminId: numb
   const expiresAt = new Date(now.getTime() + SUPERADMIN_SESSION_MAX_AGE * 1000)
   const token = randomUUID()
 
-  const session = await prisma.superAdminSession.create({
+  const session = await prisma.adminSession.create({
     data: {
       token,
       superAdminId,
@@ -64,7 +64,7 @@ export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAd
     return null
   }
 
-  const session = await prisma.superAdminSession.findUnique({
+  const session = await prisma.adminSession.findUnique({
     where: { token },
     include: { superAdmin: true }
   })
@@ -75,7 +75,7 @@ export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAd
   }
 
   if (session.expiresAt.getTime() <= Date.now()) {
-    await prisma.superAdminSession.delete({ where: { id: session.id } })
+    await prisma.adminSession.delete({ where: { id: session.id } })
     deleteCookie(event, SUPERADMIN_SESSION_COOKIE, { path: '/' })
     return null
   }
@@ -84,7 +84,7 @@ export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAd
   const shouldRefresh = session.expiresAt.getTime() - Date.now() < (SUPERADMIN_SESSION_MAX_AGE * 1000) / 2
   if (shouldRefresh) {
     const newExpiresAt = new Date(Date.now() + SUPERADMIN_SESSION_MAX_AGE * 1000)
-    await prisma.superAdminSession.update({
+    await prisma.adminSession.update({
       where: { id: session.id },
       data: { expiresAt: newExpiresAt }
     })
@@ -107,7 +107,7 @@ export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAd
 export async function clearSuperAdminSession(event: H3Event) {
   const token = getCookie(event, SUPERADMIN_SESSION_COOKIE)
   if (token) {
-    await prisma.superAdminSession.deleteMany({ where: { token } })
+    await prisma.adminSession.deleteMany({ where: { token } })
   }
 
   deleteCookie(event, SUPERADMIN_SESSION_COOKIE, { path: '/' })

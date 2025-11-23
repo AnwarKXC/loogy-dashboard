@@ -85,12 +85,12 @@
 
 | Method | Endpoint | Role Required | Description |
 |--------|----------|---------------|-------------|
-| GET | `/api/customers` | Any | List customers |
-| GET | `/api/customers/:id` | Any | Get customer details |
-| PATCH | `/api/customers/:id` | OWNER, MANAGER | Update customer |
-| DELETE | `/api/customers/:id` | OWNER | Delete customer |
-| GET | `/api/customers/:id/orders` | Any | Customer order history |
-| GET | `/api/customers/:id/behavior` | OWNER, MANAGER | Customer behavior analytics |
+| GET | `/api/users` | Any | List customers |
+| GET | `/api/users/:id` | Any | Get customer details |
+| PATCH | `/api/users/:id` | OWNER, MANAGER | Update customer |
+| DELETE | `/api/users/:id` | OWNER | Delete customer |
+| GET | `/api/users/:id/orders` | Any | Customer order history |
+| GET | `/api/users/:id/behavior` | OWNER, MANAGER | Customer behavior analytics |
 
 ---
 

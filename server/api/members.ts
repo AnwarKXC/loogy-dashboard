@@ -5,7 +5,7 @@ export default eventHandler(async (event) => {
   await requireSuperAdmin(event)
 
   // Get all super admin users
-  const superAdmins = await prisma.superAdmin.findMany({
+  const superAdmins = await prisma.admin.findMany({
     select: {
       id: true,
       email: true,
