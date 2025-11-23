@@ -84,7 +84,7 @@ Only 3 statuses available:
 ### User Model
 - Uses single `name` field (not `firstName`/`lastName`)
 - Email is unique identifier
-- `firebaseUid` for authentication
+- `authProvider` for authentication
 - Role can be `CUSTOMER` or `ADMIN`
 
 ### Order Model

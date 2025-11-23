@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BrandQuickCreateModal from '~/components/brands/BrandQuickCreateModal.vue'
 import ProductEditorForm from '~/components/products/ProductEditorForm.vue'
-import type { BrandEditorValues, ProductDetailResponse, ProductEditorValues, ProductFiltersResponse } from '~/types'
+import type { BrandEditorValues, ProductBasePayload, ProductDetailResponse, ProductEditorValues, ProductFiltersResponse } from '~/types'
 import { mapProductDetailToEditorValues } from '~/utils/product-editor'
 
 const route = useRoute()
@@ -47,20 +47,10 @@ const initialValues = computed<Partial<ProductEditorValues>>(() => {
 
 const isLoading = computed(() => productStatus.value === 'pending' || filtersStatus.value === 'pending')
 
-async function handleSubmit(values: ProductEditorValues) {
+async function handleSubmit(payload: ProductBasePayload) {
   saving.value = true
 
   try {
-    const payload = {
-      nameEn: values.nameEn,
-      nameAr: values.nameAr,
-      price: values.price,
-      salePrice: values.salePrice ?? null,
-      quantity: values.quantity,
-      categoryId: values.categoryId ?? null,
-      brandId: values.brandId ?? null
-    }
-
     const response = await $fetch<ProductDetailResponse>(`/api/products/${productId}`, {
       method: 'PATCH',
       body: payload

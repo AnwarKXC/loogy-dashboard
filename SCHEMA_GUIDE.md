@@ -41,7 +41,7 @@ User (Customer)              Address                  UserPreference
 ├─ id                       ├─ id                    ├─ id
 ├─ name                     ├─ userId ──────┐        ├─ userId ──┐
 ├─ email                    ├─ street       │        ├─ preferredLanguage
-├─ firebaseUid              ├─ city         │        ├─ minPrice
+├─ authProvider             ├─ city         │        ├─ minPrice
 ├─ phoneNumber              ├─ state        │        ├─ maxPrice
 ├─ isActive *               ├─ postalCode   │        ├─ categories[]
 ├─ role (CUSTOMER/ADMIN)    ├─ country      │        ├─ brands[]

@@ -3,7 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
-import type { CategoryTreeNode, ProductEditorValues, ProductFilterOption } from '~/types'
+import type { CategoryTreeNode, ProductBasePayload, ProductEditorValues, ProductFilterOption } from '~/types'
 import { flattenCategoryTree } from '~/utils/categories'
 import S3ImageUploader from '~/components/media/S3ImageUploader.vue'
 
@@ -16,7 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'submit', values: ProductEditorValues): void
+  (e: 'submit', values: ProductBasePayload): void
   (e: 'open-category-create' | 'open-brand-create'): void
 }>()
 
@@ -38,14 +38,30 @@ function slugify(value: string) {
     .slice(0, MAX_SLUG_LENGTH)
 }
 
+const optionalMoneyField = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) {
+    return null
+  }
+  return value
+}, z.number().min(0).nullable()).optional()
+
+const optionalStockField = z.preprocess((value) => {
+  if (value === '' || value === null || value === undefined) {
+    return null
+  }
+  return value
+}, z.number().int().min(0).nullable()).optional()
+
+const requiredLabel = (label: string) => `${label} *`
+
 const schema = z.object({
   nameEn: z.string().trim().min(1, 'Enter a product name'),
   nameAr: z.string().trim().optional().default(''),
   slug: z.string().trim().max(MAX_SLUG_LENGTH, `Slug must be under ${MAX_SLUG_LENGTH} characters`).optional(),
   price: z.number().min(0, 'Price must be greater than or equal to 0'),
-  salePrice: z.number().min(0).nullable().optional(),
+  salePrice: optionalMoneyField,
   quantity: z.number().int().min(0, 'Quantity cannot be negative'),
-  stock: z.number().int().min(0).nullable().optional(),
+  stock: optionalStockField,
   categoryId: z.number().int().positive().nullable().optional(),
   brandId: z.number().int().positive().nullable().optional(),
   descriptionEn: z.string().trim().max(MAX_DESCRIPTION_LENGTH, 'Description is too long').optional(),
@@ -69,8 +85,8 @@ function toNullableNumber(value: unknown) {
 }
 
 function createStateFromInitialValues(initial?: Partial<ProductEditorValues>) {
-  const images = Array.isArray(initial?.images) ? initial.images.filter((item): item is string => typeof item === 'string') : []
-  const seoKeywords = Array.isArray(initial?.seoKeywords) ? initial.seoKeywords.filter((keyword): keyword is string => typeof keyword === 'string') : []
+  const images = Array.isArray(initial?.images) ? initial.images.filter((item: unknown): item is string => typeof item === 'string') : []
+  const seoKeywords = Array.isArray(initial?.seoKeywords) ? initial.seoKeywords.filter((keyword: unknown): keyword is string => typeof keyword === 'string') : []
 
   return {
     nameEn: initial?.nameEn ?? '',
@@ -116,7 +132,7 @@ const categoryItems = computed(() => {
 
   return [
     { label: 'No category', value: null },
-    ...flattened.map(category => ({
+    ...flattened.map((category: CategoryTreeNode) => ({
       label: `${category.depth > 0 ? `${'-'.repeat(category.depth * 2)} ` : ''}${category.name || `Category #${category.id}`}`,
       value: category.id
     }))
@@ -389,7 +405,7 @@ watch(
       return
     }
 
-    if (Number.isNaN(value)) {
+    if ((typeof value === 'string' && value === '') || Number.isNaN(value as number)) {
       state.salePrice = null
     }
   }
@@ -402,7 +418,7 @@ watch(
       return
     }
 
-    if (Number.isNaN(value)) {
+    if ((typeof value === 'string' && value === '') || Number.isNaN(value as number)) {
       state.stock = null
     }
   }
@@ -1127,7 +1143,7 @@ function addSeoKeywords(rawInput: string) {
     return
   }
 
-  const existingLower = state.seoKeywords.map(keyword => keyword.toLowerCase())
+  const existingLower = state.seoKeywords.map((keyword: string) => keyword.toLowerCase())
 
   for (const keyword of incoming) {
     if (state.seoKeywords.length >= MAX_SEO_KEYWORDS) {
@@ -1147,7 +1163,7 @@ function addSeoKeywords(rawInput: string) {
 }
 
 function removeSeoKeyword(keyword: string) {
-  const index = state.seoKeywords.findIndex(current => current === keyword)
+  const index = state.seoKeywords.findIndex((current: string) => current === keyword)
   if (index !== -1) {
     state.seoKeywords.splice(index, 1)
   }
@@ -1169,44 +1185,25 @@ function regenerateSlug() {
   hasManuallyEditedSlug.value = false
 }
 
-function sanitizeText(value?: string | null) {
-  const trimmed = value?.trim() ?? ''
-  return trimmed.length > 0 ? trimmed : undefined
-}
-
-function toProductEditorValues(): ProductEditorValues {
+function toProductPayload(): ProductBasePayload {
   const salePrice = typeof state.salePrice === 'number' && !salePriceInvalid.value && state.salePrice > 0
     ? state.salePrice
     : null
 
-  const stock = typeof state.stock === 'number' && state.stock >= 0 ? state.stock : null
-
   return {
     nameEn: state.nameEn.trim(),
     nameAr: state.nameAr.trim(),
-    slug: sanitizeText(state.slug),
     price: state.price,
     salePrice,
     quantity: state.quantity,
-    stock,
     categoryId: state.categoryId ?? null,
-    brandId: state.brandId ?? null,
-    descriptionEn: sanitizeText(state.descriptionEn),
-    descriptionAr: sanitizeText(state.descriptionAr),
-    shortDescriptionEn: sanitizeText(state.shortDescriptionEn),
-    shortDescriptionAr: sanitizeText(state.shortDescriptionAr),
-    images: [...state.images],
-    isArchived: state.isArchived,
-    seoTitle: sanitizeText(state.seoTitle),
-    seoDescription: sanitizeText(state.seoDescription),
-    seoCanonical: sanitizeText(state.seoCanonical),
-    seoKeywords: state.seoKeywords.map(keyword => keyword.trim()).filter(keyword => keyword.length > 0)
+    brandId: state.brandId ?? null
   }
 }
 
 function onSubmit(event: FormSubmitEvent<Record<string, unknown>>) {
   void event
-  emit('submit', toProductEditorValues())
+  emit('submit', toProductPayload())
 }
 
 function setCategoryId(id: number | null) {
@@ -1247,7 +1244,7 @@ defineExpose({
           </div>
 
           <div class="grid gap-4 md:grid-cols-2">
-            <UFormField label="Product name " name="nameEn">
+            <UFormField :label="requiredLabel('Product name')" name="nameEn">
               <UInput
                 v-model="state.nameEn"
                 placeholder="Awesome product"
@@ -1296,7 +1293,10 @@ defineExpose({
             <UFormField name="categoryId">
               <template #label>
                 <div class="flex items-center justify-between text-sm font-medium text-highlighted">
-                  <span>Category</span>
+                  <span class="flex items-center gap-1">
+                    <span>Category</span>
+                    <span class="text-error" aria-hidden="true">*</span>
+                  </span>
                   <UButton
                     size="xs"
                     variant="ghost"
@@ -1319,7 +1319,10 @@ defineExpose({
             <UFormField name="brandId">
               <template #label>
                 <div class="flex items-center justify-between text-sm font-medium text-highlighted">
-                  <span>Brand</span>
+                  <span class="flex items-center gap-1">
+                    <span>Brand</span>
+                    <span class="text-error" aria-hidden="true">*</span>
+                  </span>
                   <UButton
                     size="xs"
                     variant="ghost"
@@ -1544,7 +1547,7 @@ defineExpose({
             </p>
           </div>
 
-          <UFormField label="Price" name="price">
+          <UFormField :label="requiredLabel('Price')" name="price">
             <UInput
               v-model.number="state.price"
               type="number"
@@ -1566,7 +1569,7 @@ defineExpose({
           </UFormField>
 
           <div class="grid gap-4 ">
-            <UFormField label="Quantity" name="quantity">
+            <UFormField :label="requiredLabel('Quantity')" name="quantity">
               <UInput
                 v-model.number="state.quantity"
                 type="number"
@@ -1575,7 +1578,12 @@ defineExpose({
               />
             </UFormField>
 
-            <UFormField help="Leave empty to follow available quantity" label="Stock override" name="stock">
+            <UFormField
+              help="Leave empty to follow available quantity"
+              label="Stock override"
+              name="stock"
+              :required="false"
+            >
               <UInput
                 v-model.number="state.stock"
                 type="number"

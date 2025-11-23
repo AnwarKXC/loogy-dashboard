@@ -250,7 +250,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 45,
     createdDaysAgo: 30,
-    firebaseUid: 'seed-customer-1'
+    authProvider: 'seed-customer-1'
   },
   {
     name: 'Jordan Brown',
@@ -259,7 +259,7 @@ const customers = [
     isActive: false,
     lastSessionMinutesAgo: 60 * 24 * 3,
     createdDaysAgo: 90,
-    firebaseUid: 'seed-customer-2'
+    authProvider: 'seed-customer-2'
   },
   {
     name: 'Taylor Green',
@@ -268,7 +268,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 6,
     createdDaysAgo: 14,
-    firebaseUid: 'seed-customer-3'
+    authProvider: 'seed-customer-3'
   },
   {
     name: 'Morgan White',
@@ -277,7 +277,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 20,
     createdDaysAgo: 7,
-    firebaseUid: 'seed-customer-4'
+    authProvider: 'seed-customer-4'
   },
   {
     name: 'Casey Gray',
@@ -286,7 +286,7 @@ const customers = [
     isActive: false,
     lastSessionMinutesAgo: 60 * 24 * 14,
     createdDaysAgo: 120,
-    firebaseUid: 'seed-customer-5'
+    authProvider: 'seed-customer-5'
   },
   {
     name: 'Jamie Johnson',
@@ -295,7 +295,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 2,
     createdDaysAgo: 3,
-    firebaseUid: 'seed-customer-6'
+    authProvider: 'seed-customer-6'
   },
   {
     name: 'Riley Davis',
@@ -304,7 +304,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 24,
     createdDaysAgo: 45,
-    firebaseUid: 'seed-customer-7'
+    authProvider: 'seed-customer-7'
   },
   {
     name: 'Kelly Wilson',
@@ -313,7 +313,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 15,
     createdDaysAgo: 2,
-    firebaseUid: 'seed-customer-8'
+    authProvider: 'seed-customer-8'
   },
   {
     name: 'Drew Moore',
@@ -322,7 +322,7 @@ const customers = [
     isActive: false,
     lastSessionMinutesAgo: 60 * 24 * 21,
     createdDaysAgo: 200,
-    firebaseUid: 'seed-customer-9'
+    authProvider: 'seed-customer-9'
   },
   {
     name: 'Jordan Taylor',
@@ -331,7 +331,7 @@ const customers = [
     isActive: true,
     lastSessionMinutesAgo: 60 * 12,
     createdDaysAgo: 60,
-    firebaseUid: 'seed-customer-10'
+    authProvider: 'seed-customer-10'
   }
 ]
 
@@ -363,7 +363,7 @@ async function seedCustomers() {
         isActive: customer.isActive,
         lastSession,
         createdAt,
-        firebaseUid: customer.firebaseUid,
+        authProvider: customer.authProvider,
         role: 'CUSTOMER'
       }
     })

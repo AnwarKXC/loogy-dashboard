@@ -61,26 +61,24 @@ enum SuperAdminRole {
 }
 
 model User {
-  id               Int             @id @default(autoincrement())
+  id               Int           @id @default(autoincrement())
   name             String
-  email            String          @unique
-  firebaseUid      String          @unique
+  email            String        @unique
+  authProvider     String        @unique
   phoneNumber      String?
-  isActive         Boolean         @default(true)
-  role             Role            @default(CUSTOMER)
-  lastSession      DateTime        @default(now())
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  isActive         Boolean       @default(true)
+  role             Role          @default(CUSTOMER)
+  lastSession      DateTime      @default(now())
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
   defaultAddressId Int?
   addresses        Address[]
-  defaultAddress   Address?        @relation("DefaultAddress", fields: [defaultAddressId], references: [id])
+  defaultAddress   Address?      @relation("DefaultAddress", fields: [defaultAddressId], references: [id])
   cart             Cart?
   wishlist         Wishlist?
   orders           Order[]
-  behaviors        UserBehavior[]
-  preference       UserPreference?
-  chatMessages     Chat[]
   conversation     Conversation?
+  chats            Chat[]
 
   @@index([role])
   @@index([isActive])
@@ -113,11 +111,9 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  parent          Category?                    @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children        Category[]                   @relation("CategoryHierarchy")
-  products        Product[]
-  preferences     UserPreferenceCategory[]
-  lastViewedPrefs UserPreferenceLastCategory[]
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
 
   @@index([parentId])
 }
@@ -131,9 +127,7 @@ model Brand {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  products        Product[]
-  preferences     UserPreferenceBrand[]
-  lastViewedPrefs UserPreferenceLastBrand[]
+  products Product[]
 }
 
 model Product {
@@ -164,7 +158,6 @@ model Product {
   wishlistItems     WishlistItem[]
   orderItems        OrderItem[]    @relation("ProductOrder")
   variantOrderItems OrderItem[]    @relation("VariantOrder")
-  behaviors         UserBehavior[]
 
   @@index([categoryId])
   @@index([brandId])
@@ -363,24 +356,6 @@ model GeneralSettings {
   updatedAt        DateTime @updatedAt
 }
 
-model UserBehavior {
-  id        Int          @id @default(autoincrement())
-  userId    Int
-  productId Int
-  type      BehaviorType
-  value     Decimal?     @db.Decimal(5, 2)
-  language  Language
-  timestamp DateTime     @default(now())
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([productId])
-  @@index([timestamp])
-}
-
 model SuperAdmin {
   id           Int            @id @default(autoincrement())
   name         String?
@@ -430,70 +405,6 @@ model SuperAdminSession {
 
   @@index([superAdminId])
   @@index([token])
-}
-
-model UserPreference {
-  id                Int      @id @default(autoincrement())
-  userId            Int      @unique
-  preferredLanguage Language @default(EN)
-  minPrice          Decimal? @db.Decimal(12, 2)
-  maxPrice          Decimal? @db.Decimal(12, 2)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  user                 User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  categories           UserPreferenceCategory[]
-  brands               UserPreferenceBrand[]
-  lastViewedCategories UserPreferenceLastCategory[]
-  lastViewedBrands     UserPreferenceLastBrand[]
-}
-
-model UserPreferenceCategory {
-  id           Int @id @default(autoincrement())
-  preferenceId Int
-  categoryId   Int
-
-  preference UserPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
-  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@unique([preferenceId, categoryId])
-  @@index([categoryId])
-}
-
-model UserPreferenceBrand {
-  id           Int @id @default(autoincrement())
-  preferenceId Int
-  brandId      Int
-
-  preference UserPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
-  brand      Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
-
-  @@unique([preferenceId, brandId])
-  @@index([brandId])
-}
-
-model UserPreferenceLastCategory {
-  id           Int @id @default(autoincrement())
-  preferenceId Int
-  categoryId   Int
-
-  preference UserPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
-  category   Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@index([preferenceId])
-  @@index([categoryId])
-}
-
-model UserPreferenceLastBrand {
-  id           Int @id @default(autoincrement())
-  preferenceId Int
-  brandId      Int
-
-  preference UserPreference @relation(fields: [preferenceId], references: [id], onDelete: Cascade)
-  brand      Brand          @relation(fields: [brandId], references: [id], onDelete: Cascade)
-
-  @@index([preferenceId])
-  @@index([brandId])
 }
 
 enum MessageStatus {

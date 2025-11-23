@@ -26,7 +26,7 @@ export default eventHandler(async (event) => {
         name: payload.name,
         email: payload.email,
         phoneNumber: payload.phoneNumber ?? null,
-        firebaseUid: `cust_${randomUUID()}`,
+        authProvider: `cust_${randomUUID()}`,
         role: 'CUSTOMER',
         isActive: true,
         lastSession: new Date()

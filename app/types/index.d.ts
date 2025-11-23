@@ -209,6 +209,16 @@ export interface ProductEditorValues {
   seoKeywords: string[]
 }
 
+export interface ProductBasePayload {
+  nameEn: string
+  nameAr: string
+  price: number
+  salePrice: number | null
+  quantity: number
+  categoryId: number | null
+  brandId: number | null
+}
+
 export interface CategoryTreeNode {
   id: number
   name: string
