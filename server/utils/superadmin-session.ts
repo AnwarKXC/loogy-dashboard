@@ -4,7 +4,7 @@ import process from 'process'
 import type { H3Event } from 'h3'
 import { createError, deleteCookie, getCookie, getRequestIP, getRequestHeader, setCookie } from 'h3'
 
-import type { SuperAdmin, SuperAdminRole } from '@prisma/client'
+import type { Admin, AdminRole } from '@prisma/client'
 import prisma from '../db'
 
 export const SUPERADMIN_SESSION_COOKIE = 'superadmin_session'
@@ -30,13 +30,13 @@ export async function createSuperAdminSession(event: H3Event, superAdminId: numb
   const session = await prisma.adminSession.create({
     data: {
       token,
-      superAdminId,
+      adminId: superAdminId,
       expiresAt,
       userAgent: getRequestHeader(event, 'user-agent') ?? null,
       ipAddress: getRequestIP(event) ?? null
     },
     include: {
-      superAdmin: true
+      admin: true
     }
   })
 
@@ -48,13 +48,13 @@ export async function createSuperAdminSession(event: H3Event, superAdminId: numb
     path: '/'
   })
 
-  event.context.superAdmin = session.superAdmin
+  event.context.superAdmin = session.admin
   event.context.superAdminSession = session
 
-  return session.superAdmin
+  return session.admin
 }
 
-export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAdmin | null> {
+export async function loadSuperAdminFromSession(event: H3Event): Promise<Admin | null> {
   if (event.context.superAdmin) {
     return event.context.superAdmin
   }
@@ -66,7 +66,7 @@ export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAd
 
   const session = await prisma.adminSession.findUnique({
     where: { token },
-    include: { superAdmin: true }
+    include: { admin: true }
   })
 
   if (!session) {
@@ -98,10 +98,10 @@ export async function loadSuperAdminFromSession(event: H3Event): Promise<SuperAd
     })
   }
 
-  event.context.superAdmin = session.superAdmin
+  event.context.superAdmin = session.admin
   event.context.superAdminSession = session
 
-  return session.superAdmin
+  return session.admin
 }
 
 export async function clearSuperAdminSession(event: H3Event) {
@@ -115,7 +115,7 @@ export async function clearSuperAdminSession(event: H3Event) {
   event.context.superAdminSession = undefined
 }
 
-export async function requireSuperAdmin(event: H3Event, options: { roles?: SuperAdminRole[] } = {}) {
+export async function requireSuperAdmin(event: H3Event, options: { roles?: AdminRole[] } = {}) {
   const superAdmin = await loadSuperAdminFromSession(event)
 
   if (!superAdmin) {
@@ -129,7 +129,7 @@ export async function requireSuperAdmin(event: H3Event, options: { roles?: Super
   return superAdmin
 }
 
-export function isSuperAdminRole(superAdmin: SuperAdmin, roles: SuperAdminRole | SuperAdminRole[]) {
+export function isSuperAdminRole(superAdmin: AdminRole, roles: AdminRole | AdminRole[]) {
   const allowed = Array.isArray(roles) ? roles : [roles]
-  return allowed.includes(superAdmin.role)
+  return allowed.includes(superAdmin)
 }
