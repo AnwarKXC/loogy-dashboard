@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import prisma from '../../db'
 import { eventHandler, readBody } from 'h3'
 import { signJwt } from '../../utils/jwt'
-
-const prisma = new PrismaClient()
 
 export default eventHandler(async (event) => {
   const body = await readBody(event)
