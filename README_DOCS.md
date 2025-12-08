@@ -200,7 +200,7 @@ pnpm prisma generate
 - Run `pnpm prisma migrate dev`
 
 **Q: Auth not working?**
-- Check you're logged in at `/login`
+- Check you're logged in at `/admin/login`
 - Check cookie is set in browser
 - Verify `SESSION_SECRET` in `.env`
 

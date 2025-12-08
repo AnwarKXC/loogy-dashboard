@@ -28,14 +28,16 @@ export const notifyAdmins = async (title: string, body: string, url?: string, ty
   try {
     const subscriptions = await prisma.pushSubscription.findMany({
       include: {
-        superAdmin: true
+        admin: true
       }
     })
 
     const filteredSubscriptions = subscriptions.filter((sub) => {
-      if (type === 'ORDER') return sub.superAdmin.notifyOrders
-      if (type === 'MESSAGE') return sub.superAdmin.notifyMessages
-      return true
+      const adminPrefs = sub.admin
+      if (!adminPrefs) return false
+      if (type === 'ORDER') return adminPrefs.notifyOrders
+      if (type === 'MESSAGE') return adminPrefs.notifyMessages
+      return false
     })
 
     const payload = {

@@ -2,7 +2,7 @@ import { eventHandler } from 'h3'
 
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
-import { getLocalizedString } from '../../utils/products'
+import { getLocalizedString, getPreferredTranslation } from '../../utils/products'
 import { buildCategoryTree } from '../../utils/categories'
 import type { CategoryRecord } from '../../utils/categories'
 
@@ -13,10 +13,15 @@ export default eventHandler(async (event) => {
     prisma.category.findMany({
       select: {
         id: true,
-        name: true,
         slug: true,
         parentId: true,
         createdAt: true,
+        translations: {
+          select: {
+            lang: true,
+            name: true
+          }
+        },
         _count: {
           select: {
             products: true,
@@ -31,8 +36,13 @@ export default eventHandler(async (event) => {
     prisma.brand.findMany({
       select: {
         id: true,
-        name: true,
-        slug: true
+        slug: true,
+        translations: {
+          select: {
+            lang: true,
+            name: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'asc'
@@ -40,8 +50,15 @@ export default eventHandler(async (event) => {
     })
   ])
 
+  const normalizedCategories = categories.map(category => ({
+    ...category,
+    name: Object.fromEntries(
+      category.translations.map(translation => [translation.lang.toLowerCase(), translation.name])
+    )
+  }))
+
   const categoryTree = buildCategoryTree(
-    categories as unknown as CategoryRecord[],
+    normalizedCategories as unknown as CategoryRecord[],
     false,
     (value, slug) => getLocalizedString(value) || slug
   )
@@ -50,8 +67,9 @@ export default eventHandler(async (event) => {
     categories: categoryTree,
     brands: brands.map(brand => ({
       id: brand.id,
-      name: getLocalizedString(brand.name),
-      slug: brand.slug
+      name: getPreferredTranslation(brand.translations, 'name'),
+      slug: brand.slug,
+      translations: brand.translations
     }))
   }
 })

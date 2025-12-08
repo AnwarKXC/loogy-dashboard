@@ -278,7 +278,7 @@ Use VS Code REST Client or Postman:
 
 ```http
 ### Login first
-POST http://localhost:3000/api/superadmin/login
+POST http://localhost:3000/api/superadmin/admin/login
 Content-Type: application/json
 
 {

@@ -77,12 +77,13 @@ model User {
   updatedAt        DateTime @updatedAt
   defaultAddressId Int?
 
-  addresses      Address[]
-  defaultAddress Address?      @relation("DefaultAddress", fields: [defaultAddressId], references: [id], onDelete: SetNull)
-  cart           Cart?
-  wishlist       Wishlist?
-  orders         Order[]
-  conversation   Conversation?
+  addresses         Address[]
+  defaultAddress    Address?           @relation("DefaultAddress", fields: [defaultAddressId], references: [id], onDelete: SetNull)
+  cart              Cart?
+  wishlist          Wishlist?
+  orders            Order[]
+  conversation      Conversation?
+  pushSubscriptions PushSubscription[]
 
   @@index([authProviderId]) // Fast lookup by Supabase auth ID
   @@index([role, isActive])
@@ -496,12 +497,15 @@ model PushSubscription {
   endpoint  String   @unique
   p256dh    String
   auth      String
-  adminId   Int
+  userId    Int?
+  adminId   Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([adminId])
 }
 

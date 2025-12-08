@@ -4,13 +4,13 @@ import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
-import { getLocalizedString, getProductInclude, mapProductToListItem } from '../../utils/products'
+import { getPreferredTranslation, getProductInclude, mapProductToListItem } from '../../utils/products'
 import type { ProductWithRelations } from '../../utils/products'
 
-type FilterEntity = {
+interface FilterEntity {
   id: number
-  name: unknown
   slug: string
+  translations: { lang: string, name: string | null }[]
 }
 
 const querySchema = z.object({
@@ -41,8 +41,7 @@ export default eventHandler(async (event) => {
     whereClauses.push({
       OR: [
         { slug: { contains: query.search, mode: 'insensitive' } },
-        { name: { path: ['en'], string_contains: query.search, mode: 'insensitive' } },
-        { name: { path: ['ar'], string_contains: query.search, mode: 'insensitive' } }
+        { translations: { some: { name: { contains: query.search, mode: 'insensitive' } } } }
       ]
     })
   }
@@ -93,8 +92,13 @@ export default eventHandler(async (event) => {
       prisma.category.findMany({
         select: {
           id: true,
-          name: true,
-          slug: true
+          slug: true,
+          translations: {
+            select: {
+              lang: true,
+              name: true
+            }
+          }
         },
         orderBy: {
           createdAt: 'asc'
@@ -103,8 +107,13 @@ export default eventHandler(async (event) => {
       prisma.brand.findMany({
         select: {
           id: true,
-          name: true,
-          slug: true
+          slug: true,
+          translations: {
+            select: {
+              lang: true,
+              name: true
+            }
+          }
         },
         orderBy: {
           createdAt: 'asc'
@@ -134,13 +143,15 @@ export default eventHandler(async (event) => {
       ? {
           categories: (categories as FilterEntity[]).map(category => ({
             id: category.id,
-            name: getLocalizedString(category.name),
-            slug: category.slug
+            name: getPreferredTranslation(category.translations, 'name'),
+            slug: category.slug,
+            translations: category.translations
           })),
           brands: (brands as FilterEntity[]).map(brand => ({
             id: brand.id,
-            name: getLocalizedString(brand.name),
-            slug: brand.slug
+            name: getPreferredTranslation(brand.translations, 'name'),
+            slug: brand.slug,
+            translations: brand.translations
           }))
         }
       : undefined

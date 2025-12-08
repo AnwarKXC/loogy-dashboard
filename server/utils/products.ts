@@ -4,18 +4,36 @@ import prisma from '../db'
 export type InventoryStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'archived'
 
 const productInclude = {
+  translations: {
+    select: {
+      lang: true,
+      name: true,
+      description: true,
+      shortDescription: true
+    }
+  },
   category: {
     select: {
       id: true,
-      name: true,
-      slug: true
+      slug: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true
+        }
+      }
     }
   },
   brand: {
     select: {
       id: true,
-      name: true,
-      slug: true
+      slug: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true
+        }
+      }
     }
   }
 } satisfies Prisma.ProductInclude
@@ -32,21 +50,44 @@ export function getProductInclude() {
   return productInclude
 }
 
-export function getLocalizedString(jsonValue: unknown, fallback = 'en'): string {
-  if (!jsonValue || typeof jsonValue !== 'object') {
-    return ''
+export function getPreferredTranslation<T extends { lang: string, name?: string | null, description?: string | null, shortDescription?: string | null }>(
+  translations: T[] | null | undefined,
+  field: 'name' | 'description' | 'shortDescription',
+  preferred: string[] = ['en', 'ar']
+): string {
+  if (!translations || translations.length === 0) return ''
+
+  for (const lang of preferred) {
+    const match = translations.find(t => t.lang.toLowerCase() === lang.toLowerCase())
+    const value = match?.[field]
+    if (typeof value === 'string' && value.trim().length > 0) return value
   }
 
-  const record = jsonValue as Record<string, unknown>
-  const localized = record[fallback]
-
-  if (typeof localized === 'string' && localized.trim().length > 0) {
-    return localized
+  for (const t of translations) {
+    const value = t[field]
+    if (typeof value === 'string' && value.trim().length > 0) return value
   }
 
-  for (const value of Object.values(record)) {
-    if (typeof value === 'string' && value.trim().length > 0) {
-      return value
+  return ''
+}
+
+export function getLocalizedString(value: unknown, preferred: string[] = ['en', 'ar']): string {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value && typeof value === 'object') {
+    for (const lang of preferred) {
+      const entry = (value as Record<string, unknown>)[lang]
+      if (typeof entry === 'string' && entry.trim().length > 0) {
+        return entry
+      }
+    }
+
+    for (const entry of Object.values(value as Record<string, unknown>)) {
+      if (typeof entry === 'string' && entry.trim().length > 0) {
+        return entry
+      }
     }
   }
 
@@ -80,10 +121,11 @@ export function mapProductToListItem(product: ProductWithRelations) {
   const salePrice = product.salePrice?.toNumber() ?? null
   const discountPercentage = product.discountPercentage?.toNumber() ?? null
   const rating = product.rating?.toNumber() ?? null
+  const preferredName = getPreferredTranslation(product.translations, 'name')
 
   return {
     id: product.id,
-    name: getLocalizedString(product.name),
+    name: preferredName,
     slug: product.slug,
     image: product.images[0] ?? null,
     price,
@@ -97,15 +139,17 @@ export function mapProductToListItem(product: ProductWithRelations) {
     category: product.category
       ? {
           id: product.category.id,
-          name: getLocalizedString(product.category.name),
-          slug: product.category.slug
+          name: getPreferredTranslation(product.category.translations, 'name'),
+          slug: product.category.slug,
+          translations: product.category.translations
         }
       : null,
     brand: product.brand
       ? {
           id: product.brand.id,
-          name: getLocalizedString(product.brand.name),
-          slug: product.brand.slug
+          name: getPreferredTranslation(product.brand.translations, 'name'),
+          slug: product.brand.slug,
+          translations: product.brand.translations
         }
       : null,
     isArchived: product.isArchived
@@ -118,12 +162,10 @@ export function mapProductToDetail(product: ProductWithRelations) {
   return {
     ...listItem,
     images: product.images,
-    description: getLocalizedString(product.description),
-    shortDescription: getLocalizedString(product.shortDescription),
+    description: getPreferredTranslation(product.translations, 'description'),
+    shortDescription: getPreferredTranslation(product.translations, 'shortDescription'),
     raw: {
-      name: product.name,
-      description: product.description,
-      shortDescription: product.shortDescription
+      translations: product.translations
     }
   }
 }

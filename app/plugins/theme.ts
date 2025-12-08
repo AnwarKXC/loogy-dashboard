@@ -1,21 +1,63 @@
+import { watchEffect } from 'vue'
+
 export default defineNuxtPlugin({
   name: 'theme-initialization',
-  enforce: 'pre', // Run before other plugins
+  enforce: 'pre',
   setup() {
-    // This runs on both server (SSR) and client
     const appConfig = useAppConfig()
+    const route = useRoute()
+    const colorMode = typeof useColorMode === 'function' ? useColorMode() : null
 
-    // Read cookies - this works on both server and client
-    const primaryColorCookie = useCookie<string>('theme-primary-color')
-    const neutralColorCookie = useCookie<string>('theme-neutral-color')
-
-    // Apply saved theme immediately during SSR or client hydration
-    if (primaryColorCookie.value) {
-      appConfig.ui.colors.primary = primaryColorCookie.value
+    const defaults = {
+      storefront: { primary: 'indigo', neutral: 'slate', mode: 'light' as const },
+      admin: { primary: 'green', neutral: 'zinc', mode: 'system' as const }
     }
 
-    if (neutralColorCookie.value) {
-      appConfig.ui.colors.neutral = neutralColorCookie.value
+    const adminPrimaryCookie = useCookie<string>('admin-primary-color', {
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax'
+    })
+    const adminNeutralCookie = useCookie<string>('admin-neutral-color', {
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax'
+    })
+
+    const storeModeCookie = useCookie<'light' | 'dark' | 'system'>('storefront-color-mode', {
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax'
+    })
+    const adminModeCookie = useCookie<'light' | 'dark' | 'system'>('admin-color-mode', {
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax'
+    })
+
+    const applyPalette = () => {
+      const isStorefront = !route.path.startsWith('/admin')
+      const palette = isStorefront
+        ? {
+            primary: defaults.storefront.primary,
+            neutral: defaults.storefront.neutral,
+            mode: storeModeCookie.value || defaults.storefront.mode
+          }
+        : {
+            primary: adminPrimaryCookie.value || defaults.admin.primary,
+            neutral: adminNeutralCookie.value || defaults.admin.neutral,
+            mode: adminModeCookie.value || defaults.admin.mode
+          }
+
+      appConfig.ui.colors.primary = palette.primary
+      appConfig.ui.colors.neutral = palette.neutral
+      if (colorMode?.preference !== undefined) {
+        colorMode.preference = palette.mode
+      }
+    }
+
+    applyPalette()
+
+    if (import.meta.client) {
+      watchEffect(() => {
+        applyPalette()
+      })
     }
   }
 })

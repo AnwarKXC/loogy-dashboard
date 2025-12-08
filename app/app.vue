@@ -1,8 +1,17 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
+const route = useRoute()
 const toast = useToast()
 const { $socket } = useNuxtApp()
 const user = useSessionUser()
+
+// Force light theme for public routes, dark for admin
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const forceTheme = computed(() => isAdminRoute.value ? 'dark' : 'light')
+
+watch(() => route.path, () => {
+  colorMode.preference = forceTheme.value
+}, { immediate: true })
 
 const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
 

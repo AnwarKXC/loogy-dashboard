@@ -49,6 +49,7 @@ export function initializeSocketServer(httpServer: HttpServer) {
     // Join user/admin to their room
     socket.on('join', async (data: { userId: number, isAdmin: boolean }) => {
       const { userId, isAdmin } = data
+      console.log('👤 Join request:', { userId, isAdmin, socketId: socket.id })
 
       if (isAdmin) {
         // Admin joins admin room to receive all messages
@@ -102,13 +103,6 @@ export function initializeSocketServer(httpServer: HttpServer) {
               messages: true
             }
           })
-
-          // Create analytics record
-          await prisma.conversationAnalytics.create({
-            data: {
-              conversationId: conversation.id
-            }
-          })
         }
 
         socket.emit('conversation:joined', conversation)
@@ -118,36 +112,20 @@ export function initializeSocketServer(httpServer: HttpServer) {
     // Handle new message
     socket.on('message:send', async (data: ChatMessage) => {
       try {
+        console.log('📨 Received message:send event:', data)
         const { conversationId, userId, content, isFromAdmin } = data
 
         // Get conversation
         const conversation = await prisma.conversation.findUnique({
           where: { id: conversationId },
           include: {
-            user: true,
-            analytics: true
+            user: true
           }
         })
 
         if (!conversation) {
           socket.emit('error', { message: 'Conversation not found' })
           return
-        }
-
-        // Calculate response time if this is admin reply
-        let responseTimeMs: number | undefined
-        if (isFromAdmin && conversation.lastMessageAt) {
-          const lastUserMessage = await prisma.chat.findFirst({
-            where: {
-              conversationId,
-              isFromAdmin: false
-            },
-            orderBy: { createdAt: 'desc' }
-          })
-
-          if (lastUserMessage) {
-            responseTimeMs = Date.now() - lastUserMessage.createdAt.getTime()
-          }
         }
 
         // Save message to database
@@ -185,64 +163,34 @@ export function initializeSocketServer(httpServer: HttpServer) {
           data: updateData
         })
 
-        // Update analytics
-        const analyticsUpdate: {
-          totalMessages: { increment: number }
-          adminMessages?: { increment: number }
-          userMessages?: { increment: number }
-          lastResponseTimeMs?: number
-          firstResponseTimeMs?: number
-          avgResponseTimeMs?: number
-        } = {
-          totalMessages: { increment: 1 }
+        // Normalize emitted payload with delivered status and ISO date
+        const emittedMessage = {
+          ...message,
+          status: 'DELIVERED' as const,
+          conversationId,
+          userId,
+          createdAt: message.createdAt.toISOString()
         }
-
-        if (isFromAdmin) {
-          analyticsUpdate.adminMessages = { increment: 1 }
-          if (responseTimeMs !== undefined) {
-            analyticsUpdate.lastResponseTimeMs = responseTimeMs
-            if (!conversation.analytics?.firstResponseTimeMs) {
-              analyticsUpdate.firstResponseTimeMs = responseTimeMs
-            }
-            // Update average response time
-            const currentAvg = conversation.analytics?.avgResponseTimeMs || 0
-            const adminMsgCount = (conversation.analytics?.adminMessages || 0) + 1
-            analyticsUpdate.avgResponseTimeMs = Math.round(
-              (currentAvg * (adminMsgCount - 1) + responseTimeMs) / adminMsgCount
-            )
-          }
-        } else {
-          analyticsUpdate.userMessages = { increment: 1 }
-        }
-
-        await prisma.conversationAnalytics.update({
-          where: { conversationId },
-          data: analyticsUpdate
-        })
 
         // Emit to appropriate rooms
         if (isFromAdmin) {
           // Admin sent message - emit to user
-          io.to(`user-${userId}`).emit('message:new', {
-            ...message,
-            createdAt: message.createdAt.toISOString()
-          })
+          io.to(`user-${userId}`).emit('message:new', emittedMessage)
           // Also emit back to admin room
-          io.to('admin-room').emit('message:new', {
-            ...message,
-            conversationId,
-            userId,
-            createdAt: message.createdAt.toISOString()
-          })
+          io.to('admin-room').emit('message:new', emittedMessage)
         } else {
           // User sent message - emit to admin and send WhatsApp notification
           io.to('admin-room').emit('message:new', {
-            ...message,
-            conversationId,
-            userId,
+            ...emittedMessage,
             userName: conversation.user.name,
-            userEmail: conversation.user.email,
-            createdAt: message.createdAt.toISOString()
+            userEmail: conversation.user.email
+          })
+
+          // Echo back to the user so they see their sent message immediately
+          io.to(`user-${userId}`).emit('message:new', {
+            ...emittedMessage,
+            userName: conversation.user.name,
+            userEmail: conversation.user.email
           })
 
           // Send Web Push notification to admin

@@ -1,375 +1,124 @@
 <script setup lang="ts">
-import { computed, h, ref, watch } from 'vue'
-import type { TableColumn } from '@nuxt/ui'
+import { computed } from 'vue'
 
-import CategoryEditorForm from '~/components/categories/CategoryEditorForm.vue'
-import type { CategoryEditorValues, CategoryListResponse } from '~/types'
-import type { FlattenedCategory } from '~/utils/categories'
-import { flattenCategoryTree } from '~/utils/categories'
-
-const UButton = resolveComponent('UButton')
-const UDropdownMenu = resolveComponent('UDropdownMenu')
-
-const toast = useToast()
-
-const { data, status, error, refresh } = await useFetch<CategoryListResponse>('/api/categories')
-
-const createOpen = ref(false)
-const editOpen = ref(false)
-const deleteOpen = ref(false)
-const formLoading = ref(false)
-const deleteLoading = ref(false)
-
-const selectedCategory = ref<FlattenedCategory | null>(null)
-
-const categories = computed(() => data.value?.categories ?? [])
-const flattenedCategories = computed<FlattenedCategory[]>(() => flattenCategoryTree(categories.value))
-
-const editInitialValues = computed<Partial<CategoryEditorValues>>(() => {
-  if (!selectedCategory.value) {
-    return {}
-  }
-
-  return {
-    nameEn: selectedCategory.value.translations.en ?? selectedCategory.value.name,
-    nameAr: selectedCategory.value.translations.ar ?? '',
-    parentId: selectedCategory.value.parentId
-  }
+// @ts-expect-error Nuxt provides definePageMeta globally
+definePageMeta({
+  layout: 'storefront'
 })
 
-const editDisabledIds = computed(() => {
-  const target = selectedCategory.value
+const { data, pending, error } = await useFetch('/api/public/categories')
 
-  if (!target) {
-    return [] as number[]
-  }
+const categories = computed(() => data.value?.categories || [])
 
-  return flattenedCategories.value
-    .filter(category => category.id === target.id || category.path.startsWith(`${target.path} /`))
-    .map(category => category.id)
-})
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const flattenCategories = (nodes: any[], depth = 0): any[] =>
+  nodes.flatMap(node => [
+    { ...node, depth },
+    ...(node.children?.length ? flattenCategories(node.children, depth + 1) : [])
+  ])
 
-const columns: TableColumn<FlattenedCategory>[] = [
-  {
-    accessorKey: 'name',
-    header: 'Category',
-    cell: ({ row }) => {
-      const category = row.original
-
-      return h('div', {
-        class: 'flex items-center gap-2 text-sm text-highlighted',
-        style: {
-          paddingInlineStart: `${category.depth * 16}px`
-        }
-      }, [
-        h('span', { class: 'i-lucide-folder w-4 h-4 text-muted shrink-0' }),
-        h('span', { class: 'font-medium truncate max-w-[240px]' }, category.name)
-      ])
-    }
-  },
-  {
-    accessorKey: 'slug',
-    header: 'Slug',
-    cell: ({ row }) => h('span', { class: 'text-sm text-muted font-mono' }, row.original.slug)
-  },
-  {
-    accessorKey: 'productCount',
-    header: 'Products',
-    cell: ({ row }) => h('span', { class: 'text-sm text-highlighted' }, row.original.productCount.toString())
-  },
-  {
-    accessorKey: 'childCount',
-    header: 'Subcategories',
-    cell: ({ row }) => h('span', { class: 'text-sm text-highlighted' }, row.original.childCount.toString())
-  },
-  {
-    id: 'actions',
-    header: '',
-    cell: ({ row }) =>
-      h(
-        UDropdownMenu,
-        {
-          items: getRowActions(row.original),
-          content: { align: 'end' }
-        },
-        () =>
-          h(UButton, {
-            icon: 'i-lucide-ellipsis-vertical',
-            color: 'neutral',
-            variant: 'ghost'
-          })
-      )
-  }
-]
-
-function getRowActions(category: FlattenedCategory) {
-  return [
-    {
-      label: 'Edit',
-      icon: 'i-lucide-pencil',
-      onSelect: () => openEdit(category)
-    },
-    {
-      label: 'Delete',
-      icon: 'i-lucide-trash-2',
-      color: 'error',
-      onSelect: () => openDelete(category)
-    }
-  ]
-}
-
-function openCreate() {
-  selectedCategory.value = null
-  createOpen.value = true
-}
-
-function openEdit(category: FlattenedCategory) {
-  selectedCategory.value = category
-  editOpen.value = true
-}
-
-function openDelete(category: FlattenedCategory) {
-  selectedCategory.value = category
-  deleteOpen.value = true
-}
-
-async function handleCreate(values: CategoryEditorValues) {
-  formLoading.value = true
-
-  try {
-    const response = await $fetch<{ category: { name: string } }>('/api/categories', {
-      method: 'POST',
-      body: values
-    })
-
-    toast.add({
-      title: 'Category created',
-      description: `${response.category.name} is ready.`
-    })
-
-    createOpen.value = false
-    await refresh()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unable to create category'
-    toast.add({
-      title: 'Creation failed',
-      description: message,
-      color: 'error'
-    })
-  } finally {
-    formLoading.value = false
-  }
-}
-
-async function handleUpdate(values: CategoryEditorValues) {
-  if (!selectedCategory.value) {
-    return
-  }
-
-  formLoading.value = true
-
-  try {
-    const response = await $fetch<{ category: { name: string } }>(`/api/categories/${selectedCategory.value.id}`, {
-      method: 'PATCH',
-      body: values
-    })
-
-    toast.add({
-      title: 'Category updated',
-      description: `${response.category.name} is up to date.`
-    })
-
-    editOpen.value = false
-    selectedCategory.value = null
-    await refresh()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unable to update category'
-    toast.add({
-      title: 'Update failed',
-      description: message,
-      color: 'error'
-    })
-  } finally {
-    formLoading.value = false
-  }
-}
-
-async function confirmDelete() {
-  if (!selectedCategory.value) {
-    return
-  }
-
-  deleteLoading.value = true
-
-  try {
-    const response = await $fetch<{ category: { name: string } }>(`/api/categories/${selectedCategory.value.id}`, {
-      method: 'DELETE'
-    })
-
-    toast.add({
-      title: 'Category deleted',
-      description: `${response.category.name} was removed.`
-    })
-
-    deleteOpen.value = false
-    selectedCategory.value = null
-    await refresh()
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unable to delete category'
-    toast.add({
-      title: 'Delete failed',
-      description: message,
-      color: 'error'
-    })
-  } finally {
-    deleteLoading.value = false
-  }
-}
-
-function handleRefresh() {
-  return refresh()
-}
-
-watch(createOpen, (open) => {
-  if (!open) {
-    formLoading.value = false
-  }
-})
-
-watch(editOpen, (open) => {
-  if (!open) {
-    formLoading.value = false
-    selectedCategory.value = null
-  }
-})
-
-watch(deleteOpen, (open) => {
-  if (!open) {
-    deleteLoading.value = false
-    selectedCategory.value = null
-  }
-})
+const flatCategories = computed(() => flattenCategories(categories.value))
+const topCategories = computed(() => flatCategories.value.slice(0, 8))
 </script>
 
 <template>
-  <UDashboardPanel id="categories">
-    <template #header>
-      <UDashboardNavbar title="Categories">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
+  <UContainer class="py-12 space-y-10">
+    <header class="space-y-2">
+      <p class="text-sm uppercase tracking-wide text-muted">
+        Catalog
+      </p>
+      <h1 class="text-3xl font-semibold">
+        Browse by category
+      </h1>
+      <p class="text-muted">
+        Explore all categories from the catalog. Counts update automatically as products change.
+      </p>
+    </header>
 
-        <template #right>
-          <div class="flex items-center gap-2">
+    <UAlert
+      v-if="error"
+      color="red"
+      icon="i-lucide-alert-triangle"
+      title="Failed to load categories"
+      :description="error?.message || 'Please try again.'"
+    />
+
+    <div v-else class="space-y-10">
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold">
+            Featured categories
+          </h2>
+          <span class="text-sm text-muted">{{ topCategories.length }} categories</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <UCard
+            v-for="cat in topCategories"
+            :key="cat.slug"
+            :ui="{ body: 'space-y-2' }"
+            class="hover:border-primary/60 transition"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm text-muted">
+                  {{ cat.depth ? `Subcategory • Level ${cat.depth}` : 'Top level' }}
+                </p>
+                <h3 class="text-lg font-semibold">
+                  {{ cat.name }}
+                </h3>
+              </div>
+              <UButton
+                :to="`/categories/${cat.slug}`"
+                size="xs"
+                variant="ghost"
+                icon="i-lucide-arrow-up-right"
+                aria-label="Open category"
+              />
+            </div>
+            <p class="text-sm text-muted">
+              {{ cat._count?.products || 0 }} products
+            </p>
+          </UCard>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <h2 class="text-xl font-semibold">
+          All categories
+        </h2>
+        <div class="border border-default/70 rounded-lg divide-y divide-default/60">
+          <div
+            v-if="pending"
+            class="p-4 text-muted"
+          >
+            Loading categories...
+          </div>
+          <div
+            v-for="cat in flatCategories"
+            v-else
+            :key="cat.slug"
+            class="flex items-center justify-between px-4 py-3"
+            :style="{ paddingLeft: `${16 + cat.depth * 16}px` }"
+          >
+            <div class="space-y-1">
+              <p class="font-medium">
+                {{ cat.name }}
+              </p>
+              <p class="text-xs text-muted">
+                {{ cat.depth ? `Level ${cat.depth}` : 'Top level' }} • {{ cat._count?.products || 0 }} products
+              </p>
+            </div>
             <UButton
-              icon="i-lucide-refresh-ccw"
-              color="neutral"
-              variant="outline"
-              :loading="status === 'pending'"
-              @click="handleRefresh"
-            />
-            <UButton
-              icon="i-lucide-folder-plus"
-              label="Add category"
-              @click="openCreate"
+              :to="`/categories/${cat.slug}`"
+              variant="ghost"
+              size="xs"
+              icon="i-lucide-chevron-right"
+              aria-label="View category"
             />
           </div>
-        </template>
-      </UDashboardNavbar>
-    </template>
-
-    <template #body>
-      <UAlert
-        v-if="error"
-        color="error"
-        variant="soft"
-        title="Unable to load categories"
-        :description="error.message"
-        class="mb-4"
-      />
-
-      <UTable
-        :data="flattenedCategories"
-        :columns="columns"
-        :loading="status === 'pending'"
-      />
-
-      <div
-        v-if="flattenedCategories.length === 0 && status !== 'pending' && !error"
-        class="mt-6 rounded-lg border border-dashed border-default px-6 py-12 text-center"
-      >
-        <p class="font-medium text-highlighted">
-          No categories yet
-        </p>
-        <p class="mt-1 text-sm text-muted">
-          Add categories from the API or seed data to build out your catalog structure.
-        </p>
+        </div>
       </div>
-    </template>
-  </UDashboardPanel>
-
-  <UModal
-    v-model:open="createOpen"
-    title="New category"
-    description="Create a top-level or nested category."
-    :ui="{ content: 'sm:max-w-xl' }"
-  >
-    <template #body>
-      <CategoryEditorForm
-        mode="create"
-        :categories="categories"
-        :open="createOpen"
-        :submitting="formLoading"
-        @submit="handleCreate"
-      />
-    </template>
-  </UModal>
-
-  <UModal
-    v-model:open="editOpen"
-    title="Edit category"
-    :description="selectedCategory ? `Update details for ${selectedCategory.name}.` : 'Update category details.'"
-    :ui="{ content: 'sm:max-w-xl' }"
-  >
-    <template #body>
-      <CategoryEditorForm
-        mode="edit"
-        :categories="categories"
-        :initial-values="editInitialValues"
-        :disabled-category-ids="editDisabledIds"
-        :open="editOpen"
-        :submitting="formLoading"
-        @submit="handleUpdate"
-      />
-    </template>
-  </UModal>
-
-  <UModal
-    v-model:open="deleteOpen"
-    :title="selectedCategory ? `Delete ${selectedCategory.name}?` : 'Delete category'"
-    :description="selectedCategory ? 'Deleting this category is permanent once all dependencies are cleared.' : undefined"
-  >
-    <template #body>
-      <p class="text-sm text-muted">
-        This action cannot be undone. Ensure the category has no subcategories or products before deleting.
-      </p>
-
-      <div class="mt-6 flex justify-end gap-2">
-        <UButton
-          label="Cancel"
-          color="neutral"
-          variant="subtle"
-          :disabled="deleteLoading"
-          @click="deleteOpen = false"
-        />
-        <UButton
-          label="Delete category"
-          color="error"
-          variant="solid"
-          :loading="deleteLoading"
-          @click="confirmDelete"
-        />
-      </div>
-    </template>
-  </UModal>
+    </div>
+  </UContainer>
 </template>

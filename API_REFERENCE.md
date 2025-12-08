@@ -4,7 +4,7 @@
 
 | Method | Endpoint | Role Required | Description |
 |--------|----------|---------------|-------------|
-| POST | `/api/superadmin/login` | Public | Login super admin |
+| POST | `/api/superadmin/admin/login` | Public | Login super admin |
 | POST | `/api/superadmin/logout` | Any | Logout super admin |
 | GET | `/api/superadmin/session` | Any | Get current session |
 | PATCH | `/api/superadmin/account` | Any | Update own profile/password |

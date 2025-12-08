@@ -5,7 +5,8 @@ export default defineNuxtConfig({
   modules: [
     '@nuxt/eslint',
     '@nuxt/ui',
-    '@vueuse/nuxt'
+    '@vueuse/nuxt',
+    'motion-v/nuxt'
   ],
 
   devtools: {
@@ -21,13 +22,17 @@ export default defineNuxtConfig({
     whatsappApiVersion: process.env.WHATSAPP_API_VERSION,
     adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER,
     public: {
-      socketUrl: process.env.SOCKET_URL || 'http://localhost:3000'
+      // Prefer Nuxt public env, fall back to legacy SOCKET_URL
+      socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || process.env.SOCKET_URL || 'http://localhost:3000'
     }
   },
 
   compatibilityDate: '2024-07-11',
 
   nitro: {
+    websocket: {
+      enabled: true
+    },
     esbuild: {
       options: {
         target: 'esnext'

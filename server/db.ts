@@ -14,5 +14,14 @@ export function getDb({ connectionString }: GetDbParams) {
   return prisma
 }
 
-const prisma = getDb({ connectionString: process.env.DATABASE_URL! })
+const connectionString
+  = process.env.DATABASE_URL
+    || process.env.POSTGRES_URL
+    || process.env.POSTGRES_PRISMA_URL
+
+if (!connectionString) {
+  throw new Error('Database connection string not configured (set DATABASE_URL or POSTGRES_URL).')
+}
+
+const prisma = getDb({ connectionString })
 export default prisma

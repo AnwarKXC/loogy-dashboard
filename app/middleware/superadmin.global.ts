@@ -1,7 +1,10 @@
-import type { SuperAdminSessionUser } from '~/composables/useSuperAdmin'
-
 export default defineNuxtRouteMiddleware(async (to) => {
-  const publicRoutes = ['/login']
+  // Only protect routes with '/admin' prefix
+  if (!to.path.startsWith('/admin')) {
+    return
+  }
+
+  const publicRoutes = ['/admin/login']
   const superAdmin = useSuperAdminState()
   const initialized = useState('super-admin-session-initialized', () => false)
 
@@ -19,11 +22,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
-  if (superAdmin.value && to.path === '/login') {
+  if (superAdmin.value && to.path === '/admin/login') {
     return navigateTo('/')
   }
 
   if (!superAdmin.value && !publicRoutes.includes(to.path)) {
-    return navigateTo('/login')
+    return navigateTo('/admin/login')
   }
 })

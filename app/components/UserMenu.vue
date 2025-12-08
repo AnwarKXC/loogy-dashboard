@@ -71,7 +71,7 @@ const displayUser = computed(() => {
 async function handleLogout() {
   await $fetch('/api/superadmin/logout', { method: 'POST' })
   superAdmin.value = null
-  await router.replace('/login')
+  await router.replace('/admin/login')
 }
 
 const items = computed<DropdownMenuItem[][]>(() => [
