@@ -184,7 +184,7 @@ async function updateStatus(orderId: number, status: OrderListItem['status']) {
 }
 
 function openOrder(orderId: number) {
-  navigateTo({ path: `/orders/${orderId}` })
+  navigateTo({ path: `/admin/orders/${orderId}` })
 }
 
 const statusItems = [

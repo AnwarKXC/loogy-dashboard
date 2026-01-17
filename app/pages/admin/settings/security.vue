@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({
   middleware: () => {
-    return navigateTo('/settings', { replace: true })
+    return navigateTo('/admin/settings', { replace: true })
   }
 })
 </script>

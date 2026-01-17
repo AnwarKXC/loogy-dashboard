@@ -29,7 +29,7 @@ const errorMessage = ref<string | null>(null)
 
 watchEffect(() => {
   if (superAdmin.value) {
-    router.replace('/').catch(() => {})
+    router.replace('/admin').catch(() => {})
   }
 })
 
@@ -44,7 +44,7 @@ async function handleSubmit(event: FormSubmitEvent<LoginSchema>) {
     })
 
     superAdmin.value = session
-    await router.replace('/')
+    await router.replace('/admin')
   } catch (err: unknown) {
     if (err instanceof FetchError) {
       if (err.response?.status === 401 || err.status === 401) {

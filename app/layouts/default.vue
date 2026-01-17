@@ -6,6 +6,7 @@ const route = useRoute()
 const toast = useToast()
 
 const open = ref(false)
+const adminBase = '/admin'
 
 const { connect, conversations } = useChat()
 const session = useSessionUser()
@@ -24,14 +25,14 @@ const unreadCount = computed(() => {
 const links = computed(() => [[{
   label: 'Home',
   icon: 'i-lucide-house',
-  to: '/',
+  to: adminBase,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Inbox',
   icon: 'i-lucide-inbox',
-  to: '/chat',
+  to: `${adminBase}/chat`,
   badge: unreadCount.value > 0 ? unreadCount.value.toString() : undefined,
   onSelect: () => {
     open.value = false
@@ -39,60 +40,60 @@ const links = computed(() => [[{
 }, {
   label: 'Customers',
   icon: 'i-lucide-users',
-  to: '/customers',
+  to: `${adminBase}/customers`,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Orders',
   icon: 'i-lucide-shopping-cart',
-  to: '/orders',
+  to: `${adminBase}/orders`,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Products',
   icon: 'i-lucide-box',
-  to: '/products',
+  to: `${adminBase}/products`,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Brands',
   icon: 'i-lucide-badge-check',
-  to: '/brands',
+  to: `${adminBase}/brands`,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Categories',
   icon: 'i-lucide-layers',
-  to: '/categories',
+  to: `${adminBase}/categories`,
   onSelect: () => {
     open.value = false
   }
 }, {
   label: 'Settings',
-  to: '/settings',
+  to: `${adminBase}/settings`,
   icon: 'i-lucide-settings',
   defaultOpen: true,
   type: 'trigger',
   children: [{
     label: 'General',
-    to: '/settings',
+    to: `${adminBase}/settings`,
     exact: true,
     onSelect: () => {
       open.value = false
     }
   }, {
     label: 'Members',
-    to: '/settings/members',
+    to: `${adminBase}/settings/members`,
     onSelect: () => {
       open.value = false
     }
   }, {
     label: 'Notifications',
-    to: '/settings/notifications',
+    to: `${adminBase}/settings/notifications`,
     onSelect: () => {
       open.value = false
     }

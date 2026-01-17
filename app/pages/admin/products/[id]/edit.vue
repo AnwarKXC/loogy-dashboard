@@ -15,7 +15,7 @@ const productFormRef = ref<{ setCategoryId: (id: number | null) => void, setBran
 const productId = Number(route.params.id)
 
 if (!Number.isFinite(productId) || productId <= 0) {
-  await navigateTo('/products')
+  await navigateTo('/admin/products')
 }
 
 const {

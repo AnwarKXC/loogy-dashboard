@@ -23,7 +23,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   }
 
   if (superAdmin.value && to.path === '/admin/login') {
-    return navigateTo('/')
+    return navigateTo('/admin')
   }
 
   if (!superAdmin.value && !publicRoutes.includes(to.path)) {

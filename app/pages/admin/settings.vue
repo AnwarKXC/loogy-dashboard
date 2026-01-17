@@ -4,16 +4,16 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 const links = [[{
   label: 'Account',
   icon: 'i-lucide-user',
-  to: '/settings',
+  to: '/admin/settings',
   exact: true
 }, {
   label: 'Super admins',
   icon: 'i-lucide-users',
-  to: '/settings/members'
+  to: '/admin/settings/members'
 }, {
   label: 'Notifications',
   icon: 'i-lucide-bell',
-  to: '/settings/notifications'
+  to: '/admin/settings/notifications'
 }]] satisfies NavigationMenuItem[][]
 </script>
 

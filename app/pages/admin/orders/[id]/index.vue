@@ -201,7 +201,7 @@ async function handleShippingCountryBlur() {
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="outline"
-            @click="navigateTo('/orders')"
+            @click="navigateTo('/admin/orders')"
           >
             Back to orders
           </UButton>

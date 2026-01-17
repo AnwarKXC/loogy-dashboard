@@ -80,7 +80,7 @@ async function handleSubmit(payload: ProductBasePayload) {
       description: `${response.product.name} is ready.`
     })
 
-    await navigateTo({ path: `/products/${response.product.id}` })
+    await navigateTo({ path: `/admin/products/${response.product.id}` })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unable to create product'
     toast.add({

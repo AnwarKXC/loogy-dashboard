@@ -131,19 +131,19 @@ function getRowItems(product: ProductListItem) {
 }
 
 function handleCreateProduct() {
-  navigateTo({ path: '/products/new' })
+  navigateTo({ path: '/admin/products/new' })
 }
 
 function openProduct(productId: number) {
-  navigateTo({ path: `/products/${productId}` })
+  navigateTo({ path: `/admin/products/${productId}` })
 }
 
 function editProduct(productId: number) {
-  navigateTo({ path: `/products/${productId}/edit` })
+  navigateTo({ path: `/admin/products/${productId}/edit` })
 }
 
 function duplicateProduct(productId: number) {
-  navigateTo({ path: '/products/new', query: { duplicateFrom: productId.toString() } })
+  navigateTo({ path: '/admin/products/new', query: { duplicateFrom: productId.toString() } })
 }
 
 function archiveProduct(product: ProductListItem) {

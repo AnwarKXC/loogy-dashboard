@@ -6,7 +6,7 @@ const route = useRoute()
 const productId = Number(route.params.id)
 
 if (!Number.isFinite(productId) || productId <= 0) {
-  await navigateTo('/products')
+  await navigateTo('/admin/products')
 }
 
 const {
@@ -60,7 +60,7 @@ const isArchived = computed(() => Boolean(product.value?.isArchived))
             <UButton
               label="Edit"
               icon="i-lucide-pencil"
-              @click="navigateTo({ path: `/products/${productId}/edit` })"
+              @click="navigateTo({ path: `/admin/products/${productId}/edit` })"
             />
           </div>
         </template>
