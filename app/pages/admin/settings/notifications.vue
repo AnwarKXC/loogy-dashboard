@@ -1,6 +1,5 @@
 <script setup lang="ts">
 const toast = useToast()
-const { isSupported, isSubscribed, subscribe, unsubscribe } = usePushNotifications()
 
 const { data: preferences, refresh } = await useFetch('/api/settings/notifications')
 
@@ -20,14 +19,6 @@ async function onChange() {
     toast.add({ title: 'Failed to update preferences', color: 'error' })
   }
 }
-
-async function togglePush() {
-  if (isSubscribed.value) {
-    await unsubscribe()
-  } else {
-    await subscribe()
-  }
-}
 </script>
 
 <template>
@@ -40,14 +31,10 @@ async function togglePush() {
         <div class="flex flex-col  ">
           <span class="text-sm font-medium text-gray-900 dark:text-white">Push Notifications</span>
           <span class="text-sm text-gray-500 dark:text-gray-400">
-            {{ isSubscribed ? 'Notifications are enabled on this device.' : 'Enable notifications to receive updates.' }}
+            Push notifications are disabled in this build.
           </span>
         </div>
-        <USwitch
-          :model-value="isSubscribed"
-          :disabled="!isSupported"
-          @update:model-value="togglePush"
-        />
+        <USwitch :model-value="false" disabled />
       </div>
     </UPageCard>
 

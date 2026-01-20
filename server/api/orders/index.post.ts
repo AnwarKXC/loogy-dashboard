@@ -2,8 +2,6 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { z } from 'zod'
 import { Prisma } from '@prisma/client'
 import prisma from '../../db'
-import { notifyAdmins } from '../../utils/web-push'
-import { getIO } from '../../sockets/chat.gateway'
 
 const createOrderSchema = z.object({
   userId: z.number().optional(),
@@ -98,25 +96,6 @@ export default defineEventHandler(async (event) => {
       data: {
         quantity: { decrement: item.quantity }
       }
-    })
-  }
-
-  // Notify admins
-  await notifyAdmins(
-    'New Order Received',
-    `Order #${order.id} from ${order.customerName} - ${totalAmount} EGP`,
-    `/orders/${order.id}`,
-    'ORDER'
-  )
-
-  // Emit WebSocket event
-  const io = getIO()
-  if (io) {
-    io.to('admin-room').emit('order:new', {
-      id: order.id,
-      customerName: order.customerName,
-      totalAmount: order.totalAmount,
-      createdAt: order.createdAt
     })
   }
 

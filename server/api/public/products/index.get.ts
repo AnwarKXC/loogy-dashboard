@@ -25,7 +25,8 @@ export default eventHandler(async (event) => {
   const query = querySchema.parse(getQuery(event))
 
   const whereClauses: Prisma.ProductWhereInput[] = [
-    { isArchived: false }
+    { isArchived: false },
+    { isPublished: true }
   ]
 
   if (query.search) {

@@ -20,19 +20,12 @@ export default defineNuxtConfig({
     whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN,
     whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
     whatsappApiVersion: process.env.WHATSAPP_API_VERSION,
-    adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER,
-    public: {
-      // Prefer Nuxt public env, fall back to legacy SOCKET_URL
-      socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || process.env.SOCKET_URL || 'http://localhost:3000'
-    }
+    adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER
   },
 
   compatibilityDate: '2024-07-11',
 
   nitro: {
-    websocket: {
-      enabled: true
-    },
     esbuild: {
       options: {
         target: 'esnext'

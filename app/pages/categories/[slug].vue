@@ -23,7 +23,8 @@ const products = computed(() =>
     title: item.name,
     price: item.price,
     salePrice: item.salePrice,
-    image: item.images?.[0]?.url,
+    image: item.image,
+    rating: item.rating ?? 4.8,
     to: `/products/${item.slug}`,
     productId: item.id
   }))
@@ -37,23 +38,29 @@ const productCount = computed(() => productsData.value?.pagination?.totalItems |
   <UContainer class="py-12 space-y-8">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-semibold capitalize">
+        <h1 class="text-2xl font-semibold capitalize text-gray-900 dark:text-gray-100">
           {{ categoryName }}
         </h1>
-        <p class="text-muted">
-          Browse products inside this category.
+        <p class="text-gray-600 dark:text-gray-400">
+          تصفح المنتجات في هذه الفئة.
         </p>
       </div>
-      <UButton icon="i-lucide-filter">
-        Filters
+      <UButton icon="i-lucide-filter" variant="soft">
+        الفلاتر
       </UButton>
     </div>
 
-    <div v-if="pending" class="text-muted">
-      Loading products...
+    <div v-if="pending" class="text-gray-600 dark:text-gray-400">
+      جاري تحميل المنتجات...
     </div>
-    <div v-else-if="productCount === 0" class="text-muted">
-      No products found in this category yet.
+    <div v-else-if="productCount === 0" class="text-center py-12">
+      <UIcon name="i-lucide-package" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" />
+      <p class="mt-3 text-gray-600 dark:text-gray-400">
+        لا توجد منتجات في هذه الفئة حالياً.
+      </p>
+      <UButton to="/products" class="mt-4" color="primary">
+        تصفح كل المنتجات
+      </UButton>
     </div>
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <ProductCard v-for="product in products" :key="product.productId" v-bind="product" />

@@ -8,7 +8,6 @@ const appConfig = useAppConfig()
 const { setPrimaryColor, setNeutralColor } = useTheme()
 const router = useRouter()
 const superAdmin = useSuperAdminState()
-const { isSupported, isSubscribed, subscribe, unsubscribe } = usePushNotifications()
 
 const colors = [
   'red',

@@ -46,61 +46,69 @@ const handleToggleWishlist = () => {
     })
   }
 }
+
+const discountPercent = computed(() => {
+  if (!props.salePrice || props.salePrice >= props.price) return null
+  return Math.round(((props.price - props.salePrice) / props.price) * 100)
+})
+
+const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
 </script>
 
 <template>
-  <UCard class="h-full">
+  <UCard
+    class="group h-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+  >
     <template #header>
-      <NuxtLink :to="props.to || '#'" class="block">
-        <div class="aspect-square rounded-lg bg-gradient-to-br from-slate-100 to-white overflow-hidden">
+      <NuxtLink :to="props.to || '#'" class="block relative">
+        <div class="aspect-square bg-gray-50 dark:bg-gray-700 overflow-hidden">
           <img
             v-if="props.image"
             :src="props.image"
             :alt="props.title"
-            class="w-full h-full object-cover"
+            class="w-full h-full object-contain p-2"
             loading="lazy"
           >
-          <div v-else class="flex h-full items-center justify-center text-muted text-sm">Image</div>
+          <div v-else class="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
+            <UIcon name="i-lucide-image" class="size-12" />
+          </div>
         </div>
+
+        <div
+          v-if="discountPercent"
+          class="absolute top-2 left-2 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded"
+        >
+          {{ discountPercent.toFixed(2) }}%
+        </div>
+
+        <button
+          class="absolute top-2 right-2 text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-sm opacity-0 group-hover:opacity-100"
+          @click.prevent="handleToggleWishlist"
+        >
+          <UIcon
+            :name="isInWishlist ? 'i-lucide-heart' : 'i-lucide-heart'"
+            class="size-5"
+            :class="{ 'fill-red-500 text-red-500': isInWishlist }"
+          />
+        </button>
       </NuxtLink>
     </template>
 
-    <div class="space-y-1">
-      <NuxtLink :to="props.to || '#'" class="font-semibold line-clamp-2 hover:text-primary">
-        {{ props.title }}
+    <div class="space-y-2 text-right px-2 py-1" dir="rtl">
+      <NuxtLink :to="props.to || '#'" class="block">
+        <p class="font-medium text-gray-900 dark:text-gray-100 line-clamp-2 text-sm leading-snug hover:text-primary transition-colors">
+          {{ props.title }}
+        </p>
       </NuxtLink>
-      <div class="flex items-center gap-2">
-        <p class="text-lg font-bold">
-          {{ props.salePrice ?? props.price }} EGP
-        </p>
-        <p v-if="props.salePrice" class="text-muted line-through text-sm">
-          {{ props.price }} EGP
-        </p>
-      </div>
-      <div class="flex items-center gap-1 text-amber-500 text-sm">
-        <UIcon name="i-lucide-star" />
-        <span>{{ props.rating ?? '4.8' }}</span>
+
+      <div class="flex items-center justify-start gap-2 flex-row-reverse">
+        <span class="text-primary font-bold text-lg">
+          {{ formatPrice(props.salePrice ?? props.price) }}
+        </span>
+        <span v-if="props.salePrice" class="text-gray-400 dark:text-gray-500 line-through text-sm">
+          {{ formatPrice(props.price) }}
+        </span>
       </div>
     </div>
-
-    <template #footer>
-      <div class="flex gap-2">
-        <UButton
-          block
-          color="primary"
-          icon="i-lucide-shopping-cart"
-          @click="handleAddToCart"
-        >
-          Add to cart
-        </UButton>
-        <UButton
-          :icon="isInWishlist ? 'i-lucide-heart-filled' : 'i-lucide-heart'"
-          :color="isInWishlist ? 'primary' : undefined"
-          variant="ghost"
-          aria-label="Wishlist"
-          @click="handleToggleWishlist"
-        />
-      </div>
-    </template>
   </UCard>
 </template>

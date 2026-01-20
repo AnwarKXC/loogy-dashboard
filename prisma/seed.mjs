@@ -19,423 +19,621 @@ const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
 
 const categories = [
-  { slug: 'electronics', translations: { en: { name: 'Electronics' }, ar: { name: 'الكترونيات' } } },
-  { slug: 'home-living', translations: { en: { name: 'Home & Living' }, ar: { name: 'منزل ومعيشة' } } },
-  { slug: 'health-beauty', translations: { en: { name: 'Health & Beauty' }, ar: { name: 'الصحة والجمال' } } },
-  { slug: 'fashion', translations: { en: { name: 'Fashion' }, ar: { name: 'أزياء' } } },
-  { slug: 'outdoors', translations: { en: { name: 'Outdoors' }, ar: { name: 'خارجية' } } }
+  { slug: 'mens-fashion', translations: { en: { name: 'Men\'s Fashion' }, ar: { name: 'أزياء رجالي' } } },
+  { slug: 'womens-fashion', translations: { en: { name: 'Women\'s Fashion' }, ar: { name: 'أزياء نسائي' } } },
+  { slug: 'shoes', translations: { en: { name: 'Shoes' }, ar: { name: 'أحذية' } } },
+  { slug: 'bags', translations: { en: { name: 'Bags' }, ar: { name: 'حقائب' } } },
+  { slug: 'accessories', translations: { en: { name: 'Accessories' }, ar: { name: 'إكسسوارات' } } },
+  { slug: 'winter-collection', translations: { en: { name: 'Winter Collection' }, ar: { name: 'كولكشن الشتاء' } } }
 ]
 
 const brands = [
   {
-    slug: 'nova-tech',
-    logo: 'https://dummyimage.com/96x96/0f172a/ffffff.png&text=NT',
-    translations: { en: 'NovaTech', ar: 'نوفا تك' },
-    descriptions: { en: 'Everyday electronics built to perform.', ar: 'إلكترونيات يومية للأداء.' }
+    slug: 'turkey-style',
+    logo: 'https://images.unsplash.com/photo-1560243563-062bfc001d68?w=96',
+    translations: { en: 'Turkey Style', ar: 'تركي ستايل' },
+    descriptions: { en: 'Authentic Turkish fashion for every occasion.', ar: 'أزياء تركية أصيلة لكل مناسبة.' }
   },
   {
-    slug: 'aero-sound',
-    logo: 'https://dummyimage.com/96x96/1f2937/ffffff.png&text=AS',
-    translations: { en: 'AeroSound', ar: 'ايرو ساوند' },
-    descriptions: { en: 'Audio gear tuned for clarity.', ar: 'معدات صوتية مصممة للوضوح.' }
+    slug: 'istanbul-trends',
+    logo: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=96',
+    translations: { en: 'Istanbul Trends', ar: 'تريندات إسطنبول' },
+    descriptions: { en: 'Trendy styles from the heart of Istanbul.', ar: 'أحدث صيحات الموضة من قلب إسطنبول.' }
   },
   {
-    slug: 'urban-home',
-    logo: 'https://dummyimage.com/96x96/334155/ffffff.png&text=UH',
-    translations: { en: 'UrbanHome', ar: 'أوربان هوم' },
-    descriptions: { en: 'Furniture and decor for modern homes.', ar: 'أثاث وديكور للمنازل الحديثة.' }
+    slug: 'anatolian-crafts',
+    logo: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=96',
+    translations: { en: 'Anatolian Crafts', ar: 'حرف الأناضول' },
+    descriptions: { en: 'Handcrafted quality from Anatolia.', ar: 'جودة يدوية من الأناضول.' }
   },
   {
-    slug: 'vital-life',
-    logo: 'https://dummyimage.com/96x96/14532d/ffffff.png&text=VL',
-    translations: { en: 'VitalLife', ar: 'فايتال لايف' },
-    descriptions: { en: 'Health and wellness essentials.', ar: 'أساسيات الصحة والعافية.' }
-  },
-  {
-    slug: 'style-haven',
-    logo: 'https://dummyimage.com/96x96/0f172a/ffffff.png&text=SH',
-    translations: { en: 'StyleHaven', ar: 'ستايل هافن' },
-    descriptions: { en: 'Everyday fashion and outdoor essentials.', ar: 'أزياء يومية واحتياجات خارجية.' }
+    slug: 'modern-ottoman',
+    logo: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=96',
+    translations: { en: 'Modern Ottoman', ar: 'العثماني الحديث' },
+    descriptions: { en: 'Blend of heritage and modern fashion.', ar: 'مزج بين التراث والموضة الحديثة.' }
   }
 ]
 
 const products = [
+  // Men's Fashion - Shirts
   {
-    slug: 'nova-phone-12',
-    price: '799.00',
-    salePrice: '749.00',
-    discountPercentage: '6.25',
+    slug: 'mens-striped-shirt-2026',
+    price: '450.00',
+    salePrice: '350.00',
+    discountPercentage: '22.22',
+    stock: 120,
+    images: [
+      'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=600',
+      'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=600'
+    ],
+    rating: '4.80',
+    categorySlug: 'mens-fashion',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: {
+        name: 'Striped Fashion Shirt 2026',
+        shortDescription: 'Premium cotton striped shirt with modern fit.',
+        description: 'High quality Turkish cotton shirt with elegant stripes. Perfect for both casual and formal occasions.'
+      },
+      ar: {
+        name: 'قميص موضة مخطط 2026',
+        shortDescription: 'قميص قطني فاخر مخطط بقصة عصرية.',
+        description: 'قميص قطني تركي عالي الجودة بخطوط أنيقة. مثالي للمناسبات الرسمية والكاجوال.'
+      }
+    },
+    seo: {
+      title: 'Striped Fashion Shirt 2026 | Turkey Store',
+      description: 'Shop premium Turkish striped shirts for men.'
+    }
+  },
+  {
+    slug: 'mens-slim-fit-shirt-black',
+    price: '420.00',
+    salePrice: '320.00',
+    discountPercentage: '23.81',
+    stock: 85,
+    images: [
+      'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=600',
+      'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=600'
+    ],
+    rating: '4.70',
+    categorySlug: 'mens-fashion',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: {
+        name: 'Slim Fit Black Shirt',
+        shortDescription: 'Elegant black slim fit shirt.',
+        description: 'Premium slim fit black shirt made from Turkish fabric. Breathable and comfortable for all-day wear.'
+      },
+      ar: {
+        name: 'قميص أسود سليم فيت',
+        shortDescription: 'قميص أسود أنيق بقصة ضيقة.',
+        description: 'قميص أسود سليم فيت من قماش تركي فاخر. قابل للتنفس ومريح طوال اليوم.'
+      }
+    },
+    seo: {
+      title: 'Slim Fit Black Shirt | Turkey Store',
+      description: 'Premium black slim fit shirt for men.'
+    }
+  },
+  {
+    slug: 'mens-casual-linen-shirt',
+    price: '380.00',
     stock: 150,
     images: [
-      'https://dummyimage.com/600x400/0f172a/ffffff.png&text=Nova+Phone+12+Front',
-      'https://dummyimage.com/600x400/1f2937/ffffff.png&text=Nova+Phone+12+Back'
+      'https://images.unsplash.com/photo-1602810318660-d2c46b750f88?w=600'
     ],
     rating: '4.60',
-    categorySlug: 'electronics',
-    brandSlug: 'nova-tech',
+    categorySlug: 'mens-fashion',
+    brandSlug: 'anatolian-crafts',
     translations: {
       en: {
-        name: 'Nova Phone 12',
-        shortDescription: 'Flagship 5G smartphone with pro camera system.',
-        description: '6.5 inch display, 5G connectivity, and all day battery life.'
+        name: 'Casual Linen Shirt',
+        shortDescription: 'Lightweight linen shirt for summer.',
+        description: 'Natural linen shirt perfect for hot summer days. Loose fit for maximum comfort.'
       },
       ar: {
-        name: 'نوفا فون 12',
-        shortDescription: 'هاتف 5G رائد مع كاميرا احترافية.',
-        description: 'شاشة 6.5 بوصة واتصال 5G وبطارية تدوم طوال اليوم.'
+        name: 'قميص كتان كاجوال',
+        shortDescription: 'قميص كتان خفيف للصيف.',
+        description: 'قميص كتان طبيعي مثالي لأيام الصيف الحارة. قصة واسعة لراحة قصوى.'
       }
     },
     seo: {
-      title: 'Nova Phone 12',
-      description: 'Stay connected with the Nova Phone 12 flagship smartphone.'
+      title: 'Casual Linen Shirt | Turkey Store',
+      description: 'Comfortable linen shirt for summer.'
     }
   },
   {
-    slug: 'aero-buds-pro',
-    price: '189.00',
-    salePrice: '159.00',
-    discountPercentage: '15.87',
-    stock: 260,
-    images: ['https://dummyimage.com/600x400/111827/ffffff.png&text=Aero+Buds+Pro'],
-    rating: '4.40',
-    categorySlug: 'electronics',
-    brandSlug: 'aero-sound',
-    translations: {
-      en: {
-        name: 'Aero Buds Pro',
-        shortDescription: 'Noise cancelling wireless earbuds with 24 hour battery.',
-        description: 'Immersive audio, adaptive noise cancellation, and comfortable all-day wear.'
-      },
-      ar: {
-        name: 'إيرو بادز برو',
-        shortDescription: 'سماعات لاسلكية مع إلغاء ضوضاء وبطارية 24 ساعة.',
-        description: 'صوت غامر مع إلغاء ضوضاء تكيفي وارتداء مريح طوال اليوم.'
-      }
-    },
-    seo: {
-      title: 'Aero Buds Pro',
-      description: 'Premium wireless earbuds with adaptive noise cancellation.'
-    }
-  },
-  {
-    slug: 'nova-airbook-15',
-    price: '1299.00',
-    stock: 85,
-    images: ['https://dummyimage.com/600x400/0f172a/ffffff.png&text=Nova+AirBook+15'],
-    rating: '4.70',
-    categorySlug: 'electronics',
-    brandSlug: 'nova-tech',
-    translations: {
-      en: {
-        name: 'Nova AirBook 15',
-        shortDescription: 'Lightweight laptop built for productivity.',
-        description: 'Latest processors, 1 TB SSD storage, and vibrant display.'
-      },
-      ar: {
-        name: 'نوفا ايربوك 15',
-        shortDescription: 'حاسوب محمول خفيف للإنتاجية.',
-        description: 'معالجات حديثة وتخزين 1 تيرابايت وشاشة نابضة بالحياة.'
-      }
-    },
-    seo: {
-      title: 'Nova AirBook 15',
-      description: 'Work anywhere with the Nova AirBook 15 ultra portable laptop.'
-    }
-  },
-  {
-    slug: 'nova-flex-case',
-    price: '24.00',
-    stock: 500,
-    images: ['https://dummyimage.com/600x400/1f2937/ffffff.png&text=Nova+Flex+Case'],
-    categorySlug: 'electronics',
-    brandSlug: 'nova-tech',
-    translations: {
-      en: {
-        name: 'Nova Flex Case',
-        shortDescription: 'Protective silicone case for Nova phones.',
-        description: 'Soft-touch silicone case with reinforced corners and antimicrobial coating.'
-      },
-      ar: {
-        name: 'كفر نوفا فليكس',
-        shortDescription: 'كفر سيليكون واقٍ لهواتف نوفا.',
-        description: 'سيليكون ناعم بزاويا مدعمة وطبقة مضادة للميكروبات.'
-      }
-    },
-    seo: {
-      title: 'Nova Flex Case',
-      description: 'Slim protective silicone case for Nova smartphones.'
-    }
-  },
-  {
-    slug: 'aero-smart-speaker',
-    price: '129.00',
-    stock: 190,
-    images: ['https://dummyimage.com/600x400/0f172a/ffffff.png&text=Aero+Smart+Speaker'],
-    rating: '4.10',
-    categorySlug: 'electronics',
-    brandSlug: 'aero-sound',
-    translations: {
-      en: {
-        name: 'Aero Smart Speaker',
-        shortDescription: 'Smart speaker with room-filling sound.',
-        description: 'Voice assistant ready speaker with dual drivers and Wi-Fi streaming.'
-      },
-      ar: {
-        name: 'مكبر صوت ايرو الذكي',
-        shortDescription: 'مكبر صوت ذكي بصوت يغمر الغرفة.',
-        description: 'مدعم بمساعد صوتي ومكبرين مع بث عبر الواي فاي.'
-      }
-    },
-    seo: {
-      title: 'Aero Smart Speaker',
-      description: 'Smart speaker tuned for clear vocals and deep bass.'
-    }
-  },
-  {
-    slug: 'urban-lounge-sofa',
-    price: '949.00',
-    stock: 30,
-    images: ['https://dummyimage.com/600x400/334155/ffffff.png&text=Urban+Lounge+Sofa'],
-    rating: '4.20',
-    categorySlug: 'home-living',
-    brandSlug: 'urban-home',
-    translations: {
-      en: {
-        name: 'Urban Lounge Sofa',
-        shortDescription: 'Modular three-seat sofa with washable covers.',
-        description: 'Performance fabric, sustainable wood framing, and modular sections.'
-      },
-      ar: {
-        name: 'كنبة أوربان لاونج',
-        shortDescription: 'كنبة بثلاثة مقاعد وأغطية قابلة للغسل.',
-        description: 'قماش متين مع هيكل خشبي مستدام وأجزاء معيارية.'
-      }
-    },
-    seo: {
-      title: 'Urban Lounge Sofa',
-      description: 'Modular sofa sized for apartments and compact living rooms.'
-    }
-  },
-  {
-    slug: 'urban-bamboo-cookset',
-    price: '59.00',
-    stock: 320,
-    images: ['https://dummyimage.com/600x400/475569/ffffff.png&text=Bamboo+Cookset'],
-    categorySlug: 'home-living',
-    brandSlug: 'urban-home',
-    translations: {
-      en: {
-        name: 'Urban Bamboo Cookset',
-        shortDescription: 'Seven-piece bamboo utensil set for everyday cooking.',
-        description: 'Sustainably sourced bamboo utensils with heat resistant handles.'
-      },
-      ar: {
-        name: 'طقم طهي بامبو أوربان',
-        shortDescription: 'طقم أدوات طهي من البامبو مكون من سبع قطع.',
-        description: 'أدوات بامبو مستدامة بمقابض مقاومة للحرارة.'
-      }
-    },
-    seo: {
-      title: 'Urban Bamboo Cookset',
-      description: 'Durable bamboo utensils for organized kitchens.'
-    }
-  },
-  {
-    slug: 'urban-glow-lamp',
-    price: '129.00',
-    stock: 110,
-    images: ['https://dummyimage.com/600x400/0f172a/ffffff.png&text=Glow+Lamp'],
-    categorySlug: 'home-living',
-    brandSlug: 'urban-home',
-    translations: {
-      en: {
-        name: 'Urban Glow Lamp',
-        shortDescription: 'Dimmable table lamp with linen shade.',
-        description: 'Warm LED lighting with touch controls and dual USB charging ports.'
-      },
-      ar: {
-        name: 'مصباح أوربان جلو',
-        shortDescription: 'مصباح طاولة معتم مع غطاء من الكتان.',
-        description: 'إضاءة LED دافئة بتحكم باللمس ومنفذي شحن USB.'
-      }
-    },
-    seo: {
-      title: 'Urban Glow Lamp',
-      description: 'Ambient table lamp with warm dimmable light.'
-    }
-  },
-  {
-    slug: 'vital-hydration-kit',
-    price: '89.00',
-    stock: 140,
-    images: ['https://dummyimage.com/600x400/14532d/ffffff.png&text=Hydration+Kit'],
-    rating: '4.30',
-    categorySlug: 'health-beauty',
-    brandSlug: 'vital-life',
-    translations: {
-      en: {
-        name: 'Vital Hydration Kit',
-        shortDescription: 'Daily hydration system with stainless bottle.',
-        description: 'Steel bottle, electrolyte tablets, and habit tracker.'
-      },
-      ar: {
-        name: 'عدة ترطيب فيتال',
-        shortDescription: 'نظام ترطيب يومي مع قارورة ستانلس.',
-        description: 'قارورة فولاذية وأقراص إلكتروليت ومتعقب عادات.'
-      }
-    },
-    seo: {
-      title: 'Vital Hydration Kit',
-      description: 'Hydration essentials for fitness and wellness routines.'
-    }
-  },
-  {
-    slug: 'vital-glow-serum',
-    price: '62.00',
-    stock: 210,
-    images: ['https://dummyimage.com/600x400/14532d/ffffff.png&text=Glow+Serum'],
+    slug: 'mens-polo-navy',
+    price: '280.00',
+    salePrice: '220.00',
+    discountPercentage: '21.43',
+    stock: 200,
+    images: [
+      'https://images.unsplash.com/photo-1625910513413-5fc45e80bc10?w=600'
+    ],
     rating: '4.50',
-    categorySlug: 'health-beauty',
-    brandSlug: 'vital-life',
+    categorySlug: 'mens-fashion',
+    brandSlug: 'turkey-style',
     translations: {
       en: {
-        name: 'Vital Glow Serum',
-        shortDescription: 'Vitamin enriched serum for daily skin renewal.',
-        description: 'Lightweight serum with vitamins C and E to brighten and hydrate.'
+        name: 'Navy Blue Polo Shirt',
+        shortDescription: 'Classic navy polo shirt.',
+        description: 'Premium cotton polo in navy blue. Perfect for casual outings and golf.'
       },
       ar: {
-        name: 'سيروم فيتال جلو',
-        shortDescription: 'سيروم غني بالفيتامينات لتجديد البشرة.',
-        description: 'سيروم خفيف بفيتامين سي وإي لتفتيح وترطيب البشرة.'
+        name: 'بولو أزرق نيفي',
+        shortDescription: 'بولو كلاسيكي أزرق نيفي.',
+        description: 'بولو قطني فاخر باللون الأزرق النيفي. مثالي للتنزه والجولف.'
       }
     },
     seo: {
-      title: 'Vital Glow Serum',
-      description: 'Daily serum that supports radiant and hydrated skin.'
+      title: 'Navy Blue Polo Shirt | Turkey Store',
+      description: 'Classic polo shirt for men.'
     }
   },
+  // Women's Fashion
   {
-    slug: 'style-denim-jacket',
-    price: '129.00',
-    stock: 95,
-    images: ['https://dummyimage.com/600x400/0f172a/ffffff.png&text=Denim+Jacket'],
-    rating: '4.10',
-    categorySlug: 'fashion',
-    brandSlug: 'style-haven',
+    slug: 'womens-elegant-blouse',
+    price: '520.00',
+    salePrice: '420.00',
+    discountPercentage: '19.23',
+    stock: 75,
+    images: [
+      'https://images.unsplash.com/photo-1551048632-24e444b48a3e?w=600',
+      'https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=600'
+    ],
+    rating: '4.90',
+    categorySlug: 'womens-fashion',
+    brandSlug: 'istanbul-trends',
     translations: {
       en: {
-        name: 'Style Denim Jacket',
-        shortDescription: 'Classic denim jacket with modern fit.',
-        description: 'Mid-weight denim with stretch, interior pocket, and matte buttons.'
+        name: 'Elegant Silk Blouse',
+        shortDescription: 'Premium silk blouse for women.',
+        description: 'Luxurious Turkish silk blouse with delicate details. Perfect for special occasions.'
       },
       ar: {
-        name: 'جاكيت جينز ستايل',
-        shortDescription: 'جاكيت جينز كلاسيكي بقصة عصرية.',
-        description: 'دينم متوسط بمرونة وجيب داخلي وأزرار مطفية.'
+        name: 'بلوزة حرير أنيقة',
+        shortDescription: 'بلوزة حرير فاخرة للنساء.',
+        description: 'بلوزة حرير تركي فاخرة بتفاصيل رقيقة. مثالية للمناسبات الخاصة.'
       }
     },
     seo: {
-      title: 'Style Denim Jacket',
-      description: 'Classic denim reworked with a modern fit and finish.'
+      title: 'Elegant Silk Blouse | Turkey Store',
+      description: 'Premium silk blouse for women.'
     }
   },
   {
-    slug: 'style-runner-shoes',
-    price: '159.00',
-    salePrice: '139.00',
-    discountPercentage: '12.58',
+    slug: 'womens-casual-dress',
+    price: '680.00',
+    salePrice: '550.00',
+    discountPercentage: '19.12',
+    stock: 60,
+    images: [
+      'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600'
+    ],
+    rating: '4.85',
+    categorySlug: 'womens-fashion',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: {
+        name: 'Casual Summer Dress',
+        shortDescription: 'Flowy summer dress with floral pattern.',
+        description: 'Light and comfortable summer dress with beautiful floral prints. Perfect for beach and casual outings.'
+      },
+      ar: {
+        name: 'فستان صيفي كاجوال',
+        shortDescription: 'فستان صيفي انسيابي بنقشة زهور.',
+        description: 'فستان صيفي خفيف ومريح بطبعات زهور جميلة. مثالي للشاطئ والتنزه.'
+      }
+    },
+    seo: {
+      title: 'Casual Summer Dress | Turkey Store',
+      description: 'Beautiful summer dress for women.'
+    }
+  },
+  {
+    slug: 'womens-cardigan-beige',
+    price: '450.00',
+    stock: 90,
+    images: [
+      'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600'
+    ],
+    rating: '4.70',
+    categorySlug: 'womens-fashion',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: {
+        name: 'Beige Wool Cardigan',
+        shortDescription: 'Soft wool cardigan for winter.',
+        description: 'Cozy wool cardigan in beige color. Perfect layering piece for cold weather.'
+      },
+      ar: {
+        name: 'كارديجان صوف بيج',
+        shortDescription: 'كارديجان صوف ناعم للشتاء.',
+        description: 'كارديجان صوف مريح باللون البيج. قطعة مثالية للطبقات في الطقس البارد.'
+      }
+    },
+    seo: {
+      title: 'Beige Wool Cardigan | Turkey Store',
+      description: 'Soft wool cardigan for women.'
+    }
+  },
+  // Shoes
+  {
+    slug: 'mens-leather-oxford',
+    price: '850.00',
+    salePrice: '720.00',
+    discountPercentage: '15.29',
+    stock: 45,
+    images: [
+      'https://images.unsplash.com/photo-1614252369475-531eba835eb1?w=600',
+      'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600'
+    ],
+    rating: '4.95',
+    categorySlug: 'shoes',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: {
+        name: 'Leather Oxford Shoes',
+        shortDescription: 'Premium leather oxford dress shoes.',
+        description: 'Handcrafted Turkish leather oxford shoes. Classic design with modern comfort.'
+      },
+      ar: {
+        name: 'حذاء أوكسفورد جلد',
+        shortDescription: 'حذاء أوكسفورد جلد طبيعي فاخر.',
+        description: 'حذاء أوكسفورد جلد تركي صناعة يدوية. تصميم كلاسيكي براحة عصرية.'
+      }
+    },
+    seo: {
+      title: 'Leather Oxford Shoes | Turkey Store',
+      description: 'Premium leather oxford shoes for men.'
+    }
+  },
+  {
+    slug: 'mens-casual-sneakers',
+    price: '480.00',
+    salePrice: '380.00',
+    discountPercentage: '20.83',
+    stock: 130,
+    images: [
+      'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600'
+    ],
+    rating: '4.65',
+    categorySlug: 'shoes',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: {
+        name: 'Casual White Sneakers',
+        shortDescription: 'Stylish white sneakers for everyday wear.',
+        description: 'Comfortable and stylish white sneakers. Perfect for casual and smart casual looks.'
+      },
+      ar: {
+        name: 'سنيكرز أبيض كاجوال',
+        shortDescription: 'سنيكرز أبيض أنيق للاستخدام اليومي.',
+        description: 'سنيكرز أبيض مريح وأنيق. مثالي للإطلالات الكاجوال والسمارت كاجوال.'
+      }
+    },
+    seo: {
+      title: 'Casual White Sneakers | Turkey Store',
+      description: 'Stylish white sneakers for men.'
+    }
+  },
+  {
+    slug: 'womens-heels-black',
+    price: '620.00',
+    salePrice: '520.00',
+    discountPercentage: '16.13',
+    stock: 55,
+    images: [
+      'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600'
+    ],
+    rating: '4.80',
+    categorySlug: 'shoes',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: {
+        name: 'Elegant Black Heels',
+        shortDescription: 'Classic black high heels.',
+        description: 'Elegant black heels with comfortable cushioning. Perfect for formal occasions.'
+      },
+      ar: {
+        name: 'كعب أسود أنيق',
+        shortDescription: 'كعب عالي أسود كلاسيكي.',
+        description: 'كعب أسود أنيق مع بطانة مريحة. مثالي للمناسبات الرسمية.'
+      }
+    },
+    seo: {
+      title: 'Elegant Black Heels | Turkey Store',
+      description: 'Classic black heels for women.'
+    }
+  },
+  // Bags
+  {
+    slug: 'leather-crossbody-bag',
+    price: '750.00',
+    salePrice: '620.00',
+    discountPercentage: '17.33',
+    stock: 40,
+    images: [
+      'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600'
+    ],
+    rating: '4.88',
+    categorySlug: 'bags',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: {
+        name: 'Leather Crossbody Bag',
+        shortDescription: 'Handcrafted leather crossbody bag.',
+        description: 'Premium Turkish leather crossbody bag. Spacious compartments with adjustable strap.'
+      },
+      ar: {
+        name: 'حقيبة كروس جلد',
+        shortDescription: 'حقيبة كروس جلد صناعة يدوية.',
+        description: 'حقيبة كروس جلد تركي فاخر. جيوب واسعة مع حزام قابل للتعديل.'
+      }
+    },
+    seo: {
+      title: 'Leather Crossbody Bag | Turkey Store',
+      description: 'Handcrafted leather crossbody bag.'
+    }
+  },
+  {
+    slug: 'womens-tote-bag-tan',
+    price: '580.00',
+    stock: 70,
+    images: [
+      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600'
+    ],
+    rating: '4.72',
+    categorySlug: 'bags',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: {
+        name: 'Tan Leather Tote Bag',
+        shortDescription: 'Spacious leather tote bag.',
+        description: 'Large leather tote bag in tan color. Perfect for work and shopping.'
+      },
+      ar: {
+        name: 'حقيبة توت جلد تان',
+        shortDescription: 'حقيبة توت جلد واسعة.',
+        description: 'حقيبة توت جلد كبيرة باللون التان. مثالية للعمل والتسوق.'
+      }
+    },
+    seo: {
+      title: 'Tan Leather Tote Bag | Turkey Store',
+      description: 'Spacious leather tote bag for women.'
+    }
+  },
+  {
+    slug: 'mens-laptop-briefcase',
+    price: '920.00',
+    salePrice: '780.00',
+    discountPercentage: '15.22',
+    stock: 35,
+    images: [
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600'
+    ],
+    rating: '4.90',
+    categorySlug: 'bags',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: {
+        name: 'Leather Laptop Briefcase',
+        shortDescription: 'Professional leather briefcase.',
+        description: 'Premium leather briefcase with laptop compartment. Ideal for business professionals.'
+      },
+      ar: {
+        name: 'حقيبة لابتوب جلد',
+        shortDescription: 'حقيبة مهنية من الجلد.',
+        description: 'حقيبة جلد فاخرة مع حجرة للابتوب. مثالية لرجال الأعمال.'
+      }
+    },
+    seo: {
+      title: 'Leather Laptop Briefcase | Turkey Store',
+      description: 'Professional leather briefcase for men.'
+    }
+  },
+  // Accessories
+  {
+    slug: 'leather-belt-brown',
+    price: '280.00',
+    salePrice: '220.00',
+    discountPercentage: '21.43',
     stock: 180,
-    images: ['https://dummyimage.com/600x400/111827/ffffff.png&text=Runner+Shoes'],
-    rating: '4.30',
-    categorySlug: 'fashion',
-    brandSlug: 'style-haven',
+    images: [
+      'https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=600'
+    ],
+    rating: '4.55',
+    categorySlug: 'accessories',
+    brandSlug: 'turkey-style',
     translations: {
       en: {
-        name: 'Style Runner Shoes',
-        shortDescription: 'Lightweight trainers for daily miles.',
-        description: 'Breathable mesh upper, responsive midsole, and grippy outsole.'
+        name: 'Brown Leather Belt',
+        shortDescription: 'Classic brown leather belt.',
+        description: 'High quality Turkish leather belt with brass buckle. Timeless design.'
       },
       ar: {
-        name: 'حذاء ستايل رانر',
-        shortDescription: 'حذاء خفيف للجري اليومي.',
-        description: 'جزء علوي شبكي، نعل وسطي متجاوب ونعل خارجي بقبضة جيدة.'
+        name: 'حزام جلد بني',
+        shortDescription: 'حزام جلد بني كلاسيكي.',
+        description: 'حزام جلد تركي عالي الجودة بإبزيم نحاسي. تصميم خالد.'
       }
     },
     seo: {
-      title: 'Style Runner Shoes',
-      description: 'Lightweight trainers built for comfort and daily runs.'
+      title: 'Brown Leather Belt | Turkey Store',
+      description: 'Classic brown leather belt for men.'
     }
   },
   {
-    slug: 'style-city-backpack',
-    price: '89.00',
-    stock: 220,
-    images: ['https://dummyimage.com/600x400/1f2937/ffffff.png&text=City+Backpack'],
-    categorySlug: 'fashion',
-    brandSlug: 'style-haven',
+    slug: 'silk-scarf-floral',
+    price: '350.00',
+    stock: 100,
+    images: [
+      'https://images.unsplash.com/photo-1601924582970-9238bcb495d9?w=600'
+    ],
+    rating: '4.78',
+    categorySlug: 'accessories',
+    brandSlug: 'modern-ottoman',
     translations: {
       en: {
-        name: 'Style City Backpack',
-        shortDescription: 'Water-resistant commuter backpack.',
-        description: 'Padded laptop sleeve, quick-access pockets, and breathable straps.'
+        name: 'Floral Silk Scarf',
+        shortDescription: 'Elegant silk scarf with floral pattern.',
+        description: 'Luxurious Turkish silk scarf with beautiful floral design. Perfect accessory for any outfit.'
       },
       ar: {
-        name: 'حقيبة ظهر ستايل سيتي',
-        shortDescription: 'حقيبة ظهر مقاومة للماء للتنقل.',
-        description: 'حافظة لابتوب مبطنة وجيوب سهلة الوصول وأحزمة قابلة للتنفس.'
+        name: 'وشاح حرير زهور',
+        shortDescription: 'وشاح حرير أنيق بنقشة زهور.',
+        description: 'وشاح حرير تركي فاخر بتصميم زهور جميل. إكسسوار مثالي لأي إطلالة.'
       }
     },
     seo: {
-      title: 'Style City Backpack',
-      description: 'Daily commuter backpack with smart organization.'
+      title: 'Floral Silk Scarf | Turkey Store',
+      description: 'Elegant silk scarf for women.'
     }
   },
   {
-    slug: 'outdoor-camp-lantern',
-    price: '59.00',
+    slug: 'leather-wallet-black',
+    price: '320.00',
+    salePrice: '260.00',
+    discountPercentage: '18.75',
     stock: 150,
-    images: ['https://dummyimage.com/600x400/0f172a/ffffff.png&text=Camp+Lantern'],
-    categorySlug: 'outdoors',
-    brandSlug: 'style-haven',
+    images: [
+      'https://images.unsplash.com/photo-1627123424574-724758594e93?w=600'
+    ],
+    rating: '4.68',
+    categorySlug: 'accessories',
+    brandSlug: 'anatolian-crafts',
     translations: {
       en: {
-        name: 'Trail Camp Lantern',
-        shortDescription: 'Rechargeable LED lantern with 3 brightness modes.',
-        description: 'USB-C rechargeable, 20-hour runtime, and IPX4 splash resistance.'
+        name: 'Black Leather Wallet',
+        shortDescription: 'Slim leather wallet with RFID protection.',
+        description: 'Premium leather wallet with multiple card slots and RFID blocking technology.'
       },
       ar: {
-        name: 'فانوس التريل',
-        shortDescription: 'فانوس LED قابل لإعادة الشحن بثلاث مستويات إضاءة.',
-        description: 'شحن USB-C، عمر بطارية 20 ساعة، ومقاومة لرذاذ الماء IPX4.'
+        name: 'محفظة جلد سوداء',
+        shortDescription: 'محفظة جلد رفيعة مع حماية RFID.',
+        description: 'محفظة جلد فاخرة بفتحات متعددة للبطاقات وتقنية حجب RFID.'
       }
     },
     seo: {
-      title: 'Trail Camp Lantern',
-      description: 'Rechargeable lantern for camping and backyard nights.'
+      title: 'Black Leather Wallet | Turkey Store',
+      description: 'Premium leather wallet for men.'
+    }
+  },
+  // Winter Collection
+  {
+    slug: 'wool-overcoat-gray',
+    price: '1450.00',
+    salePrice: '1150.00',
+    discountPercentage: '20.69',
+    stock: 30,
+    images: [
+      'https://images.unsplash.com/photo-1544923246-77307dd628b5?w=600',
+      'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=600'
+    ],
+    rating: '4.92',
+    categorySlug: 'winter-collection',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: {
+        name: 'Wool Overcoat Gray',
+        shortDescription: 'Premium wool overcoat for winter.',
+        description: 'Luxurious wool overcoat in gray. Double-breasted design with satin lining.'
+      },
+      ar: {
+        name: 'معطف صوف رمادي',
+        shortDescription: 'معطف صوف فاخر للشتاء.',
+        description: 'معطف صوف فاخر باللون الرمادي. تصميم ببطانة ساتان.'
+      }
+    },
+    seo: {
+      title: 'Wool Overcoat Gray | Turkey Store',
+      description: 'Premium wool overcoat for men.'
     }
   },
   {
-    slug: 'outdoor-trail-bottle',
-    price: '39.00',
-    stock: 260,
-    images: ['https://dummyimage.com/600x400/0f172a/ffffff.png&text=Trail+Bottle'],
-    categorySlug: 'outdoors',
-    brandSlug: 'style-haven',
+    slug: 'knit-sweater-burgundy',
+    price: '480.00',
+    salePrice: '380.00',
+    discountPercentage: '20.83',
+    stock: 85,
+    images: [
+      'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600'
+    ],
+    rating: '4.75',
+    categorySlug: 'winter-collection',
+    brandSlug: 'istanbul-trends',
     translations: {
       en: {
-        name: 'Trail Steel Bottle',
-        shortDescription: 'Insulated stainless steel bottle 750ml.',
-        description: 'Keeps drinks cold for 24h or hot for 12h with leak-proof lid.'
+        name: 'Burgundy Knit Sweater',
+        shortDescription: 'Warm knit sweater in burgundy.',
+        description: 'Soft merino wool sweater in rich burgundy color. Perfect for cold winter days.'
       },
       ar: {
-        name: 'قارورة ستيل تريل',
-        shortDescription: 'قارورة ستانلس معزولة 750 مل.',
-        description: 'تحافظ على المشروبات باردة 24 ساعة أو ساخنة 12 ساعة مع غطاء محكم.'
+        name: 'سويتر محبوك بورجندي',
+        shortDescription: 'سويتر محبوك دافئ بلون بورجندي.',
+        description: 'سويتر صوف ميرينو ناعم بلون بورجندي غني. مثالي لأيام الشتاء الباردة.'
       }
     },
     seo: {
-      title: 'Trail Steel Bottle',
-      description: 'Insulated bottle ready for hikes, commutes, and gym sessions.'
+      title: 'Burgundy Knit Sweater | Turkey Store',
+      description: 'Warm knit sweater for men.'
+    }
+  },
+  {
+    slug: 'puffer-jacket-navy',
+    price: '780.00',
+    salePrice: '620.00',
+    discountPercentage: '20.51',
+    stock: 65,
+    images: [
+      'https://images.unsplash.com/photo-1544923246-77307dd628b5?w=600'
+    ],
+    rating: '4.82',
+    categorySlug: 'winter-collection',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: {
+        name: 'Navy Puffer Jacket',
+        shortDescription: 'Warm puffer jacket for extreme cold.',
+        description: 'Down-filled puffer jacket with water-resistant outer shell. Ultra warm for harsh winters.'
+      },
+      ar: {
+        name: 'جاكيت بافر نيفي',
+        shortDescription: 'جاكيت بافر دافئ للبرد القارس.',
+        description: 'جاكيت بافر محشو بالريش مع غلاف مقاوم للماء. دافئ جداً للشتاء القارس.'
+      }
+    },
+    seo: {
+      title: 'Navy Puffer Jacket | Turkey Store',
+      description: 'Warm puffer jacket for men.'
+    }
+  },
+  {
+    slug: 'cashmere-scarf-camel',
+    price: '550.00',
+    stock: 50,
+    images: [
+      'https://images.unsplash.com/photo-1520903920243-00d872a2d1c9?w=600'
+    ],
+    rating: '4.88',
+    categorySlug: 'winter-collection',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: {
+        name: 'Cashmere Scarf Camel',
+        shortDescription: 'Pure cashmere scarf in camel color.',
+        description: 'Luxurious 100% cashmere scarf. Incredibly soft and warm. A winter essential.'
+      },
+      ar: {
+        name: 'وشاح كشمير كاميل',
+        shortDescription: 'وشاح كشمير نقي بلون الكاميل.',
+        description: 'وشاح كشمير فاخر 100%. ناعم ودافئ بشكل لا يصدق. قطعة أساسية للشتاء.'
+      }
+    },
+    seo: {
+      title: 'Cashmere Scarf Camel | Turkey Store',
+      description: 'Pure cashmere scarf for winter.'
     }
   }
 ]
@@ -681,10 +879,16 @@ async function seedCustomers() {
 }
 
 async function main() {
+  console.log('Starting seed...')
   const categoryMap = await seedCategories()
+  console.log(`Seeded ${categoryMap.size} categories`)
   const brandMap = await seedBrands()
+  console.log(`Seeded ${brandMap.size} brands`)
   await seedProducts(categoryMap, brandMap)
+  console.log(`Seeded ${products.length} products`)
   await seedCustomers()
+  console.log(`Seeded ${customers.length} customers`)
+  console.log('Seed complete!')
 }
 
 main()

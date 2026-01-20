@@ -6,30 +6,43 @@ const props = defineProps<{
 </script>
 
 <template>
-  <section id="categories" class="space-y-4">
+  <section id="categories" class="space-y-6" dir="rtl">
     <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold">
-        {{ props.title || 'Shop by category' }}
-      </h2>
-      <ULink to="/categories" class="text-primary font-medium">All categories</ULink>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          فئات مختارة
+        </p>
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          {{ props.title || 'تسوق حسب الفئة' }}
+        </h2>
+      </div>
+      <ULink to="/categories" class="text-primary font-medium text-sm flex items-center gap-1">
+        كل الفئات
+        <UIcon name="i-lucide-arrow-left" class="size-4" />
+      </ULink>
     </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-      <UCard v-for="cat in props.categories" :key="cat.name" class="hover:ring-2 hover:ring-primary/60 transition">
-        <NuxtLink :to="cat.to || '/categories'" class="block space-y-2">
-          <div class="aspect-square rounded-md bg-gradient-to-br from-slate-100 to-white overflow-hidden">
-            <img
-              v-if="cat.image"
-              :src="cat.image"
-              :alt="cat.name"
-              class="w-full h-full object-cover"
-              loading="lazy"
-            >
-            <div v-else class="flex h-full items-center justify-center text-muted text-sm">{{ cat.name }}</div>
-          </div>
-          <p class="font-medium">{{ cat.name }}</p>
-        </NuxtLink>
-      </UCard>
+      <NuxtLink
+        v-for="cat in props.categories"
+        :key="cat.name"
+        :to="cat.to || '/categories'"
+        class="group relative aspect-[4/5] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800"
+      >
+        <img
+          v-if="cat.image"
+          :src="cat.image"
+          :alt="cat.name"
+          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+        >
+        <div v-else class="h-full w-full bg-gradient-to-br from-gray-200 to-gray-100 dark:from-gray-700 dark:to-gray-800" />
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        <div class="absolute bottom-3 right-3 left-3 text-white">
+          <p class="font-bold text-lg drop-shadow">{{ cat.name }}</p>
+          <p class="text-xs text-white/80">تصفح التفاصيل</p>
+        </div>
+      </NuxtLink>
     </div>
   </section>
 </template>

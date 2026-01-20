@@ -53,8 +53,8 @@ const products = computed(() =>
     title: item.name,
     price: item.price,
     salePrice: item.salePrice,
-    image: item.images?.[0]?.url,
-    rating: 4.8,
+    image: item.image,
+    rating: item.rating ?? 4.8,
     to: `/products/${item.slug}`,
     productId: item.id
   }))
@@ -63,10 +63,10 @@ const products = computed(() =>
 const totalProducts = computed(() => productsData.value?.pagination?.totalItems || 0)
 
 const sortOptions = [
-  { label: 'Featured', value: 'featured' },
-  { label: 'Newest', value: 'newest' },
-  { label: 'Price: Low to High', value: 'price-asc' },
-  { label: 'Price: High to Low', value: 'price-desc' }
+  { label: 'الأبرز', value: 'featured' },
+  { label: 'الأحدث', value: 'newest' },
+  { label: 'السعر: من الأقل', value: 'price-asc' },
+  { label: 'السعر: من الأعلى', value: 'price-desc' }
 ]
 
 const resetFilters = () => {
@@ -81,19 +81,19 @@ const resetFilters = () => {
 <template>
   <UContainer class="py-12 space-y-8">
     <div class="flex flex-col gap-2">
-      <h1 class="text-2xl font-semibold">
-        Products
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+        المنتجات
       </h1>
-      <p class="text-muted">
-        Browse our catalog, search, and filter by category or price.
+      <p class="text-gray-600 dark:text-gray-400">
+        تصفح كتالوج المنتجات وابحث وفلتر حسب الفئة أو السعر.
       </p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
-      <UCard class="self-start space-y-6">
+      <UCard class="self-start space-y-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
-          <p class="font-semibold">
-            Filters
+          <p class="font-semibold text-gray-900 dark:text-gray-100">
+            الفلاتر
           </p>
           <UButton
             variant="ghost"
@@ -101,15 +101,15 @@ const resetFilters = () => {
             icon="i-lucide-rotate-ccw"
             @click="resetFilters"
           >
-            Reset
+            إعادة ضبط
           </UButton>
         </div>
 
-        <UFormGroup label="Search">
-          <UInput v-model="search" icon="i-lucide-search" placeholder="Search products" />
+        <UFormGroup label="بحث">
+          <UInput v-model="search" icon="i-lucide-search" placeholder="ابحث عن منتج" />
         </UFormGroup>
 
-        <UFormGroup label="Categories">
+        <UFormGroup label="الفئات">
           <div class="space-y-2">
             <UCheckbox
               v-for="cat in availableCategories"
@@ -121,7 +121,7 @@ const resetFilters = () => {
           </div>
         </UFormGroup>
 
-        <UFormGroup label="Price range (EGP)">
+        <UFormGroup label="نطاق السعر (EGP)">
           <div class="flex items-center gap-2">
             <UInput
               v-model.number="priceMin"
@@ -130,7 +130,7 @@ const resetFilters = () => {
               max="10000"
               size="xs"
             />
-            <span class="text-muted text-sm">to</span>
+            <span class="text-gray-500 dark:text-gray-400 text-sm">إلى</span>
             <UInput
               v-model.number="priceMax"
               type="number"
@@ -144,11 +144,11 @@ const resetFilters = () => {
 
       <div class="space-y-6">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <p class="text-sm text-muted">
-            Showing {{ totalProducts }} products
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            عرض {{ totalProducts }} منتج
           </p>
           <div class="flex items-center gap-2">
-            <span class="text-sm text-muted">Sort</span>
+            <span class="text-sm text-gray-600 dark:text-gray-400">ترتيب</span>
             <USelectMenu v-model="sortBy" :options="sortOptions" size="sm" />
           </div>
         </div>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
-import type { Conversation } from '~/composables/useChat'
 
 const route = useRoute()
 const toast = useToast()
@@ -8,32 +7,10 @@ const toast = useToast()
 const open = ref(false)
 const adminBase = '/admin'
 
-const { connect, conversations } = useChat()
-const session = useSessionUser()
-
-// Connect to chat
-watchEffect(() => {
-  if (import.meta.client && session.value) {
-    connect(session.value.id, true)
-  }
-})
-
-const unreadCount = computed(() => {
-  return conversations.value.reduce((sum: number, conv: Conversation) => sum + conv.unreadCount, 0)
-})
-
 const links = computed(() => [[{
   label: 'Home',
   icon: 'i-lucide-house',
   to: adminBase,
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Inbox',
-  icon: 'i-lucide-inbox',
-  to: `${adminBase}/chat`,
-  badge: unreadCount.value > 0 ? unreadCount.value.toString() : undefined,
   onSelect: () => {
     open.value = false
   }

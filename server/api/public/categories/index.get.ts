@@ -20,7 +20,12 @@ export default eventHandler(async () => {
       },
       _count: {
         select: {
-          products: true,
+          products: {
+            where: {
+              isPublished: true,
+              isArchived: false
+            }
+          },
           children: true
         }
       }

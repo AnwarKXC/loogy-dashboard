@@ -1,17 +1,15 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
 const route = useRoute()
-const toast = useToast()
-const { $socket } = useNuxtApp()
-const user = useSessionUser()
 
-// Force light theme for public routes, dark for admin
+// Prefer dark mode for admin, allow storefront to follow user preference
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
-const forceTheme = computed(() => isAdminRoute.value ? 'dark' : 'light')
 
-watch(() => route.path, () => {
-  colorMode.preference = forceTheme.value
-}, { immediate: true })
+watchEffect(() => {
+  if (isAdminRoute.value) {
+    colorMode.preference = 'dark'
+  }
+})
 
 const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
 
@@ -24,33 +22,6 @@ onMounted(() => {
       .catch((error) => {
         console.error('Service Worker registration failed:', error)
       })
-  }
-
-  // Listen for new orders
-  if ($socket) {
-    $socket.on('connect', () => {
-      if (user.value) {
-        $socket.emit('join', { userId: user.value.id, isAdmin: true })
-      }
-    })
-
-    // If already connected
-    if ($socket.connected && user.value) {
-      $socket.emit('join', { userId: user.value.id, isAdmin: true })
-    }
-
-    $socket.on('order:new', (data: any) => {
-      toast.add({
-        title: 'New Order Received',
-        description: `Order #${data.id} from ${data.customerName}`,
-        icon: 'i-lucide-shopping-bag',
-        color: 'primary',
-        actions: [{
-          label: 'View',
-          click: () => navigateTo(`/orders/${data.id}`)
-        }]
-      })
-    })
   }
 })
 

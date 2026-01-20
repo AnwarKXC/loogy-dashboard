@@ -1,88 +1,224 @@
 // @ts-nocheck
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { StepperItem } from '@nuxt/ui'
-// @ts-expect-error Nuxt provides definePageMeta globally
+import { computed, reactive, ref } from 'vue'
+
 definePageMeta({
   layout: 'storefront'
 })
 
-const steps: StepperItem[] = [
-  { title: 'Shipping', icon: 'i-lucide-truck' },
-  { title: 'Payment', icon: 'i-lucide-credit-card' },
-  { title: 'Review', icon: 'i-lucide-check-circle-2' }
-]
+const toast = useToast()
+const { lines, subtotal, clear: clearCart } = useCart()
 
-const active = ref(0)
+const form = reactive({
+  name: '',
+  phone: '',
+  governorate: '',
+  address: '',
+  notes: '',
+  payment: 'cod'
+})
+
+const shipping = ref(80)
+const total = computed(() => subtotal.value + shipping.value)
+const isSubmitting = ref(false)
+const orderComplete = ref(false)
+const orderNumber = ref('')
+
+const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
+
+const placeOrder = async () => {
+  if (!form.name || !form.phone || !form.address) {
+    toast.add({
+      title: 'اكمل البيانات',
+      description: 'الاسم، الهاتف والعنوان مطلوبة لإتمام الطلب',
+      color: 'warning'
+    })
+    return
+  }
+
+  if (lines.value.length === 0) {
+    toast.add({
+      title: 'السلة فارغة',
+      description: 'أضف منتجات للسلة قبل إتمام الطلب',
+      color: 'warning'
+    })
+    return
+  }
+
+  isSubmitting.value = true
+  try {
+    const response = await $fetch('/api/public/orders', {
+      method: 'POST',
+      body: {
+        customer: {
+          name: form.name,
+          phone: form.phone,
+          governorate: form.governorate,
+          address: form.address,
+          notes: form.notes
+        },
+        paymentMethod: form.payment,
+        items: lines.value
+      }
+    })
+
+    orderNumber.value = response.orderNumber
+    orderComplete.value = true
+    clearCart()
+
+    toast.add({
+      title: 'تم إنشاء الطلب بنجاح',
+      description: response.message,
+      color: 'success'
+    })
+  } catch (error: any) {
+    toast.add({
+      title: 'تعذر إنشاء الطلب',
+      description: error?.data?.message || error?.message || 'حاول مرة أخرى أو تواصل معنا عبر واتساب',
+      color: 'error'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+}
 </script>
 
 <template>
   <UContainer class="py-12 space-y-8">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">
-        Checkout
-      </h1>
-      <ULink to="/cart" class="text-primary">Back to cart</ULink>
+    <!-- Order Success State -->
+    <div v-if="orderComplete" class="max-w-lg mx-auto text-center space-y-6">
+      <div class="size-20 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+        <UIcon name="i-lucide-check" class="size-10 text-green-600 dark:text-green-400" />
+      </div>
+      <div class="space-y-2">
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          تم إنشاء الطلب بنجاح!
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          رقم الطلب: <span class="font-mono font-semibold">{{ orderNumber }}</span>
+        </p>
+        <p class="text-gray-600 dark:text-gray-400">
+          سنتواصل معك قريباً لتأكيد الشحن والدفع عند الاستلام.
+        </p>
+      </div>
+      <div class="flex justify-center gap-3">
+        <UButton to="/" color="primary" icon="i-lucide-home">
+          العودة للرئيسية
+        </UButton>
+        <UButton to="/products" variant="soft" icon="i-lucide-shopping-bag">
+          تصفح المنتجات
+        </UButton>
+      </div>
     </div>
 
-    <UStepper v-model="active" :items="steps" />
+    <!-- Checkout Form -->
+    <template v-else>
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+          إتمام الطلب
+        </h1>
+        <ULink to="/cart" class="text-primary">العودة للسلة</ULink>
+      </div>
 
-    <UCard class="space-y-4">
-      <template v-if="active === 0">
-        <h2 class="text-lg font-semibold">
-          Shipping address
-        </h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <UInput placeholder="Full name" />
-          <UInput placeholder="Phone" />
-          <UInput placeholder="City" />
-          <UInput placeholder="Country" />
-          <UTextarea class="md:col-span-2" placeholder="Street address" />
-        </div>
-        <div class="flex justify-end">
-          <UButton color="primary" @click="active = 1">
-            Continue to payment
-          </UButton>
-        </div>
-      </template>
+      <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
+        <UCard class="space-y-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <div class="space-y-1">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              بيانات العميل
+            </p>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              معلومات الشحن
+            </h2>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <UInput v-model="form.name" placeholder="الاسم الكامل" />
+            <UInput v-model="form.phone" placeholder="رقم الهاتف" />
+            <UInput v-model="form.governorate" placeholder="المحافظة" />
+            <UInput v-model="form.address" class="md:col-span-2" placeholder="العنوان بالتفصيل" />
+            <UTextarea v-model="form.notes" class="md:col-span-2" placeholder="ملاحظات إضافية (اختياري)" />
+          </div>
 
-      <template v-else-if="active === 1">
-        <h2 class="text-lg font-semibold">
-          Payment
-        </h2>
-        <URadioGroup
-          :options="[
-            { label: 'Paymob Card', value: 'paymob' },
-            { label: 'Cash on Delivery', value: 'cash' }
-          ]"
-          value="paymob"
-        />
-        <div class="flex justify-between">
-          <UButton variant="ghost" @click="active = 0">
-            Back
-          </UButton>
-          <UButton color="primary" @click="active = 2">
-            Review order
-          </UButton>
-        </div>
-      </template>
+          <div class="space-y-3">
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              طريقة الدفع
+            </p>
+            <URadioGroup
+              v-model="form.payment"
+              :options="[
+                { label: 'الدفع عند الاستلام', value: 'cod' },
+                { label: 'بطاقة عبر Paymob', value: 'paymob' }
+              ]"
+            />
+          </div>
 
-      <template v-else>
-        <h2 class="text-lg font-semibold">
-          Review
-        </h2>
-        <p class="text-muted">
-          Order summary and Paymob redirect placeholder.
-        </p>
-        <div class="flex justify-between">
-          <UButton variant="ghost" @click="active = 1">
-            Back
-          </UButton>
-          <UButton color="primary">
-            Place order
-          </UButton>
-        </div>
-      </template>
-    </UCard>
+          <div class="flex justify-end">
+            <UButton
+              color="primary"
+              size="lg"
+              icon="i-lucide-check-circle-2"
+              :loading="isSubmitting"
+              :disabled="!lines.length"
+              @click="placeOrder"
+            >
+              إتمام الشراء
+            </UButton>
+          </div>
+        </UCard>
+
+        <UCard class="h-fit space-y-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            ملخص الطلب
+          </h2>
+
+          <div v-if="!lines.length" class="text-gray-500 dark:text-gray-400 text-sm">
+            لا توجد منتجات في السلة.
+          </div>
+
+          <div v-else class="space-y-3">
+            <div
+              v-for="item in lines"
+              :key="`${item.productId}-${item.variantId || 'default'}`"
+              class="flex items-center justify-between gap-3"
+            >
+              <div class="flex items-center gap-3">
+                <img
+                  :src="item.image || 'https://images.unsplash.com/photo-1481277542470-605612bd2d61?w=200'"
+                  :alt="item.title"
+                  class="size-12 rounded-lg object-cover bg-gray-100 dark:bg-gray-700"
+                  loading="lazy"
+                >
+                <div class="space-y-1">
+                  <p class="font-medium text-gray-900 dark:text-gray-100">
+                    {{ item.title }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    x{{ item.quantity }}
+                  </p>
+                </div>
+              </div>
+              <p class="font-semibold text-primary">
+                {{ formatPrice(item.price * item.quantity) }}
+              </p>
+            </div>
+
+            <UDivider />
+
+            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+              <span>الإجمالي</span>
+              <span>{{ formatPrice(subtotal) }}</span>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+              <span>الشحن</span>
+              <span>{{ formatPrice(shipping) }}</span>
+            </div>
+            <UDivider />
+            <div class="flex justify-between font-bold text-lg text-gray-900 dark:text-gray-100">
+              <span>الإجمالي الكلي</span>
+              <span class="text-primary">{{ formatPrice(total) }}</span>
+            </div>
+          </div>
+        </UCard>
+      </div>
+    </template>
   </UContainer>
 </template>
