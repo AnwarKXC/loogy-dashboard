@@ -70,10 +70,22 @@ const schema = z.object({
   shortDescriptionAr: z.string().trim().max(MAX_SHORT_DESCRIPTION_LENGTH, 'Short description (Arabic) is too long').optional(),
   images: z.array(z.string().trim()).default([]),
   isArchived: z.boolean().default(false),
+  // Legacy single-language SEO (kept for AI generator)
   seoTitle: z.string().trim().max(MAX_SEO_TITLE_LENGTH, 'SEO title is too long').optional(),
   seoDescription: z.string().trim().max(MAX_SEO_DESCRIPTION_LENGTH, 'SEO description is too long').optional(),
   seoCanonical: z.string().trim().max(255, 'Canonical URL is too long').optional(),
-  seoKeywords: z.array(z.string().trim().max(60)).max(MAX_SEO_KEYWORDS).default([])
+  seoKeywords: z.array(z.string().trim().max(60)).max(MAX_SEO_KEYWORDS).default([]),
+  // Bilingual SEO fields
+  seoTitleEn: z.string().trim().max(70, 'SEO title (EN) is too long').optional(),
+  seoTitleAr: z.string().trim().max(70, 'SEO title (AR) is too long').optional(),
+  seoDescriptionEn: z.string().trim().max(160, 'SEO description (EN) is too long').optional(),
+  seoDescriptionAr: z.string().trim().max(160, 'SEO description (AR) is too long').optional(),
+  seoKeywordsEn: z.string().trim().max(255, 'SEO keywords (EN) is too long').optional(),
+  seoKeywordsAr: z.string().trim().max(255, 'SEO keywords (AR) is too long').optional(),
+  ogTitleEn: z.string().trim().max(70, 'OG title (EN) is too long').optional(),
+  ogTitleAr: z.string().trim().max(70, 'OG title (AR) is too long').optional(),
+  ogDescriptionEn: z.string().trim().max(200, 'OG description (EN) is too long').optional(),
+  ogDescriptionAr: z.string().trim().max(200, 'OG description (AR) is too long').optional()
 })
 
 function toNumberOr(value: unknown, fallback: number) {
@@ -87,6 +99,11 @@ function toNullableNumber(value: unknown) {
 function createStateFromInitialValues(initial?: Partial<ProductEditorValues>) {
   const images = Array.isArray(initial?.images) ? initial.images.filter((item: unknown): item is string => typeof item === 'string') : []
   const seoKeywords = Array.isArray(initial?.seoKeywords) ? initial.seoKeywords.filter((keyword: unknown): keyword is string => typeof keyword === 'string') : []
+
+  // Extract SEO from translations if available
+  const translations = initial?.translationsRaw ?? []
+  const enTrans = translations.find(t => t.lang === 'EN')
+  const arTrans = translations.find(t => t.lang === 'AR')
 
   return {
     nameEn: initial?.nameEn ?? '',
@@ -104,17 +121,30 @@ function createStateFromInitialValues(initial?: Partial<ProductEditorValues>) {
     shortDescriptionAr: initial?.shortDescriptionAr ?? '',
     images: [...images],
     isArchived: initial?.isArchived ?? false,
+    // Legacy SEO (for AI generator)
     seoTitle: initial?.seoTitle ?? '',
     seoDescription: initial?.seoDescription ?? '',
     seoCanonical: initial?.seoCanonical ?? '',
     seoKeywords: [...seoKeywords],
-    newSeoKeyword: ''
+    newSeoKeyword: '',
+    // Bilingual SEO fields
+    seoTitleEn: initial?.seoTitleEn ?? enTrans?.metaTitle ?? '',
+    seoTitleAr: initial?.seoTitleAr ?? arTrans?.metaTitle ?? '',
+    seoDescriptionEn: initial?.seoDescriptionEn ?? enTrans?.metaDescription ?? '',
+    seoDescriptionAr: initial?.seoDescriptionAr ?? arTrans?.metaDescription ?? '',
+    seoKeywordsEn: initial?.seoKeywordsEn ?? enTrans?.metaKeywords ?? '',
+    seoKeywordsAr: initial?.seoKeywordsAr ?? arTrans?.metaKeywords ?? '',
+    ogTitleEn: initial?.ogTitleEn ?? enTrans?.ogTitle ?? '',
+    ogTitleAr: initial?.ogTitleAr ?? arTrans?.ogTitle ?? '',
+    ogDescriptionEn: initial?.ogDescriptionEn ?? enTrans?.ogDescription ?? '',
+    ogDescriptionAr: initial?.ogDescriptionAr ?? arTrans?.ogDescription ?? ''
   }
 }
 
 const state = reactive(createStateFromInitialValues(props.initialValues))
 
 const hasManuallyEditedSlug = ref(state.slug.length > 0 && state.slug !== slugify(state.nameEn))
+const showBilingualSeo = ref(false)
 
 const submitLabel = computed(() => {
   if (props.mode === 'edit') {
@@ -1533,6 +1563,169 @@ defineExpose({
               </p>
             </div>
           </UFormField>
+        </section>
+
+        <!-- Bilingual SEO Section -->
+        <section class="space-y-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h2 class="text-lg font-medium text-highlighted">
+                Bilingual SEO
+              </h2>
+              <p class="text-sm text-muted">
+                Per-language meta tags for English and Arabic storefronts.
+              </p>
+            </div>
+            <UButton
+              variant="ghost"
+              color="neutral"
+              size="xs"
+              :icon="showBilingualSeo ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+              @click="showBilingualSeo = !showBilingualSeo"
+            >
+              {{ showBilingualSeo ? 'Hide' : 'Show' }}
+            </UButton>
+          </div>
+
+          <div
+            v-show="showBilingualSeo"
+            class="space-y-4"
+          >
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField
+                label="Meta Title (EN)"
+                name="seoTitleEn"
+                :hint="`${(state.seoTitleEn || '').length}/70`"
+              >
+                <UInput
+                  v-model="state.seoTitleEn"
+                  placeholder="Page title for search engines"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Meta Title (AR)"
+                name="seoTitleAr"
+                :hint="`${(state.seoTitleAr || '').length}/70`"
+              >
+                <UInput
+                  v-model="state.seoTitleAr"
+                  placeholder="عنوان الصفحة لمحركات البحث"
+                  dir="rtl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField
+                label="Meta Description (EN)"
+                name="seoDescriptionEn"
+                :hint="`${(state.seoDescriptionEn || '').length}/160`"
+              >
+                <UTextarea
+                  v-model="state.seoDescriptionEn"
+                  placeholder="Description for search engines"
+                  :rows="2"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Meta Description (AR)"
+                name="seoDescriptionAr"
+                :hint="`${(state.seoDescriptionAr || '').length}/160`"
+              >
+                <UTextarea
+                  v-model="state.seoDescriptionAr"
+                  placeholder="وصف لمحركات البحث"
+                  :rows="2"
+                  dir="rtl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField
+                label="Meta Keywords (EN)"
+                name="seoKeywordsEn"
+              >
+                <UInput
+                  v-model="state.seoKeywordsEn"
+                  placeholder="keyword1, keyword2, keyword3"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="Meta Keywords (AR)"
+                name="seoKeywordsAr"
+              >
+                <UInput
+                  v-model="state.seoKeywordsAr"
+                  placeholder="كلمة1، كلمة2، كلمة3"
+                  dir="rtl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <UDivider label="Open Graph" />
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField
+                label="OG Title (EN)"
+                name="ogTitleEn"
+              >
+                <UInput
+                  v-model="state.ogTitleEn"
+                  placeholder="Title for social sharing"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="OG Title (AR)"
+                name="ogTitleAr"
+              >
+                <UInput
+                  v-model="state.ogTitleAr"
+                  placeholder="عنوان للمشاركة الاجتماعية"
+                  dir="rtl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField
+                label="OG Description (EN)"
+                name="ogDescriptionEn"
+              >
+                <UTextarea
+                  v-model="state.ogDescriptionEn"
+                  placeholder="Description for social sharing"
+                  :rows="2"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField
+                label="OG Description (AR)"
+                name="ogDescriptionAr"
+              >
+                <UTextarea
+                  v-model="state.ogDescriptionAr"
+                  placeholder="وصف للمشاركة الاجتماعية"
+                  :rows="2"
+                  dir="rtl"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+          </div>
         </section>
       </div>
 

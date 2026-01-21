@@ -14,6 +14,7 @@ const querySchema = z.object({
   categorySlug: z.string().trim().min(1).optional(),
   brandId: z.coerce.number().int().positive().optional(),
   brandSlug: z.string().trim().min(1).optional(),
+  sale: z.enum(['true', 'false']).optional(),
   minPrice: z.coerce.number().nonnegative().optional(),
   maxPrice: z.coerce.number().positive().optional(),
   sort: z.enum(['featured', 'newest', 'price-asc', 'price-desc', 'rating']).catch('featured')
@@ -52,6 +53,10 @@ export default eventHandler(async (event) => {
 
   if (query.brandSlug) {
     whereClauses.push({ brand: { slug: query.brandSlug } })
+  }
+
+  if (query.sale === 'true') {
+    whereClauses.push({ NOT: { salePrice: null } })
   }
 
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {

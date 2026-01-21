@@ -1,3 +1,7 @@
 {
-	"chat.agent.maxRequests": 100
+	"chat.agent.maxRequests": 100,
+	"i18n-ally.localesPaths": [
+		"i18n",
+		"i18n/locales"
+	]
 }

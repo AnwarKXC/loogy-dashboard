@@ -11,7 +11,7 @@ definePageMeta({
 const route = useRoute()
 const slug = route.params.slug as string
 
-const { data: categoryData } = await useFetch(`/api/public/categories/${slug}`)
+const { data: categoryData } = await useFetch(`/api/public/storefront/categories/${slug}`)
 
 const { data: productsData, pending } = await useFetch('/api/public/products', {
   query: { categorySlug: slug, pageSize: 12 }
@@ -32,10 +32,14 @@ const products = computed(() =>
 
 const categoryName = computed(() => categoryData.value?.name || slug)
 const productCount = computed(() => productsData.value?.pagination?.totalItems || 0)
+const filterLink = computed(() => `/products?category=${slug}`)
 </script>
 
 <template>
   <UContainer class="py-12 space-y-8">
+    <div v-if="categoryData?.image" class="aspect-[3/1] rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <img :src="categoryData.image" :alt="categoryName" class="w-full h-full object-cover">
+    </div>
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-2xl font-semibold capitalize text-gray-900 dark:text-gray-100">
@@ -45,7 +49,7 @@ const productCount = computed(() => productsData.value?.pagination?.totalItems |
           تصفح المنتجات في هذه الفئة.
         </p>
       </div>
-      <UButton icon="i-lucide-filter" variant="soft">
+      <UButton :to="filterLink" icon="i-lucide-filter" variant="soft">
         الفلاتر
       </UButton>
     </div>

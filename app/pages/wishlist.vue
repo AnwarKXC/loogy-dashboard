@@ -1,120 +1,112 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 definePageMeta({
   layout: 'storefront'
 })
 
-const { items, remove, clear } = useWishlist()
-const { add: addToCart } = useCart()
-const toast = useToast()
+const fallbackImage = 'https://placehold.co/600x750/f3f4f6/171717?text=Product'
 
-const hasItems = computed(() => items.value.length > 0)
+type WishlistItem = {
+  productId: number
+  variantId?: number | null
+  name: string
+  slug: string
+  price: number
+  salePrice?: number | null
+  image?: string | null
+  inStock: boolean
+}
 
-const formatPrice = (value: number) => new Intl.NumberFormat('ar-EG', { style: 'decimal' }).format(value) + ' EGP'
+const { data, pending, refresh } = await useFetch<{ items: WishlistItem[] }>('/api/public/wishlist')
 
-const handleAddToCart = (item: any) => {
-  addToCart({
-    title: item.title,
-    price: item.price,
-    quantity: 1,
-    image: item.image,
-    productId: item.productId,
-    variantId: item.variantId
+const wishlistItems = computed<WishlistItem[]>(() => data.value?.items ?? [])
+
+const removeItem = async (item: { productId: number, variantId?: number | null }) => {
+  await $fetch('/api/public/wishlist', {
+    method: 'DELETE',
+    body: {
+      productId: item.productId,
+      variantId: item.variantId ?? undefined
+    }
   })
-  toast.add({ title: 'تمت الإضافة للسلة', color: 'success' })
+
+  await refresh()
+}
+
+const addToCart = async (item: { productId: number, variantId?: number | null }) => {
+  await $fetch('/api/public/cart', {
+    method: 'POST',
+    body: {
+      productId: item.productId,
+      variantId: item.variantId ?? undefined,
+      quantity: 1
+    }
+  })
+
+  await refresh()
 }
 </script>
 
 <template>
-  <UContainer class="py-12 space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-2xl font-semibold">
-        المفضلة
-      </h1>
-      <UButton
-        :disabled="!hasItems"
-        variant="ghost"
-        color="error"
-        icon="i-lucide-trash"
-        @click="clear"
-      >
-        مسح الكل
-      </UButton>
-    </div>
+  <div class="bg-neutral-50 text-neutral-900 font-sans min-h-screen flex flex-col">
+    <!-- Main Content -->
+    <main class="flex-grow pt-12 pb-24">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-end mb-16">
+          <h1 class="text-5xl lg:text-7xl font-serif font-black uppercase leading-none">
+            Wishlist
+          </h1>
+          <p class="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-2">
+            {{ wishlistItems.length }} Items Saved
+          </p>
+        </div>
 
-    <div v-if="hasItems" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <UCard
-        v-for="item in items"
-        :key="`${item.productId || item.title}-${item.variantId || 'default'}`"
-        class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-      >
-        <UButton
-          variant="ghost"
-          size="xs"
-          color="error"
-          icon="i-lucide-x"
-          class="absolute right-2 top-2 z-10"
-          aria-label="إزالة من المفضلة"
-          @click="remove(item.productId, item.variantId)"
-        />
-
-        <div class="space-y-3">
-          <NuxtLink :to="`/products/${item.productId}`" class="block space-y-2">
-            <div class="aspect-square rounded-md bg-gradient-to-br from-slate-100 to-white dark:from-gray-800 dark:to-gray-700 overflow-hidden">
+        <div v-if="wishlistItems.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
+          <div v-for="item in wishlistItems" :key="`${item.productId}-${item.variantId ?? 'default'}`" class="group relative">
+            <!-- Card -->
+            <div class="aspect-[4/5] bg-neutral-200 overflow-hidden mb-4 relative">
               <img
-                v-if="item.image"
-                :src="item.image"
-                :alt="item.title"
-                class="h-full w-full object-cover"
-                loading="lazy"
+                :src="item.image || fallbackImage"
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 filter"
+                :class="!item.inStock ? 'grayscale opacity-70' : ''"
+                :alt="item.name"
               >
-              <div v-else class="flex h-full items-center justify-center text-gray-500 dark:text-gray-300 text-sm">
-                {{ item.title }}
-              </div>
-            </div>
-            <div class="flex items-center justify-between">
-              <p class="font-semibold text-gray-900 dark:text-gray-100">
-                {{ item.title }}
-              </p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ formatPrice(item.price) }}
-              </p>
-            </div>
-          </NuxtLink>
 
-          <div class="flex items-center gap-2">
-            <UButton
-              color="primary"
-              block
-              icon="i-lucide-shopping-cart"
-              @click="handleAddToCart(item)"
-            >
-              أضف للسلة
-            </UButton>
+              <button class="absolute top-4 right-4 text-black/70 hover:bg-red-500 hover:text-white cursor-pointer transition-colors z-10 grid place-content-center bg-white/80 rounded-full size-8" @click="removeItem(item)">
+                <UIcon name="i-heroicons-x-mark" class="size-5 " />
+              </button>
+
+              <div v-if="!item.inStock" class="absolute inset-0 flex items-center justify-center">
+                <span class="bg-black/70 text-white px-4 py-2 text-xs font-bold uppercase tracking-widest backdrop-blur-sm">Out of Stock</span>
+              </div>
+
+              <button v-else class="absolute bottom-0 inset-x-0 h-12 bg-white flex items-center justify-center text-xs font-bold uppercase tracking-widest translate-y-full group-hover:translate-y-0 transition-transform duration-300 hover:bg-black hover:text-white" @click="addToCart(item)">
+                Add To Cart
+              </button>
+            </div>
+
+            <!-- Info -->
+            <div class="flex justify-between items-start">
+              <h3 class="text-sm font-bold uppercase tracking-wide max-w-[70%]">
+                {{ item.name }}
+              </h3>
+              <span class="font-serif font-medium">${{ item.price.toFixed(2) }}</span>
+            </div>
           </div>
         </div>
-      </UCard>
-    </div>
 
-    <UCard v-else class="py-12 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-      <div class="space-y-2">
-        <UIcon name="i-lucide-heart" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" />
-        <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-          قائمة المفضلة فارغة
-        </p>
-        <p class="text-gray-600 dark:text-gray-400">
-          احفظ المنتجات التي تعجبك للعودة إليها لاحقاً.
-        </p>
-        <div class="mt-4 flex justify-center gap-2">
-          <UButton to="/products" color="primary" icon="i-lucide-shopping-bag">
-            تصفح المنتجات
-          </UButton>
-          <UButton to="/" variant="ghost">
-            الرئيسية
-          </UButton>
+        <div v-else class="py-32 text-center">
+          <div class="mb-6">
+            <UIcon name="i-heroicons-heart" class="w-16 h-16 text-neutral-200 mx-auto" />
+          </div>
+          <p class="text-xl font-serif mb-8 text-neutral-500">
+            {{ pending ? 'Loading wishlist…' : 'Your wishlist is currently empty.' }}
+          </p>
+          <NuxtLink to="/" class="bg-black text-white px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest inline-flex items-center gap-2 hover:bg-neutral-800 transition-colors">
+            <span>Explore Collection</span>
+            <UIcon name="i-heroicons-arrow-right" class="w-4 h-4" />
+          </NuxtLink>
         </div>
       </div>
-    </UCard>
-  </UContainer>
+    </main>
+  </div>
 </template>

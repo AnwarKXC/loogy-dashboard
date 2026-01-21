@@ -10,21 +10,83 @@ export interface WishlistItem {
 
 export const useWishlist = () => {
   const items = useState<WishlistItem[]>('wishlist:items', () => [])
+  const initialized = useState<boolean>('wishlist:initialized', () => false)
+  const loading = useState<boolean>('wishlist:loading', () => false)
 
-  const add = (item: WishlistItem) => {
-    if (items.value.some(i => i.productId === item.productId && i.variantId === item.variantId)) {
-      return
+  const refresh = async () => {
+    if (loading.value) return
+    loading.value = true
+    try {
+      const response = await $fetch<{ items: Array<{
+        productId: number
+        variantId?: number | null
+        name: string
+        price: number
+        image?: string | null
+      }> }>('/api/public/wishlist')
+
+      items.value = (response.items || []).map(item => ({
+        title: item.name,
+        price: item.price,
+        image: item.image ?? undefined,
+        productId: item.productId,
+        variantId: item.variantId ?? undefined
+      }))
+    } finally {
+      loading.value = false
     }
-    items.value.push(item)
   }
 
-  const remove = (productId: WishlistItem['productId'], variantId: WishlistItem['variantId']) => {
-    items.value = items.value.filter(i => i.productId !== productId || i.variantId !== variantId)
+  if (import.meta.client && !initialized.value) {
+    initialized.value = true
+    refresh()
   }
 
-  const clear = () => {
-    items.value = []
+  const add = async (item: WishlistItem) => {
+    if (!item.productId) return
+
+    await $fetch('/api/public/wishlist', {
+      method: 'POST',
+      body: {
+        productId: Number(item.productId),
+        variantId: item.variantId ? Number(item.variantId) : undefined
+      }
+    })
+
+    await refresh()
   }
 
-  return { items, add, remove, clear }
+  const remove = async (productId: WishlistItem['productId'], variantId: WishlistItem['variantId']) => {
+    if (!productId) return
+
+    await $fetch('/api/public/wishlist', {
+      method: 'DELETE',
+      body: {
+        productId: Number(productId),
+        variantId: variantId ? Number(variantId) : undefined
+      }
+    })
+
+    await refresh()
+  }
+
+  const clear = async () => {
+    const existing = [...items.value]
+
+    for (const item of existing) {
+      if (!item.productId) continue
+
+      await $fetch('/api/public/wishlist', {
+        method: 'DELETE',
+        body: {
+          productId: Number(item.productId),
+          variantId: item.variantId ? Number(item.variantId) : undefined
+        }
+      })
+    }
+
+    await refresh()
+  }
+
+  return { items, add, remove, clear, refresh, loading }
 }

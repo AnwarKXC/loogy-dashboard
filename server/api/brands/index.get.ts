@@ -4,9 +4,6 @@ import { z } from 'zod'
 import type { Prisma } from '@prisma/client'
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
-import { getLocalizedString } from '../products/utils'
-import { mapBrandRecord } from '../../utils/brands'
-import type { BrandRecord } from '../../utils/brands'
 
 const querySchema = z.object({
   page: z.coerce.number().int().min(1).catch(1),
@@ -29,8 +26,7 @@ export default eventHandler(async (event) => {
     whereClauses.push({
       OR: [
         { slug: { contains: searchTerm, mode: 'insensitive' } },
-        { name: { path: ['en'], string_contains: searchTerm, mode: 'insensitive' } },
-        { name: { path: ['ar'], string_contains: searchTerm, mode: 'insensitive' } }
+        { translations: { some: { name: { contains: searchTerm, mode: 'insensitive' } } } }
       ]
     })
   }
@@ -55,6 +51,19 @@ export default eventHandler(async (event) => {
       where,
       orderBy: orderByMap[query.sort],
       include: {
+        translations: {
+          select: {
+            lang: true,
+            name: true,
+            description: true,
+            metaTitle: true,
+            metaDescription: true,
+            metaKeywords: true,
+            ogTitle: true,
+            ogDescription: true,
+            ogImage: true
+          }
+        },
         _count: {
           select: {
             products: true
@@ -68,7 +77,26 @@ export default eventHandler(async (event) => {
 
   const totalPages = totalItems > 0 ? Math.ceil(totalItems / pageSize) : 0
 
-  const items = (records as BrandRecord[]).map(record => mapBrandRecord(record, getLocalizedString))
+  const items = records.map((record) => {
+    const enTranslation = record.translations.find(t => t.lang === 'EN')
+    const arTranslation = record.translations.find(t => t.lang === 'AR')
+
+    return {
+      id: record.id,
+      name: enTranslation?.name ?? record.slug,
+      slug: record.slug,
+      logo: record.logo,
+      description: enTranslation?.description ?? null,
+      productCount: record._count.products,
+      createdAt: record.createdAt.toISOString(),
+      updatedAt: record.updatedAt.toISOString(),
+      translations: {
+        en: enTranslation?.name ?? '',
+        ar: arTranslation?.name ?? ''
+      },
+      translationsRaw: record.translations
+    }
+  })
 
   return {
     items,

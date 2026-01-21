@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { CarouselItem } from '@nuxt/ui'
 
 const props = defineProps<{
   slides: Array<{ title: string, description: string, image: string, to?: string }>
 }>()
 
-const items = computed<CarouselItem[]>(() => props.slides.map(slide => ({
+const items = computed(() => props.slides.map(slide => ({
   ...slide,
   class: 'basis-full'
 })))
@@ -15,23 +14,17 @@ const items = computed<CarouselItem[]>(() => props.slides.map(slide => ({
 <template>
   <section class="relative overflow-hidden group">
     <UCarousel
-      v-slot="{ item }"
+      v-slot="{ item }: { item: { title: string, description: string, image: string, to?: string } }"
       :items="items"
       :ui="{
         item: 'min-w-0',
-        container: 'rounded-none',
-        indicators: {
-          wrapper: 'absolute flex items-center justify-center gap-3 bottom-8 inset-x-0 z-10',
-          base: 'rounded-full h-2 w-2 ring-1 ring-white/50 transition-all duration-300',
-          active: 'bg-white w-6 ring-white',
-          inactive: 'bg-white/40 hover:bg-white/70'
-        }
+        container: 'rounded-none'
       }"
       dots
       :autoplay="{ delay: 5000 }"
       class="rounded-none h-[500px] sm:h-[600px] lg:h-[700px]"
     >
-      <div class="relative w-full h-full">
+      <div v-if="item" class="relative w-full h-full">
         <img
           :src="item.image"
           :alt="item.title"
@@ -61,20 +54,20 @@ const items = computed<CarouselItem[]>(() => props.slides.map(slide => ({
             <div class="flex flex-wrap gap-4 pt-4">
               <UButton
                 :to="item.to || '/products'"
-                color="white"
+                color="neutral"
                 variant="solid"
                 size="xl"
-                class="px-8 font-bold text-gray-900 hover:bg-gray-100 transition-colors"
+                class="px-8 font-bold text-gray-900 bg-white hover:bg-gray-100 transition-colors"
                 trailing-icon="i-lucide-arrow-left"
               >
                 تسوق المجموعة
               </UButton>
               <UButton
-                to="#deals"
-                color="white"
+                to="/#deals"
+                color="neutral"
                 variant="outline"
                 size="xl"
-                class="px-8 hover:bg-white/10 transition-colors"
+                class="px-8 text-white border-white hover:bg-white/10 transition-colors"
               >
                 اكتشف العروض
               </UButton>

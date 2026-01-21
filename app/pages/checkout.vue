@@ -64,17 +64,24 @@ const placeOrder = async () => {
 
     orderNumber.value = response.orderNumber
     orderComplete.value = true
-    clearCart()
+    await clearCart()
 
     toast.add({
       title: 'تم إنشاء الطلب بنجاح',
       description: response.message,
       color: 'success'
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const dataMessage = (error as { data?: { message?: string } })?.data?.message
+    const message = typeof dataMessage === 'string'
+      ? dataMessage
+      : error instanceof Error
+        ? error.message
+        : 'حاول مرة أخرى أو تواصل معنا عبر واتساب'
+
     toast.add({
       title: 'تعذر إنشاء الطلب',
-      description: error?.data?.message || error?.message || 'حاول مرة أخرى أو تواصل معنا عبر واتساب',
+      description: message,
       color: 'error'
     })
   } finally {

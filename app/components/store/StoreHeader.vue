@@ -4,32 +4,53 @@ import { useRoute } from 'vue-router'
 import type { NavigationMenuItem } from '@nuxt/ui'
 
 const route = useRoute()
-// @ts-expect-error Provided by Nuxt auto-imports at runtime
+const { data: layoutData } = await useFetch('/api/public/storefront/layout')
+
+type LayoutConfig = {
+  brand?: {
+    name?: string
+    logoUrl?: string | null
+    homeUrl?: string
+  }
+  navLinks?: Array<{ label: string, to: string }>
+  actions?: {
+    showSearch?: boolean
+    searchUrl?: string
+    showWishlist?: boolean
+    showCart?: boolean
+    accountUrl?: string
+  }
+}
+
+const layout = computed<LayoutConfig>(() => layoutData.value?.layout ?? {})
 const colorMode = useColorMode()
 const { lines: cartLines } = useCart()
 const { items: wishlistItems } = useWishlist()
 
-const navItems = computed<NavigationMenuItem[]>(() => [{
-  label: 'الرئيسية',
-  to: '/',
-  active: route.path === '/'
-}, {
-  label: 'المنتجات',
-  to: '/products',
-  active: route.path.startsWith('/products')
-}, {
-  label: 'الفئات',
-  to: '/categories',
-  active: route.path.startsWith('/categories')
-}, {
-  label: 'العروض',
-  to: '/#deals',
-  active: route.hash === '#deals'
-}, {
-  label: 'تواصل معنا',
-  to: '/#contact',
-  active: route.hash === '#contact'
-}])
+const navItems = computed<NavigationMenuItem[]>(() => {
+  const links = layout.value.navLinks?.length
+    ? layout.value.navLinks
+    : [
+        { label: 'الرئيسية', to: '/' },
+        { label: 'المنتجات', to: '/products' },
+        { label: 'الفئات', to: '/categories' },
+        { label: 'العروض', to: '/#deals' },
+        { label: 'تواصل معنا', to: '/#contact' }
+      ]
+
+  return links.map(link => ({
+    label: link.label,
+    to: link.to,
+    active: link.to.startsWith('/#')
+      ? route.hash === link.to.replace('/', '')
+      : route.path === link.to || route.path.startsWith(`${link.to}/`)
+  }))
+})
+
+const brandName = computed(() => layout.value.brand?.name ?? 'Turkey Store')
+const brandLogo = computed(() => layout.value.brand?.logoUrl ?? null)
+const brandUrl = computed(() => layout.value.brand?.homeUrl ?? '/')
+const layoutActions = computed(() => layout.value.actions ?? {})
 
 const isDark = computed(() => colorMode.value === 'dark')
 const modeIcon = computed(() => isDark.value ? 'i-lucide-sun' : 'i-lucide-moon')
@@ -48,17 +69,23 @@ const wishlistCount = computed(() => wishlistItems.value.length)
     <StoreAnnouncementBar />
 
     <UHeader
-      to="/"
+      :to="brandUrl"
       class="border-b border-gray-100 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md"
     >
       <template #title>
         <div class="flex items-center gap-2">
           <!-- Logo could be an image, but using text/icon heavily styled -->
-          <div class="bg-gray-900 text-white p-1.5 rounded-lg">
-            <UIcon name="i-lucide-shopping-bag" class="size-5" />
+          <div class="bg-gray-900 text-white p-1.5 rounded-lg overflow-hidden">
+            <img
+              v-if="brandLogo"
+              :src="brandLogo"
+              :alt="brandName"
+              class="size-5 object-contain"
+            >
+            <UIcon v-else name="i-lucide-shopping-bag" class="size-5" />
           </div>
           <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">
-            Turkey Store
+            {{ brandName }}
           </span>
         </div>
       </template>
@@ -66,27 +93,22 @@ const wishlistCount = computed(() => wishlistItems.value.length)
       <UNavigationMenu
         :items="navItems"
         class="hidden lg:flex"
-        :ui="{
-          link: {
-            active: 'text-primary font-bold after:bg-primary',
-            base: 'text-base font-medium hover:text-primary transition-colors relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-transparent hover:after:bg-primary/50 after:transition-colors'
-          }
-        }"
       />
 
       <template #right>
         <div class="flex items-center gap-1">
           <UButton
-            to="/search"
+            v-if="layoutActions.showSearch !== false"
+            :to="layoutActions.searchUrl || '/search'"
             variant="ghost"
-            color="gray"
+            color="neutral"
             icon="i-lucide-search"
             aria-label="بحث"
             class="hidden sm:inline-flex"
           />
           <UButton
             variant="ghost"
-            color="gray"
+            color="neutral"
             :icon="modeIcon"
             :aria-label="modeLabel"
             @click="toggleMode"
@@ -94,11 +116,11 @@ const wishlistCount = computed(() => wishlistItems.value.length)
 
           <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1 hidden sm:block" />
 
-          <div class="relative">
+          <div v-if="layoutActions.showWishlist !== false" class="relative">
             <UButton
               to="/wishlist"
               variant="ghost"
-              color="gray"
+              color="neutral"
               icon="i-lucide-heart"
               aria-label="المفضلة"
             />
@@ -109,11 +131,11 @@ const wishlistCount = computed(() => wishlistItems.value.length)
               {{ wishlistCount }}
             </span>
           </div>
-          <div class="relative">
+          <div v-if="layoutActions.showCart !== false" class="relative">
             <UButton
               to="/cart"
               variant="ghost"
-              color="gray"
+              color="neutral"
               icon="i-lucide-shopping-bag"
               aria-label="السلة"
             />
@@ -127,61 +149,12 @@ const wishlistCount = computed(() => wishlistItems.value.length)
         </div>
 
         <UButton
-          to="/admin/login"
+          :to="layoutActions.accountUrl || '/admin/login'"
           variant="ghost"
-          color="gray"
+          color="neutral"
           class="hidden sm:inline-flex ml-2"
           icon="i-lucide-user"
         />
-      </template>
-
-      <template #panel>
-        <div class="p-4 space-y-4">
-          <UNavigationMenu :items="navItems" orientation="vertical" />
-          <div class="grid grid-cols-2 gap-2">
-            <UButton
-              variant="ghost"
-              color="neutral"
-              :icon="modeIcon"
-              :aria-label="modeLabel"
-              @click="toggleMode"
-            />
-            <UButton
-              to="/search"
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-search"
-              aria-label="بحث"
-            />
-            <UButton
-              to="/wishlist"
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-heart"
-              aria-label="المفضلة"
-            >
-              <span v-if="wishlistCount" class="ml-2 text-xs text-primary font-semibold">{{ wishlistCount }}</span>
-            </UButton>
-            <UButton
-              to="/cart"
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-shopping-cart"
-              aria-label="السلة"
-            >
-              <span v-if="cartCount" class="ml-2 text-xs text-primary font-semibold">{{ cartCount }}</span>
-            </UButton>
-            <UButton
-              to="/admin/login"
-              block
-              variant="soft"
-              color="primary"
-              class="col-span-2"
-            >
-              تسجيل الدخول
-            </UButton>
-          </div>
-        </div>
       </template>
     </UHeader>
   </header>

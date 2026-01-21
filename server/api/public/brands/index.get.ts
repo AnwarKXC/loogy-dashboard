@@ -7,8 +7,14 @@ export default eventHandler(async () => {
   const brands = await prisma.brand.findMany({
     select: {
       id: true,
-      name: true,
       slug: true,
+      logo: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true
+        }
+      },
       _count: {
         select: {
           products: true
@@ -21,8 +27,9 @@ export default eventHandler(async () => {
   return {
     brands: brands.map(brand => ({
       id: brand.id,
-      name: getLocalizedString(brand.name),
+      name: getLocalizedString(brand.translations) || brand.slug,
       slug: brand.slug,
+      logo: brand.logo ?? null,
       productCount: brand._count.products
     }))
   }

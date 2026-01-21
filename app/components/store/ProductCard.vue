@@ -22,8 +22,8 @@ const isInWishlist = computed(() =>
   )
 )
 
-const handleAddToCart = () => {
-  addToCart({
+const handleAddToCart = async () => {
+  await addToCart({
     title: props.title,
     price: props.salePrice ?? props.price,
     quantity: 1,
@@ -33,11 +33,11 @@ const handleAddToCart = () => {
   })
 }
 
-const handleToggleWishlist = () => {
+const handleToggleWishlist = async () => {
   if (isInWishlist.value) {
-    removeFromWishlist(props.productId, props.variantId)
+    await removeFromWishlist(props.productId, props.variantId)
   } else {
-    addToWishlist({
+    await addToWishlist({
       title: props.title,
       price: props.price,
       image: props.image,

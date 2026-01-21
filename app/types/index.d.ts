@@ -175,6 +175,7 @@ export interface ProductDetail extends ProductListItem {
   seoDescription?: string | null
   seoCanonical?: string | null
   seoKeywords?: string[]
+  translationsRaw?: TranslationWithSEO[]
   raw: {
     name: Record<string, unknown>
     description: Record<string, unknown> | null
@@ -203,10 +204,26 @@ export interface ProductEditorValues {
   stock?: number | null
   images: string[]
   isArchived: boolean
+  // Legacy single-language SEO (kept for backward compatibility)
   seoTitle?: string
   seoDescription?: string
   seoCanonical?: string
   seoKeywords: string[]
+  // Bilingual SEO fields
+  seoTitleEn?: string
+  seoTitleAr?: string
+  seoDescriptionEn?: string
+  seoDescriptionAr?: string
+  seoKeywordsEn?: string
+  seoKeywordsAr?: string
+  ogTitleEn?: string
+  ogTitleAr?: string
+  ogDescriptionEn?: string
+  ogDescriptionAr?: string
+  ogImageEn?: string
+  ogImageAr?: string
+  // Raw translations for edit mode
+  translationsRaw?: TranslationWithSEO[]
 }
 
 export interface ProductBasePayload {
@@ -227,6 +244,7 @@ export interface CategoryTreeNode {
   productCount: number
   childCount: number
   translations: Record<string, string>
+  translationsRaw?: TranslationWithSEO[]
   children: CategoryTreeNode[]
 }
 
@@ -237,7 +255,35 @@ export interface CategoryListResponse {
 export interface CategoryEditorValues {
   nameEn: string
   nameAr?: string
+  descriptionEn?: string
+  descriptionAr?: string
   parentId: number | null
+  image?: string | null
+  // SEO fields (per language)
+  seoTitleEn?: string
+  seoTitleAr?: string
+  seoDescriptionEn?: string
+  seoDescriptionAr?: string
+  seoKeywordsEn?: string
+  seoKeywordsAr?: string
+  ogTitleEn?: string
+  ogTitleAr?: string
+  ogDescriptionEn?: string
+  ogDescriptionAr?: string
+  ogImageEn?: string
+  ogImageAr?: string
+}
+
+export interface TranslationWithSEO {
+  lang: string
+  name: string
+  description?: string | null
+  metaTitle?: string | null
+  metaDescription?: string | null
+  metaKeywords?: string | null
+  ogTitle?: string | null
+  ogDescription?: string | null
+  ogImage?: string | null
 }
 
 export interface BrandListItem {
@@ -250,6 +296,7 @@ export interface BrandListItem {
   createdAt: string
   updatedAt: string
   translations: Record<string, string>
+  translationsRaw?: TranslationWithSEO[]
 }
 
 export interface BrandListResponse {
@@ -265,5 +312,20 @@ export interface BrandListResponse {
 export interface BrandEditorValues {
   nameEn: string
   nameAr?: string
+  descriptionEn?: string
+  descriptionAr?: string
   logo?: string | null
+  // SEO fields (per language)
+  seoTitleEn?: string
+  seoTitleAr?: string
+  seoDescriptionEn?: string
+  seoDescriptionAr?: string
+  seoKeywordsEn?: string
+  seoKeywordsAr?: string
+  ogTitleEn?: string
+  ogTitleAr?: string
+  ogDescriptionEn?: string
+  ogDescriptionAr?: string
+  ogImageEn?: string
+  ogImageAr?: string
 }

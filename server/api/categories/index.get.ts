@@ -3,7 +3,6 @@ import { z } from 'zod'
 
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
-import { getLocalizedString } from '../products/utils'
 import { buildCategoryTree } from '../../utils/categories'
 import type { CategoryRecord } from '../../utils/categories'
 
@@ -19,10 +18,22 @@ export default eventHandler(async (event) => {
   const categories = await prisma.category.findMany({
     select: {
       id: true,
-      name: true,
       slug: true,
       parentId: true,
       createdAt: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true,
+          description: true,
+          metaTitle: true,
+          metaDescription: true,
+          metaKeywords: true,
+          ogTitle: true,
+          ogDescription: true,
+          ogImage: true
+        }
+      },
       _count: {
         select: {
           products: true,
@@ -33,10 +44,34 @@ export default eventHandler(async (event) => {
     orderBy: [{ createdAt: 'asc' }]
   })
 
+  // Transform to the expected format
+  const normalized = categories.map((category) => {
+    const enTranslation = category.translations.find(t => t.lang === 'EN')
+    const arTranslation = category.translations.find(t => t.lang === 'AR')
+
+    return {
+      id: category.id,
+      slug: category.slug,
+      parentId: category.parentId,
+      createdAt: category.createdAt,
+      _count: category._count,
+      name: {
+        en: enTranslation?.name ?? category.slug,
+        ar: arTranslation?.name ?? ''
+      },
+      translations: category.translations
+    }
+  })
+
   const tree = buildCategoryTree(
-    categories as unknown as CategoryRecord[],
+    normalized as unknown as CategoryRecord[],
     query.includeProductCounts,
-    (value, slug) => getLocalizedString(value) || slug
+    (value, slug) => {
+      if (typeof value === 'object' && value !== null) {
+        return (value as Record<string, string>).en || slug
+      }
+      return slug
+    }
   )
 
   return {

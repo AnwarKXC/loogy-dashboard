@@ -9,7 +9,14 @@ const productInclude = {
       lang: true,
       name: true,
       description: true,
-      shortDescription: true
+      shortDescription: true,
+      // SEO fields
+      metaTitle: true,
+      metaDescription: true,
+      metaKeywords: true,
+      ogTitle: true,
+      ogDescription: true,
+      ogImage: true
     }
   },
   category: {
@@ -19,7 +26,14 @@ const productInclude = {
       translations: {
         select: {
           lang: true,
-          name: true
+          name: true,
+          // SEO fields
+          metaTitle: true,
+          metaDescription: true,
+          metaKeywords: true,
+          ogTitle: true,
+          ogDescription: true,
+          ogImage: true
         }
       }
     }
@@ -31,7 +45,14 @@ const productInclude = {
       translations: {
         select: {
           lang: true,
-          name: true
+          name: true,
+          // SEO fields
+          metaTitle: true,
+          metaDescription: true,
+          metaKeywords: true,
+          ogTitle: true,
+          ogDescription: true,
+          ogImage: true
         }
       }
     }
@@ -50,9 +71,20 @@ export function getProductInclude() {
   return productInclude
 }
 
-export function getPreferredTranslation<T extends { lang: string, name?: string | null, description?: string | null, shortDescription?: string | null }>(
+export function getPreferredTranslation<T extends {
+  lang: string
+  name?: string | null
+  description?: string | null
+  shortDescription?: string | null
+  metaTitle?: string | null
+  metaDescription?: string | null
+  metaKeywords?: string | null
+  ogTitle?: string | null
+  ogDescription?: string | null
+  ogImage?: string | null
+}>(
   translations: T[] | null | undefined,
-  field: 'name' | 'description' | 'shortDescription',
+  field: keyof Omit<T, 'lang'>,
   preferred: string[] = ['en', 'ar']
 ): string {
   if (!translations || translations.length === 0) return ''
@@ -69,6 +101,49 @@ export function getPreferredTranslation<T extends { lang: string, name?: string 
   }
 
   return ''
+}
+
+export interface SEOData {
+  title: string
+  description: string
+  keywords: string | null
+  ogTitle: string | null
+  ogDescription: string | null
+  ogImage: string | null
+}
+
+export function getProductSEO<T extends {
+  lang: string
+  name?: string | null
+  shortDescription?: string | null
+  metaTitle?: string | null
+  metaDescription?: string | null
+  metaKeywords?: string | null
+  ogTitle?: string | null
+  ogDescription?: string | null
+  ogImage?: string | null
+}>(
+  translations: T[] | null | undefined,
+  fallbackName: string,
+  fallbackDescription: string,
+  productImage?: string | null,
+  preferred: string[] = ['en', 'ar']
+): SEOData {
+  const metaTitle = getPreferredTranslation(translations, 'metaTitle', preferred)
+  const metaDescription = getPreferredTranslation(translations, 'metaDescription', preferred)
+  const metaKeywords = getPreferredTranslation(translations, 'metaKeywords', preferred)
+  const ogTitle = getPreferredTranslation(translations, 'ogTitle', preferred)
+  const ogDescription = getPreferredTranslation(translations, 'ogDescription', preferred)
+  const ogImage = getPreferredTranslation(translations, 'ogImage', preferred)
+
+  return {
+    title: metaTitle || fallbackName,
+    description: metaDescription || fallbackDescription,
+    keywords: metaKeywords || null,
+    ogTitle: ogTitle || metaTitle || fallbackName || null,
+    ogDescription: ogDescription || metaDescription || fallbackDescription || null,
+    ogImage: ogImage || productImage || null
+  }
 }
 
 export function getLocalizedString(value: unknown, preferred: string[] = ['en', 'ar']): string {
@@ -158,12 +233,20 @@ export function mapProductToListItem(product: ProductWithRelations) {
 
 export function mapProductToDetail(product: ProductWithRelations) {
   const listItem = mapProductToListItem(product)
+  const shortDescription = getPreferredTranslation(product.translations, 'shortDescription')
+  const description = getPreferredTranslation(product.translations, 'description')
 
   return {
     ...listItem,
     images: product.images,
-    description: getPreferredTranslation(product.translations, 'description'),
-    shortDescription: getPreferredTranslation(product.translations, 'shortDescription'),
+    description,
+    shortDescription,
+    seo: getProductSEO(
+      product.translations,
+      listItem.name,
+      shortDescription || description,
+      product.images[0] ?? null
+    ),
     raw: {
       translations: product.translations
     }

@@ -34,7 +34,22 @@ const updateProductSchema = z.object({
   salePrice: optionalNullableNumberSchema,
   quantity: z.coerce.number().int().min(0).optional(),
   categoryId: optionalIdSchema,
-  brandId: optionalIdSchema
+  brandId: optionalIdSchema,
+  descriptionEn: z.string().trim().optional(),
+  descriptionAr: z.string().trim().optional(),
+  shortDescriptionEn: z.string().trim().optional(),
+  shortDescriptionAr: z.string().trim().optional(),
+  // Bilingual SEO fields
+  seoTitleEn: z.string().trim().max(70).optional(),
+  seoTitleAr: z.string().trim().max(70).optional(),
+  seoDescriptionEn: z.string().trim().max(160).optional(),
+  seoDescriptionAr: z.string().trim().max(160).optional(),
+  seoKeywordsEn: z.string().trim().max(255).optional(),
+  seoKeywordsAr: z.string().trim().max(255).optional(),
+  ogTitleEn: z.string().trim().max(70).optional(),
+  ogTitleAr: z.string().trim().max(70).optional(),
+  ogDescriptionEn: z.string().trim().max(200).optional(),
+  ogDescriptionAr: z.string().trim().max(200).optional()
 }).refine(data => Object.keys(data).length > 0, {
   message: 'No updates provided'
 })
@@ -131,13 +146,95 @@ export default eventHandler(async (event) => {
     data.discountPercentage = null
   }
 
+  // Update product first
   const product = await prisma.product.update({
     where: { id: params.id },
     data,
     include: getProductInclude()
   })
 
+  // Upsert translations for bilingual SEO
+  const hasEnTranslation = payload.nameEn !== undefined || payload.descriptionEn !== undefined
+    || payload.shortDescriptionEn !== undefined || payload.seoTitleEn !== undefined
+    || payload.seoDescriptionEn !== undefined || payload.seoKeywordsEn !== undefined
+    || payload.ogTitleEn !== undefined || payload.ogDescriptionEn !== undefined
+
+  const hasArTranslation = payload.nameAr !== undefined || payload.descriptionAr !== undefined
+    || payload.shortDescriptionAr !== undefined || payload.seoTitleAr !== undefined
+    || payload.seoDescriptionAr !== undefined || payload.seoKeywordsAr !== undefined
+    || payload.ogTitleAr !== undefined || payload.ogDescriptionAr !== undefined
+
+  if (hasEnTranslation) {
+    const existingEnTrans = await prisma.productTranslation.findUnique({
+      where: { productId_lang: { productId: params.id, lang: 'EN' } }
+    })
+
+    await prisma.productTranslation.upsert({
+      where: { productId_lang: { productId: params.id, lang: 'EN' } },
+      create: {
+        productId: params.id,
+        lang: 'EN',
+        name: payload.nameEn || (existing.name as Record<string, string>).en || '',
+        shortDescription: payload.shortDescriptionEn || null,
+        description: payload.descriptionEn || null,
+        metaTitle: payload.seoTitleEn || null,
+        metaDescription: payload.seoDescriptionEn || null,
+        metaKeywords: payload.seoKeywordsEn || null,
+        ogTitle: payload.ogTitleEn || null,
+        ogDescription: payload.ogDescriptionEn || null
+      },
+      update: {
+        name: payload.nameEn ?? existingEnTrans?.name ?? '',
+        shortDescription: payload.shortDescriptionEn !== undefined ? (payload.shortDescriptionEn || null) : existingEnTrans?.shortDescription,
+        description: payload.descriptionEn !== undefined ? (payload.descriptionEn || null) : existingEnTrans?.description,
+        metaTitle: payload.seoTitleEn !== undefined ? (payload.seoTitleEn || null) : existingEnTrans?.metaTitle,
+        metaDescription: payload.seoDescriptionEn !== undefined ? (payload.seoDescriptionEn || null) : existingEnTrans?.metaDescription,
+        metaKeywords: payload.seoKeywordsEn !== undefined ? (payload.seoKeywordsEn || null) : existingEnTrans?.metaKeywords,
+        ogTitle: payload.ogTitleEn !== undefined ? (payload.ogTitleEn || null) : existingEnTrans?.ogTitle,
+        ogDescription: payload.ogDescriptionEn !== undefined ? (payload.ogDescriptionEn || null) : existingEnTrans?.ogDescription
+      }
+    })
+  }
+
+  if (hasArTranslation) {
+    const existingArTrans = await prisma.productTranslation.findUnique({
+      where: { productId_lang: { productId: params.id, lang: 'AR' } }
+    })
+
+    await prisma.productTranslation.upsert({
+      where: { productId_lang: { productId: params.id, lang: 'AR' } },
+      create: {
+        productId: params.id,
+        lang: 'AR',
+        name: payload.nameAr || (existing.name as Record<string, string>).ar || payload.nameEn || (existing.name as Record<string, string>).en || '',
+        shortDescription: payload.shortDescriptionAr || null,
+        description: payload.descriptionAr || null,
+        metaTitle: payload.seoTitleAr || null,
+        metaDescription: payload.seoDescriptionAr || null,
+        metaKeywords: payload.seoKeywordsAr || null,
+        ogTitle: payload.ogTitleAr || null,
+        ogDescription: payload.ogDescriptionAr || null
+      },
+      update: {
+        name: payload.nameAr ?? existingArTrans?.name ?? '',
+        shortDescription: payload.shortDescriptionAr !== undefined ? (payload.shortDescriptionAr || null) : existingArTrans?.shortDescription,
+        description: payload.descriptionAr !== undefined ? (payload.descriptionAr || null) : existingArTrans?.description,
+        metaTitle: payload.seoTitleAr !== undefined ? (payload.seoTitleAr || null) : existingArTrans?.metaTitle,
+        metaDescription: payload.seoDescriptionAr !== undefined ? (payload.seoDescriptionAr || null) : existingArTrans?.metaDescription,
+        metaKeywords: payload.seoKeywordsAr !== undefined ? (payload.seoKeywordsAr || null) : existingArTrans?.metaKeywords,
+        ogTitle: payload.ogTitleAr !== undefined ? (payload.ogTitleAr || null) : existingArTrans?.ogTitle,
+        ogDescription: payload.ogDescriptionAr !== undefined ? (payload.ogDescriptionAr || null) : existingArTrans?.ogDescription
+      }
+    })
+  }
+
+  // Refetch with updated translations
+  const updatedProduct = await prisma.product.findUnique({
+    where: { id: params.id },
+    include: getProductInclude()
+  })
+
   return {
-    product: mapProductToDetail(product as unknown as ProductWithRelations)
+    product: mapProductToDetail(updatedProduct as unknown as ProductWithRelations)
   }
 })

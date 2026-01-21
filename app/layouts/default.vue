@@ -7,7 +7,7 @@ const toast = useToast()
 const open = ref(false)
 const adminBase = '/admin'
 
-const links = computed(() => [[{
+const links = computed<NavigationMenuItem[][]>(() => [[{
   label: 'Home',
   icon: 'i-lucide-house',
   to: adminBase,
@@ -49,7 +49,41 @@ const links = computed(() => [[{
   onSelect: () => {
     open.value = false
   }
-}, {
+},
+{
+  label: 'Pages',
+  icon: 'i-lucide-file-text',
+  type: 'trigger',
+  children: [
+    {
+      label: 'Storefront',
+      to: `${adminBase}/front`,
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Storefront Layout',
+      to: `${adminBase}/front/layout`,
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Storefront Categories',
+      to: `${adminBase}/front/categories`,
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: ' SEO',
+      to: `${adminBase}/front/seo`,
+      onSelect: () => {
+        open.value = false
+      }
+    }
+  ]
+},
+
+{
   label: 'Settings',
   to: `${adminBase}/settings`,
   icon: 'i-lucide-settings',

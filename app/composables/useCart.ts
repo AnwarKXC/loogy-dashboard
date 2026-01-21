@@ -12,32 +12,103 @@ export interface CartLine {
 
 export const useCart = () => {
   const lines = useState<CartLine[]>('cart:lines', () => [])
+  const initialized = useState<boolean>('cart:initialized', () => false)
+  const loading = useState<boolean>('cart:loading', () => false)
 
-  const add = (line: CartLine) => {
-    const existing = lines.value.find(l => l.productId === line.productId && l.variantId === line.variantId)
-    if (existing) {
-      existing.quantity += line.quantity
-      return
+  const refresh = async () => {
+    if (loading.value) return
+    loading.value = true
+    try {
+      const response = await $fetch<{ items: Array<{
+        productId: number
+        variantId?: number | null
+        quantity: number
+        name: string
+        price: number
+        image?: string | null
+      }>; subtotal: number }>('/api/public/cart')
+
+      lines.value = (response.items || []).map(item => ({
+        title: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image ?? undefined,
+        productId: item.productId,
+        variantId: item.variantId ?? undefined
+      }))
+    } finally {
+      loading.value = false
     }
-    lines.value.push(line)
   }
 
-  const updateQty = (productId: CartLine['productId'], variantId: CartLine['variantId'], quantity: number) => {
-    const target = lines.value.find(l => l.productId === productId && l.variantId === variantId)
-    if (target) {
-      target.quantity = Math.max(1, quantity)
+  if (import.meta.client && !initialized.value) {
+    initialized.value = true
+    refresh()
+  }
+
+  const add = async (line: CartLine) => {
+    if (!line.productId) return
+
+    await $fetch('/api/public/cart', {
+      method: 'POST',
+      body: {
+        productId: Number(line.productId),
+        variantId: line.variantId ? Number(line.variantId) : undefined,
+        quantity: line.quantity || 1
+      }
+    })
+
+    await refresh()
+  }
+
+  const updateQty = async (productId: CartLine['productId'], variantId: CartLine['variantId'], quantity: number) => {
+    if (!productId) return
+
+    await $fetch('/api/public/cart', {
+      method: 'PATCH',
+      body: {
+        productId: Number(productId),
+        variantId: variantId ? Number(variantId) : undefined,
+        quantity: Math.max(1, quantity)
+      }
+    })
+
+    await refresh()
+  }
+
+  const remove = async (productId: CartLine['productId'], variantId: CartLine['variantId']) => {
+    if (!productId) return
+
+    await $fetch('/api/public/cart', {
+      method: 'DELETE',
+      body: {
+        productId: Number(productId),
+        variantId: variantId ? Number(variantId) : undefined
+      }
+    })
+
+    await refresh()
+  }
+
+  const clear = async () => {
+    const items = [...lines.value]
+
+    for (const item of items) {
+      if (!item.productId) continue
+
+      await $fetch('/api/public/cart', {
+        method: 'DELETE',
+        body: {
+          productId: Number(item.productId),
+          variantId: item.variantId ? Number(item.variantId) : undefined
+        }
+      })
     }
-  }
 
-  const remove = (productId: CartLine['productId'], variantId: CartLine['variantId']) => {
-    lines.value = lines.value.filter(l => l.productId !== productId || l.variantId !== variantId)
-  }
-
-  const clear = () => {
-    lines.value = []
+    await refresh()
   }
 
   const subtotal = computed(() => lines.value.reduce((sum, line) => sum + line.price * line.quantity, 0))
 
-  return { lines, add, updateQty, remove, clear, subtotal }
+  return { lines, add, updateQty, remove, clear, subtotal, refresh, loading }
 }

@@ -30,10 +30,27 @@ const editInitialValues = computed<Partial<CategoryEditorValues>>(() => {
     return {}
   }
 
+  const category = selectedCategory.value
+  const enTranslation = category.translationsRaw?.find(t => t.lang === 'EN')
+  const arTranslation = category.translationsRaw?.find(t => t.lang === 'AR')
+
   return {
-    nameEn: selectedCategory.value.translations.en ?? selectedCategory.value.name,
-    nameAr: selectedCategory.value.translations.ar ?? '',
-    parentId: selectedCategory.value.parentId
+    nameEn: enTranslation?.name ?? category.translations.en ?? category.name,
+    nameAr: arTranslation?.name ?? category.translations.ar ?? '',
+    descriptionEn: enTranslation?.description ?? undefined,
+    descriptionAr: arTranslation?.description ?? undefined,
+    parentId: category.parentId,
+    // SEO fields
+    seoTitleEn: enTranslation?.metaTitle ?? undefined,
+    seoTitleAr: arTranslation?.metaTitle ?? undefined,
+    seoDescriptionEn: enTranslation?.metaDescription ?? undefined,
+    seoDescriptionAr: arTranslation?.metaDescription ?? undefined,
+    seoKeywordsEn: enTranslation?.metaKeywords ?? undefined,
+    seoKeywordsAr: arTranslation?.metaKeywords ?? undefined,
+    ogTitleEn: enTranslation?.ogTitle ?? undefined,
+    ogTitleAr: arTranslation?.ogTitle ?? undefined,
+    ogDescriptionEn: enTranslation?.ogDescription ?? undefined,
+    ogDescriptionAr: arTranslation?.ogDescription ?? undefined
   }
 })
 

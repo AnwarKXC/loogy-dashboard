@@ -17,9 +17,9 @@ export default eventHandler(async (event) => {
 
   const startDate = subDays(startOfDay(new Date()), days)
 
-  // Get top selling products
+  // Get top selling products grouped by productId only
   const topProducts = await prisma.orderItem.groupBy({
-    by: ['productId', 'productName'],
+    by: ['productId'],
     where: {
       order: {
         createdAt: {
@@ -45,11 +45,34 @@ export default eventHandler(async (event) => {
     take: limit
   })
 
-  return topProducts.map(item => ({
-    productId: item.productId,
-    productName: item.productName,
-    totalQuantity: item._sum.quantity || 0,
-    totalRevenue: Number(item._sum.totalPrice || 0),
-    orderCount: item._count.id
-  }))
+  // Fetch product names for the top products
+  const productIds = topProducts.map(item => item.productId)
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      slug: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true
+        }
+      }
+    }
+  })
+
+  const productMap = new Map(products.map(p => [p.id, p]))
+
+  return topProducts.map((item) => {
+    const product = productMap.get(item.productId)
+    const productName = product?.translations?.[0]?.name ?? product?.slug ?? `Product #${item.productId}`
+
+    return {
+      productId: item.productId,
+      productName,
+      totalQuantity: item._sum.quantity || 0,
+      totalRevenue: Number(item._sum.totalPrice || 0),
+      orderCount: item._count.id
+    }
+  })
 })

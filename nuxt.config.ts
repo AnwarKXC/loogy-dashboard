@@ -6,7 +6,9 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/ui',
     '@vueuse/nuxt',
-    'motion-v/nuxt'
+    'motion-v/nuxt',
+    '@nuxtjs/i18n'
+
   ],
 
   devtools: {
@@ -31,9 +33,7 @@ export default defineNuxtConfig({
         target: 'esnext'
       }
     }
-
   },
-
   eslint: {
     config: {
       stylistic: {
@@ -41,5 +41,30 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+  i18n: {
+    locales: [
+      {
+        code: 'en',
+        name: 'English',
+        dir: 'ltr',
+        file: 'en.json'
+      },
+      {
+        code: 'ar',
+        name: 'العربية',
+        dir: 'rtl',
+        file: 'ar.json'
+      }
+    ],
+    langDir: 'locales',
+    defaultLocale: 'en',
+    strategy: 'no_prefix',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_locale',
+      redirectOn: 'root'
+    },
+    vueI18n: './i18n.config.ts'
   }
 })

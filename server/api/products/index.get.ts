@@ -20,8 +20,8 @@ const querySchema = z.object({
   categoryId: z.coerce.number().int().positive().optional(),
   brandId: z.coerce.number().int().positive().optional(),
   sort: z.enum(['newest', 'oldest', 'price-asc', 'price-desc', 'stock-asc', 'stock-desc']).catch('newest'),
-  includeFilters: z.coerce.boolean().catch(false),
-  includeArchived: z.coerce.boolean().catch(false)
+  includeFilters: z.string().transform(val => val === 'true').catch(false),
+  onlyArchived: z.string().transform(val => val === 'true').catch(false)
 })
 
 type SortKey = z.infer<typeof querySchema>['sort']
@@ -33,8 +33,9 @@ export default eventHandler(async (event) => {
 
   const whereClauses: Prisma.ProductWhereInput[] = []
 
-  if (!query.includeArchived) {
-    whereClauses.push({ isArchived: false } as Prisma.ProductWhereInput)
+  // Filter by archived status: show only archived when onlyArchived is true, otherwise show all products
+  if (query.onlyArchived === true) {
+    whereClauses.push({ isArchived: true } as Prisma.ProductWhereInput)
   }
 
   if (query.search) {

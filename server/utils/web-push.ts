@@ -1,4 +1,3 @@
-import webpush from 'web-push'
 import prisma from '../db'
 
 const vapidKeys = {
@@ -6,23 +5,7 @@ const vapidKeys = {
   privateKey: process.env.VAPID_PRIVATE_KEY || 'Py7GHvUYu319VK3Sd--ME7rTxypPwSeCxsm1N4htjMo'
 }
 
-webpush.setVapidDetails(
-  'mailto:admin@example.com',
-  vapidKeys.publicKey,
-  vapidKeys.privateKey
-)
-
 export const getVapidPublicKey = () => vapidKeys.publicKey
-
-export const sendPushNotification = async (subscription: any, payload: any) => {
-  try {
-    await webpush.sendNotification(subscription, JSON.stringify(payload))
-    return true
-  } catch (error) {
-    console.error('Error sending push notification:', error)
-    return false
-  }
-}
 
 export const notifyAdmins = async (title: string, body: string, url?: string, type: 'ORDER' | 'MESSAGE' = 'ORDER') => {
   try {

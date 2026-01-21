@@ -58,6 +58,23 @@ export function mapProductDetailToEditorValues(product: ProductDetail): ProductE
   const seoKeywordsSource = seoRecord?.keywords ?? normalizedSeo?.keywords ?? product.seoKeywords
   const seoKeywords = toStringArray(seoKeywordsSource)
 
+  // Extract bilingual SEO from translations
+  const translations = (product as unknown as { translationsRaw?: Array<{
+    lang: string
+    name: string
+    shortDescription?: string | null
+    description?: string | null
+    metaTitle?: string | null
+    metaDescription?: string | null
+    metaKeywords?: string | null
+    ogTitle?: string | null
+    ogDescription?: string | null
+    ogImage?: string | null
+  }> }).translationsRaw ?? []
+
+  const enTrans = translations.find(t => t.lang === 'EN')
+  const arTrans = translations.find(t => t.lang === 'AR')
+
   return {
     nameEn,
     nameAr,
@@ -77,6 +94,18 @@ export function mapProductDetailToEditorValues(product: ProductDetail): ProductE
     seoTitle,
     seoDescription,
     seoCanonical,
-    seoKeywords
+    seoKeywords,
+    // Bilingual SEO from translations
+    seoTitleEn: enTrans?.metaTitle ?? '',
+    seoTitleAr: arTrans?.metaTitle ?? '',
+    seoDescriptionEn: enTrans?.metaDescription ?? '',
+    seoDescriptionAr: arTrans?.metaDescription ?? '',
+    seoKeywordsEn: enTrans?.metaKeywords ?? '',
+    seoKeywordsAr: arTrans?.metaKeywords ?? '',
+    ogTitleEn: enTrans?.ogTitle ?? '',
+    ogTitleAr: arTrans?.ogTitle ?? '',
+    ogDescriptionEn: enTrans?.ogDescription ?? '',
+    ogDescriptionAr: arTrans?.ogDescription ?? '',
+    translationsRaw: translations
   }
 }

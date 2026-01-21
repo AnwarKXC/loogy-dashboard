@@ -3,13 +3,29 @@ import { z } from 'zod'
 
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
-import { getLocalizedString } from '../products/utils'
-import { createCategoryName, generateUniqueCategorySlug } from '../../utils/categories'
+import { generateUniqueCategorySlug } from '../../utils/categories'
+
+const MAX_SEO_TITLE_LENGTH = 70
+const MAX_SEO_DESCRIPTION_LENGTH = 160
 
 const updateCategorySchema = z.object({
   nameEn: z.string().trim().min(1, 'Category name (English) is required').optional(),
   nameAr: z.string().trim().optional(),
-  parentId: z.coerce.number().int().positive().optional().nullable()
+  descriptionEn: z.string().trim().optional(),
+  descriptionAr: z.string().trim().optional(),
+  parentId: z.coerce.number().int().positive().optional().nullable(),
+  image: z.string().url().optional().nullable(),
+  // SEO fields
+  seoTitleEn: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  seoTitleAr: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  seoDescriptionEn: z.string().trim().max(MAX_SEO_DESCRIPTION_LENGTH).optional(),
+  seoDescriptionAr: z.string().trim().max(MAX_SEO_DESCRIPTION_LENGTH).optional(),
+  seoKeywordsEn: z.string().trim().optional(),
+  seoKeywordsAr: z.string().trim().optional(),
+  ogTitleEn: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  ogTitleAr: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  ogDescriptionEn: z.string().trim().max(200).optional(),
+  ogDescriptionAr: z.string().trim().max(200).optional()
 })
 
 async function assertValidParent(categoryId: number, parentId: number | null) {
@@ -53,11 +69,8 @@ export default eventHandler(async (event) => {
 
   const existing = await prisma.category.findUnique({
     where: { id: categoryId },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      parentId: true
+    include: {
+      translations: true
     }
   })
 
@@ -72,37 +85,93 @@ export default eventHandler(async (event) => {
     await assertValidParent(categoryId, payload.parentId ?? null)
   }
 
-  const existingName = existing.name as Record<string, unknown>
+  const existingEn = existing.translations.find(t => t.lang === 'EN')
+  const existingAr = existing.translations.find(t => t.lang === 'AR')
 
-  const nextNameEn = payload.nameEn ?? (typeof existingName.en === 'string' ? existingName.en : existing.slug)
+  const nextNameEn = payload.nameEn ?? existingEn?.name ?? existing.slug
   if (!nextNameEn || nextNameEn.trim().length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Category name (English) is required' })
   }
 
-  const nextNameAr = payload.nameAr !== undefined
-    ? payload.nameAr
-    : typeof existingName.ar === 'string'
-      ? existingName.ar
-      : undefined
-
   const slugSource = payload.nameEn ?? existing.slug
   const slug = await generateUniqueCategorySlug(slugSource, categoryId)
 
+  // Update category
   const updated = await prisma.category.update({
     where: { id: categoryId },
     data: {
-      name: createCategoryName(nextNameEn, nextNameAr),
       slug,
       parentId: payload.parentId !== undefined ? payload.parentId ?? null : existing.parentId
     }
   })
+
+  // Upsert English translation
+  await prisma.categoryTranslation.upsert({
+    where: { categoryId_lang: { categoryId, lang: 'EN' } },
+    update: {
+      name: nextNameEn,
+      description: payload.descriptionEn ?? existingEn?.description,
+      metaTitle: payload.seoTitleEn ?? existingEn?.metaTitle,
+      metaDescription: payload.seoDescriptionEn ?? existingEn?.metaDescription,
+      metaKeywords: payload.seoKeywordsEn ?? existingEn?.metaKeywords,
+      ogTitle: payload.ogTitleEn ?? existingEn?.ogTitle,
+      ogDescription: payload.ogDescriptionEn ?? existingEn?.ogDescription
+    },
+    create: {
+      categoryId,
+      lang: 'EN',
+      name: nextNameEn,
+      description: payload.descriptionEn ?? null,
+      metaTitle: payload.seoTitleEn ?? null,
+      metaDescription: payload.seoDescriptionEn ?? null,
+      metaKeywords: payload.seoKeywordsEn ?? null,
+      ogTitle: payload.ogTitleEn ?? null,
+      ogDescription: payload.ogDescriptionEn ?? null
+    }
+  })
+
+  // Upsert Arabic translation if provided
+  const nextNameAr = payload.nameAr ?? existingAr?.name
+  if (nextNameAr) {
+    await prisma.categoryTranslation.upsert({
+      where: { categoryId_lang: { categoryId, lang: 'AR' } },
+      update: {
+        name: nextNameAr,
+        description: payload.descriptionAr ?? existingAr?.description,
+        metaTitle: payload.seoTitleAr ?? existingAr?.metaTitle,
+        metaDescription: payload.seoDescriptionAr ?? existingAr?.metaDescription,
+        metaKeywords: payload.seoKeywordsAr ?? existingAr?.metaKeywords,
+        ogTitle: payload.ogTitleAr ?? existingAr?.ogTitle,
+        ogDescription: payload.ogDescriptionAr ?? existingAr?.ogDescription
+      },
+      create: {
+        categoryId,
+        lang: 'AR',
+        name: nextNameAr,
+        description: payload.descriptionAr ?? null,
+        metaTitle: payload.seoTitleAr ?? null,
+        metaDescription: payload.seoDescriptionAr ?? null,
+        metaKeywords: payload.seoKeywordsAr ?? null,
+        ogTitle: payload.ogTitleAr ?? null,
+        ogDescription: payload.ogDescriptionAr ?? null
+      }
+    })
+  }
+
+  // Fetch updated translations
+  const translations = await prisma.categoryTranslation.findMany({
+    where: { categoryId }
+  })
+
+  const enTranslation = translations.find(t => t.lang === 'EN')
 
   return {
     category: {
       id: updated.id,
       slug: updated.slug,
       parentId: updated.parentId,
-      name: getLocalizedString(updated.name) || updated.slug
+      name: enTranslation?.name ?? updated.slug,
+      translations
     }
   }
 })

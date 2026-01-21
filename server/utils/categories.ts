@@ -1,11 +1,24 @@
 import prisma from '../db'
 
+export interface TranslationWithSEO {
+  lang: string
+  name: string
+  description?: string | null
+  metaTitle?: string | null
+  metaDescription?: string | null
+  metaKeywords?: string | null
+  ogTitle?: string | null
+  ogDescription?: string | null
+  ogImage?: string | null
+}
+
 export type CategoryRecord = {
   id: number
-  name: unknown
+  name?: unknown
   slug: string
   parentId: number | null
   createdAt: Date
+  translations?: TranslationWithSEO[]
   _count: {
     products: number
     children: number
@@ -20,6 +33,7 @@ export type CategoryNode = {
   productCount: number
   childCount: number
   translations: Record<string, string>
+  translationsRaw?: TranslationWithSEO[]
   children: CategoryNode[]
 }
 
@@ -31,16 +45,23 @@ export function buildCategoryTree(
   const nodes = new Map<number, CategoryNode>()
 
   for (const record of records) {
-    const translations = normalizeTranslations(record.name)
+    const translations = record.translations
+      ? Object.fromEntries(record.translations.map(t => [t.lang.toLowerCase(), t.name]))
+      : normalizeTranslations(record.name)
+
+    const name = record.translations?.find(t => t.lang === 'EN')?.name
+      ?? getLocalizedName(record.name, record.slug)
+      ?? record.slug
 
     nodes.set(record.id, {
       id: record.id,
-      name: getLocalizedName(record.name, record.slug) || record.slug,
+      name,
       slug: record.slug,
       parentId: record.parentId,
       productCount: includeProductCounts ? record._count.products : 0,
       childCount: record._count.children,
       translations,
+      translationsRaw: record.translations,
       children: []
     })
   }

@@ -16,6 +16,20 @@ const productInclude = {
       name: true,
       slug: true
     }
+  },
+  translations: {
+    select: {
+      lang: true,
+      name: true,
+      shortDescription: true,
+      description: true,
+      metaTitle: true,
+      metaDescription: true,
+      metaKeywords: true,
+      ogTitle: true,
+      ogDescription: true,
+      ogImage: true
+    }
   }
 } satisfies Prisma.ProductInclude
 
@@ -116,6 +130,20 @@ export function mapProductToDetail(product: ProductWithRelations) {
 
   const seo = parseSeoMetadata(product.seo)
 
+  // Get translations for bilingual SEO
+  const translations = (product as unknown as { translations?: Array<{
+    lang: string
+    name: string
+    shortDescription?: string | null
+    description?: string | null
+    metaTitle?: string | null
+    metaDescription?: string | null
+    metaKeywords?: string | null
+    ogTitle?: string | null
+    ogDescription?: string | null
+    ogImage?: string | null
+  }> }).translations ?? []
+
   return {
     ...listItem,
     images: product.images,
@@ -126,6 +154,7 @@ export function mapProductToDetail(product: ProductWithRelations) {
     seoCanonical: seo?.canonical ?? null,
     seoKeywords: seo?.keywords ?? [],
     seo,
+    translationsRaw: translations,
     raw: {
       name: product.name,
       description: product.description,

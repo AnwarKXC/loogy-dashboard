@@ -14,7 +14,22 @@ const createProductSchema = z.object({
   salePrice: z.coerce.number().min(0).optional().nullable(),
   quantity: z.coerce.number().int().min(0, 'Quantity must be positive'),
   categoryId: z.coerce.number().int().positive().optional().nullable(),
-  brandId: z.coerce.number().int().positive().optional().nullable()
+  brandId: z.coerce.number().int().positive().optional().nullable(),
+  descriptionEn: z.string().trim().optional(),
+  descriptionAr: z.string().trim().optional(),
+  shortDescriptionEn: z.string().trim().optional(),
+  shortDescriptionAr: z.string().trim().optional(),
+  // Bilingual SEO fields
+  seoTitleEn: z.string().trim().max(70).optional(),
+  seoTitleAr: z.string().trim().max(70).optional(),
+  seoDescriptionEn: z.string().trim().max(160).optional(),
+  seoDescriptionAr: z.string().trim().max(160).optional(),
+  seoKeywordsEn: z.string().trim().max(255).optional(),
+  seoKeywordsAr: z.string().trim().max(255).optional(),
+  ogTitleEn: z.string().trim().max(70).optional(),
+  ogTitleAr: z.string().trim().max(70).optional(),
+  ogDescriptionEn: z.string().trim().max(200).optional(),
+  ogDescriptionAr: z.string().trim().max(200).optional()
 }).superRefine((data, ctx) => {
   if (data.salePrice != null && data.salePrice > data.price) {
     ctx.addIssue({
@@ -97,7 +112,35 @@ export default eventHandler(async (event) => {
       stock: null,
       rating: null,
       categoryId: payload.categoryId ?? undefined,
-      brandId: payload.brandId ?? undefined
+      brandId: payload.brandId ?? undefined,
+      translations: {
+        createMany: {
+          data: [
+            {
+              lang: 'EN',
+              name: payload.nameEn,
+              shortDescription: payload.shortDescriptionEn || null,
+              description: payload.descriptionEn || null,
+              metaTitle: payload.seoTitleEn || null,
+              metaDescription: payload.seoDescriptionEn || null,
+              metaKeywords: payload.seoKeywordsEn || null,
+              ogTitle: payload.ogTitleEn || null,
+              ogDescription: payload.ogDescriptionEn || null
+            },
+            {
+              lang: 'AR',
+              name: payload.nameAr || payload.nameEn,
+              shortDescription: payload.shortDescriptionAr || null,
+              description: payload.descriptionAr || null,
+              metaTitle: payload.seoTitleAr || null,
+              metaDescription: payload.seoDescriptionAr || null,
+              metaKeywords: payload.seoKeywordsAr || null,
+              ogTitle: payload.ogTitleAr || null,
+              ogDescription: payload.ogDescriptionAr || null
+            }
+          ]
+        }
+      }
     },
     include: getProductInclude()
   })

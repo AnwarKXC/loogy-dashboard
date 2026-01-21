@@ -35,7 +35,7 @@ const query = computed(() => ({
   brandId: brandId.value ?? undefined,
   sort: sort.value,
   includeFilters: false,
-  includeArchived: showArchived.value
+  onlyArchived: showArchived.value
 }))
 
 const { data, status, error, refresh } = await useFetch<ProductListResponse>('/api/products', {
@@ -210,7 +210,18 @@ const columns: TableColumn<ProductListItem>[] = [
           size: 'lg'
         }),
         h('div', undefined, [
-          h('p', { class: 'font-medium text-highlighted truncate max-w-[220px]' }, product.name || `Product #${product.id}`),
+          h(
+            'a',
+            {
+              href: `/admin/products/${product.id}`,
+              class: 'font-medium text-highlighted truncate max-w-[220px] hover:text-primary-500 hover:underline cursor-pointer',
+              onClick: (e: MouseEvent) => {
+                e.preventDefault()
+                navigateTo(`/admin/products/${product.id}`)
+              }
+            },
+            product.name || `Product #${product.id}`
+          ),
           h('p', { class: 'text-sm text-muted truncate max-w-[220px]' }, withFallback(product.category, 'Uncategorized'))
         ])
       ])
@@ -391,7 +402,7 @@ watch(archiveDialogOpen, (open) => {
           />
           <UCheckbox
             v-model="showArchived"
-            label="Show archived"
+            label="Archived only"
             class="pl-2"
           />
         </div>

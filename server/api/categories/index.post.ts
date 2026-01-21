@@ -3,13 +3,29 @@ import { z } from 'zod'
 
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
-import { getLocalizedString } from '../products/utils'
-import { createCategoryName, generateUniqueCategorySlug } from '../../utils/categories'
+import { generateUniqueCategorySlug } from '../../utils/categories'
+
+const MAX_SEO_TITLE_LENGTH = 70
+const MAX_SEO_DESCRIPTION_LENGTH = 160
 
 const createCategorySchema = z.object({
   nameEn: z.string().trim().min(1, 'Category name (English) is required'),
   nameAr: z.string().trim().optional(),
-  parentId: z.coerce.number().int().positive().optional().nullable()
+  descriptionEn: z.string().trim().optional(),
+  descriptionAr: z.string().trim().optional(),
+  parentId: z.coerce.number().int().positive().optional().nullable(),
+  image: z.string().url().optional().nullable(),
+  // SEO fields
+  seoTitleEn: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  seoTitleAr: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  seoDescriptionEn: z.string().trim().max(MAX_SEO_DESCRIPTION_LENGTH).optional(),
+  seoDescriptionAr: z.string().trim().max(MAX_SEO_DESCRIPTION_LENGTH).optional(),
+  seoKeywordsEn: z.string().trim().optional(),
+  seoKeywordsAr: z.string().trim().optional(),
+  ogTitleEn: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  ogTitleAr: z.string().trim().max(MAX_SEO_TITLE_LENGTH).optional(),
+  ogDescriptionEn: z.string().trim().max(200).optional(),
+  ogDescriptionAr: z.string().trim().max(200).optional()
 })
 
 export default eventHandler(async (event) => {
@@ -33,11 +49,43 @@ export default eventHandler(async (event) => {
 
   const category = await prisma.category.create({
     data: {
-      name: createCategoryName(payload.nameEn, payload.nameAr),
       slug,
-      parentId: payload.parentId ?? null
+      parentId: payload.parentId ?? null,
+      translations: {
+        createMany: {
+          data: [
+            {
+              lang: 'EN',
+              name: payload.nameEn,
+              description: payload.descriptionEn ?? null,
+              metaTitle: payload.seoTitleEn ?? null,
+              metaDescription: payload.seoDescriptionEn ?? null,
+              metaKeywords: payload.seoKeywordsEn ?? null,
+              ogTitle: payload.ogTitleEn ?? null,
+              ogDescription: payload.ogDescriptionEn ?? null
+            },
+            ...(payload.nameAr
+              ? [{
+                  lang: 'AR' as const,
+                  name: payload.nameAr,
+                  description: payload.descriptionAr ?? null,
+                  metaTitle: payload.seoTitleAr ?? null,
+                  metaDescription: payload.seoDescriptionAr ?? null,
+                  metaKeywords: payload.seoKeywordsAr ?? null,
+                  ogTitle: payload.ogTitleAr ?? null,
+                  ogDescription: payload.ogDescriptionAr ?? null
+                }]
+              : [])
+          ]
+        }
+      }
+    },
+    include: {
+      translations: true
     }
   })
+
+  const enTranslation = category.translations.find(t => t.lang === 'EN')
 
   setResponseStatus(event, 201)
 
@@ -46,7 +94,8 @@ export default eventHandler(async (event) => {
       id: category.id,
       slug: category.slug,
       parentId: category.parentId,
-      name: getLocalizedString(category.name) || category.slug
+      name: enTranslation?.name ?? category.slug,
+      translations: category.translations
     }
   }
 })

@@ -6,19 +6,29 @@ definePageMeta({
   layout: 'storefront'
 })
 
-const { data, pending, error } = await useFetch('/api/public/categories')
+const { data, pending, error } = await useFetch('/api/public/storefront/categories')
 
-const categories = computed(() => data.value?.categories || [])
+type CategoryNode = {
+  id: number
+  slug: string
+  name: string
+  depth?: number
+  image?: string | null
+  _count?: { products?: number }
+  children?: CategoryNode[]
+}
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const flattenCategories = (nodes: any[], depth = 0): any[] =>
+const categories = computed<CategoryNode[]>(() => data.value?.categories ?? [])
+const featured = computed<CategoryNode[]>(() => data.value?.featured ?? [])
+
+const flattenCategories = (nodes: CategoryNode[], depth = 0): CategoryNode[] =>
   nodes.flatMap(node => [
     { ...node, depth },
     ...(node.children?.length ? flattenCategories(node.children, depth + 1) : [])
   ])
 
 const flatCategories = computed(() => flattenCategories(categories.value))
-const topCategories = computed(() => flatCategories.value.slice(0, 8))
+const topCategories = computed(() => (featured.value.length ? featured.value : flatCategories.value.slice(0, 8)))
 </script>
 
 <template>
@@ -59,6 +69,9 @@ const topCategories = computed(() => flatCategories.value.slice(0, 8))
             :ui="{ body: 'space-y-2' }"
             class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-primary/60 transition"
           >
+            <div v-if="cat.image" class="aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
+              <img :src="cat.image" :alt="cat.name" class="w-full h-full object-cover">
+            </div>
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">

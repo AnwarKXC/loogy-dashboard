@@ -1,10 +1,12 @@
-import { eventHandler, getRouterParam, createError } from 'h3'
+import { eventHandler, getRouterParam, createError, getQuery } from 'h3'
 
 import prisma from '../../../db'
-import { getLocalizedString } from '../../../utils/products'
+import { getPreferredTranslation } from '../../../utils/products'
 
 export default eventHandler(async (event) => {
   const slug = getRouterParam(event, 'slug')
+  const query = getQuery(event)
+  const lang = (query.lang as string) || 'en'
 
   if (!slug) {
     throw createError({
@@ -17,9 +19,22 @@ export default eventHandler(async (event) => {
     where: { slug },
     select: {
       id: true,
-      name: true,
       slug: true,
       parentId: true,
+      image: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true,
+          description: true,
+          metaTitle: true,
+          metaDescription: true,
+          metaKeywords: true,
+          ogTitle: true,
+          ogDescription: true,
+          ogImage: true
+        }
+      },
       _count: {
         select: {
           products: true
@@ -35,11 +50,32 @@ export default eventHandler(async (event) => {
     })
   }
 
+  const preferred = [lang.toLowerCase(), 'en', 'ar']
+  const name = getPreferredTranslation(category.translations, 'name', preferred)
+  const description = getPreferredTranslation(category.translations, 'description', preferred)
+  const metaTitle = getPreferredTranslation(category.translations, 'metaTitle', preferred)
+  const metaDescription = getPreferredTranslation(category.translations, 'metaDescription', preferred)
+  const metaKeywords = getPreferredTranslation(category.translations, 'metaKeywords', preferred)
+  const ogTitle = getPreferredTranslation(category.translations, 'ogTitle', preferred)
+  const ogDescription = getPreferredTranslation(category.translations, 'ogDescription', preferred)
+  const ogImage = getPreferredTranslation(category.translations, 'ogImage', preferred)
+
   return {
     id: category.id,
-    name: getLocalizedString(category.name),
+    name,
+    description,
     slug: category.slug,
     parentId: category.parentId,
-    productCount: category._count.products
+    image: category.image,
+    productCount: category._count.products,
+    seo: {
+      title: metaTitle || name,
+      description: metaDescription || description,
+      keywords: metaKeywords || null,
+      ogTitle: ogTitle || metaTitle || name || null,
+      ogDescription: ogDescription || metaDescription || description || null,
+      ogImage: ogImage || category.image || null
+    },
+    translations: category.translations
   }
 })

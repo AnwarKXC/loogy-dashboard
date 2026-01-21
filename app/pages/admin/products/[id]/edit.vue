@@ -120,6 +120,16 @@ async function handleQuickBrandSubmit(values: BrandEditorValues) {
 
     <template #body>
       <div class="space-y-4">
+        <UTooltip text="Go back to product details">
+          <UButton
+            icon="fa7-solid:long-arrow-alt-left"
+            color="neutral"
+            variant="ghost"
+            size="xl"
+            :to="`/admin/products/${productId}`"
+            class="h-7 px-4 -mt-4 text-4xl"
+          />
+        </UTooltip>
         <UAlert
           v-if="productError"
           color="error"

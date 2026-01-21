@@ -56,10 +56,27 @@ const editInitialValues = computed<Partial<BrandEditorValues>>(() => {
     return {}
   }
 
+  const brand = selectedBrand.value
+  const enTranslation = brand.translationsRaw?.find(t => t.lang === 'EN')
+  const arTranslation = brand.translationsRaw?.find(t => t.lang === 'AR')
+
   return {
-    nameEn: selectedBrand.value.translations.en ?? selectedBrand.value.name,
-    nameAr: selectedBrand.value.translations.ar,
-    logo: selectedBrand.value.logo
+    nameEn: enTranslation?.name ?? brand.translations.en ?? brand.name,
+    nameAr: arTranslation?.name ?? brand.translations.ar,
+    descriptionEn: enTranslation?.description ?? undefined,
+    descriptionAr: arTranslation?.description ?? undefined,
+    logo: brand.logo,
+    // SEO fields
+    seoTitleEn: enTranslation?.metaTitle ?? undefined,
+    seoTitleAr: arTranslation?.metaTitle ?? undefined,
+    seoDescriptionEn: enTranslation?.metaDescription ?? undefined,
+    seoDescriptionAr: arTranslation?.metaDescription ?? undefined,
+    seoKeywordsEn: enTranslation?.metaKeywords ?? undefined,
+    seoKeywordsAr: arTranslation?.metaKeywords ?? undefined,
+    ogTitleEn: enTranslation?.ogTitle ?? undefined,
+    ogTitleAr: arTranslation?.ogTitle ?? undefined,
+    ogDescriptionEn: enTranslation?.ogDescription ?? undefined,
+    ogDescriptionAr: arTranslation?.ogDescription ?? undefined
   }
 })
 

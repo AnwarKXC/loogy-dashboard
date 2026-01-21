@@ -1,119 +1,174 @@
-// @ts-nocheck
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-
 definePageMeta({
   layout: 'storefront'
 })
 
-const { lines, updateQty, remove, subtotal } = useCart()
-const shipping = ref(80)
-const total = computed(() => subtotal.value + shipping.value)
+const fallbackImage = 'https://placehold.co/600x750/f3f4f6/171717?text=Product'
 
-const hasItems = computed(() => lines.value.length > 0)
+type CartItem = {
+  productId: number
+  variantId?: number | null
+  quantity: number
+  name: string
+  slug: string
+  price: number
+  salePrice?: number | null
+  image?: string | null
+}
 
-const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
+const { data, pending, refresh } = await useFetch<{ items: CartItem[], subtotal: number }>('/api/public/cart')
+
+const cartItems = computed<CartItem[]>(() => data.value?.items ?? [])
+const subtotal = computed(() => data.value?.subtotal ?? 0)
+
+const shipping = 15.00
+const total = computed(() => subtotal.value + shipping)
+
+const updateQuantity = async (item: { productId: number, variantId?: number | null, quantity: number }, nextQty: number) => {
+  if (nextQty < 1) return
+
+  await $fetch('/api/public/cart', {
+    method: 'PATCH',
+    body: {
+      productId: item.productId,
+      variantId: item.variantId ?? undefined,
+      quantity: nextQty
+    }
+  })
+
+  await refresh()
+}
+
+const removeItem = async (item: { productId: number, variantId?: number | null }) => {
+  await $fetch('/api/public/cart', {
+    method: 'DELETE',
+    body: {
+      productId: item.productId,
+      variantId: item.variantId ?? undefined
+    }
+  })
+
+  await refresh()
+}
 </script>
 
 <template>
-  <UContainer class="py-12 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8" dir="rtl">
-    <div class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          سلة التسوق
+  <div class="bg-neutral-50 text-neutral-900 font-sans min-h-screen flex flex-col">
+    <!-- Main Content -->
+    <main class="flex-grow pt-12 pb-24">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-5xl lg:text-7xl font-serif font-black uppercase leading-none mb-16">
+          Cart
         </h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          {{ lines.length }} منتج
-        </p>
-      </div>
 
-      <UCard v-if="!hasItems" class="text-center text-gray-500 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-        <div class="py-8 space-y-4">
-          <UIcon name="i-lucide-shopping-cart" class="size-16 mx-auto text-gray-300 dark:text-gray-600" />
-          <p class="text-lg">
-            لا توجد منتجات في السلة حالياً.
-          </p>
-          <UButton to="/products" color="primary" icon="i-lucide-shopping-bag">
-            ابدأ التسوق
-          </UButton>
-        </div>
-      </UCard>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
+          <!-- Cart Items List -->
+          <div class="lg:col-span-8">
+            <div v-if="cartItems.length > 0" class="space-y-8">
+              <div
+                v-for="item in cartItems"
+                :key="`${item.productId}-${item.variantId ?? 'default'}`"
+                class="flex flex-col sm:flex-row gap-6 pb-8 border-b border-neutral-200"
+              >
+                <!-- Image -->
+                <div class="w-full sm:w-32 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden shrink-0">
+                  <img :src="item.image || fallbackImage" class="w-full h-full object-cover" :alt="item.name">
+                </div>
 
-      <template v-else>
-        <UCard
-          v-for="item in lines"
-          :key="`${item.productId}-${item.variantId || 'default'}`"
-          class="flex items-center gap-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
-        >
-          <img
-            :src="item.image || 'https://images.unsplash.com/photo-1481277542470-605612bd2d61?w=400'"
-            :alt="item.title"
-            class="size-20 rounded-lg object-cover bg-gray-100 dark:bg-gray-700"
-            loading="lazy"
-          >
-          <div class="flex-1 space-y-1">
-            <p class="font-semibold text-gray-900 dark:text-gray-100">
-              {{ item.title }}
-            </p>
-            <p class="text-primary font-bold">
-              {{ formatPrice(item.price) }}
-            </p>
-            <div class="flex items-center gap-2">
-              <UButton
-                icon="i-lucide-minus"
-                size="xs"
-                variant="soft"
-                @click="updateQty(item.productId, item.variantId, Math.max(1, item.quantity - 1))"
-              />
-              <span class="w-8 text-center font-medium">{{ item.quantity }}</span>
-              <UButton
-                icon="i-lucide-plus"
-                size="xs"
-                variant="soft"
-                @click="updateQty(item.productId, item.variantId, item.quantity + 1)"
-              />
+                <!-- Details -->
+                <div class="flex-grow flex flex-col justify-between">
+                  <div>
+                    <div class="flex justify-between items-start mb-2">
+                      <h3 class="text-lg font-bold uppercase tracking-wide">
+                        {{ item.name }}
+                      </h3>
+                      <p class="font-serif font-medium text-lg">
+                        ${{ item.price.toFixed(2) }}
+                      </p>
+                    </div>
+                    <p class="text-sm text-green-600 font-medium">
+                      In Stock
+                    </p>
+                  </div>
+
+                  <div class="flex justify-between items-center mt-6">
+                    <!-- Qty -->
+                    <div class="flex items-center border border-neutral-200 rounded-full h-10 w-32">
+                      <button class="w-10 h-10 flex items-center justify-center hover:bg-neutral-100 rounded-l-full" @click="updateQuantity(item, item.quantity - 1)">
+                        <UIcon name="i-heroicons-minus" class="w-3 h-3" />
+                      </button>
+                      <input
+                        type="text"
+                        :value="item.quantity"
+                        readonly
+                        class="w-12 text-center text-sm font-bold bg-transparent border-none p-0 focus:ring-0"
+                      >
+                      <button class="w-10 h-10 flex items-center justify-center hover:bg-neutral-100 rounded-r-full" @click="updateQuantity(item, item.quantity + 1)">
+                        <UIcon name="i-heroicons-plus" class="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <!-- Remove -->
+                    <button class="text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors" @click="removeItem(item)">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center py-24">
+              <p class="text-neutral-500 mb-8">
+                {{ pending ? 'Loading cart…' : 'Your cart is empty.' }}
+              </p>
+              <NuxtLink to="/" class="bg-black text-white px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest">
+                Start Shopping
+              </NuxtLink>
             </div>
           </div>
-          <UButton
-            icon="i-lucide-trash"
-            variant="ghost"
-            color="error"
-            aria-label="حذف"
-            @click="remove(item.productId, item.variantId)"
-          />
-        </UCard>
-      </template>
-    </div>
 
-    <UCard class="h-fit space-y-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-        ملخص الطلب
-      </h2>
-      <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-        <span>الإجمالي</span>
-        <span>{{ formatPrice(subtotal) }}</span>
+          <!-- Summary -->
+          <div class="lg:col-span-4">
+            <div class="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm sticky top-32">
+              <h3 class="text-xl font-bold uppercase tracking-wide mb-8">
+                Order Summary
+              </h3>
+
+              <div class="space-y-4 mb-8">
+                <div class="flex justify-between text-sm">
+                  <span class="text-neutral-500">Subtotal</span>
+                  <span class="font-bold">${{ subtotal.toFixed(2) }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-neutral-500">Shipping Estimate</span>
+                  <span class="font-bold">${{ shipping.toFixed(2) }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-neutral-500">Tax</span>
+                  <span class="font-bold text-neutral-400">Calculated at checkout</span>
+                </div>
+              </div>
+
+              <div class="flex justify-between items-center pt-6 border-t border-neutral-100 mb-8">
+                <span class="text-lg font-bold uppercase">Total</span>
+                <span class="text-2xl font-serif font-bold">${{ total.toFixed(2) }}</span>
+              </div>
+
+              <NuxtLink
+                to="/checkout"
+                class="w-full bg-neutral-900 text-white py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-amber-700 transition-colors mb-4 inline-flex items-center justify-center"
+              >
+                Checkout
+              </NuxtLink>
+
+              <div class="flex justify-center gap-4 text-neutral-300">
+                <UIcon name="i-simple-icons-visa" class="w-8 h-8" />
+                <UIcon name="i-simple-icons-mastercard" class="w-8 h-8" />
+                <UIcon name="i-simple-icons-paypal" class="w-8 h-8" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-        <span>الشحن</span>
-        <span>{{ formatPrice(shipping) }}</span>
-      </div>
-      <UDivider />
-      <div class="flex justify-between font-bold text-lg text-gray-900 dark:text-gray-100">
-        <span>الإجمالي الكلي</span>
-        <span class="text-primary">{{ formatPrice(total) }}</span>
-      </div>
-      <UButton
-        block
-        color="primary"
-        to="/checkout"
-        :disabled="!hasItems"
-        size="lg"
-      >
-        المتابعة للدفع
-      </UButton>
-      <UButton block variant="ghost" to="/products">
-        متابعة التسوق
-      </UButton>
-    </UCard>
-  </UContainer>
+    </main>
+  </div>
 </template>

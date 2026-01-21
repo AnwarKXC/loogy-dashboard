@@ -9,7 +9,7 @@
           <p>خصومات مميزة على الكولكشن الشتوي الآن</p>
         </div>
       </div>
-      <ULink to="#contact" class="hidden sm:inline-flex text-white/90 hover:text-white text-xs underline">
+      <ULink to="/#contact" class="hidden sm:inline-flex text-white/90 hover:text-white text-xs underline">
         تواصل معنا
       </ULink>
     </div>

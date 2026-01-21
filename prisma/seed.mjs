@@ -638,6 +638,313 @@ const products = [
   }
 ]
 
+const storefrontProducts = [
+  {
+    slug: 'embroidered-seersucker-shirt',
+    price: '99.00',
+    stock: 80,
+    images: ['https://placehold.co/600x750/f3f4f6/171717?text=Shirt+Style+1'],
+    isHeroFeatured: true,
+    categorySlug: 'mens-fashion',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: { name: 'Embroidered Seersucker Shirt' },
+      ar: { name: 'قميص سيكرس مطرز' }
+    }
+  },
+  {
+    slug: 'basic-slim-fit-tshirt',
+    price: '99.00',
+    stock: 120,
+    images: ['https://placehold.co/600x750/f3f4f6/171717?text=Clean+White+Tee'],
+    isHeroFeatured: true,
+    categorySlug: 'mens-fashion',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: { name: 'Basic Slim Fit T-Shirt' },
+      ar: { name: 'تيشيرت ضيق أساسي' }
+    }
+  },
+  {
+    slug: 'henley-tshirt',
+    price: '99.00',
+    stock: 110,
+    images: ['https://placehold.co/600x750/f3f4f6/171717?text=Abstract+Print+Tee'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: { name: 'Henley T-Shirt' },
+      ar: { name: 'تيشيرت هنلي' }
+    }
+  },
+  {
+    slug: 'crewneck-tshirt',
+    price: '99.00',
+    stock: 95,
+    images: ['https://placehold.co/600x750/f3f4f6/171717?text=Beige+Tee'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: { name: 'Crewneck T-Shirt' },
+      ar: { name: 'تيشيرت كرو نيك' }
+    }
+  },
+  {
+    slug: 'basic-heavy-weight-tshirt',
+    price: '199.00',
+    stock: 60,
+    images: ['https://placehold.co/600x800/d1d5db/171717?text=Grunge+Tee'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: { name: 'Basic Heavy Weight T-Shirt' },
+      ar: { name: 'تيشيرت ثقيل أساسي' }
+    }
+  },
+  {
+    slug: 'soft-wash-straight-fit-jeans',
+    price: '199.00',
+    stock: 70,
+    images: ['https://placehold.co/600x800/e5e5e5/171717?text=Casual+Fit'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: { name: 'Soft Wash Straight Fit Jeans' },
+      ar: { name: 'جينز ستريت فيت مغسول' }
+    }
+  },
+  {
+    slug: 'basic-heavy-weight-tshirt-oversized',
+    price: '199.00',
+    stock: 65,
+    images: ['https://placehold.co/600x800/f3f4f6/171717?text=Oversized+Tee'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: { name: 'Basic Heavy Weight T-Shirt' },
+      ar: { name: 'تيشيرت ثقيل واسع' }
+    }
+  },
+  {
+    slug: 'cotton-giza-shirt',
+    price: '45.00',
+    stock: 140,
+    images: ['https://placehold.co/600x800/f3f4f6/171717?text=Giza+Cotton'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: { name: 'Cotton Giza Shirt' },
+      ar: { name: 'قميص قطن جيزة' }
+    }
+  },
+  {
+    slug: 'cairo-street-hoodie',
+    price: '89.00',
+    stock: 90,
+    images: ['https://placehold.co/600x800/e5e5e5/171717?text=Cairo+Street'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: { name: 'Cairo Street Hoodie' },
+      ar: { name: 'هودي ستريت القاهرة' }
+    }
+  },
+  {
+    slug: 'nile-breeze-linen',
+    price: '120.00',
+    stock: 75,
+    images: ['https://placehold.co/600x800/d4d4d4/171717?text=Linen+Breeze'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: { name: 'Nile Breeze Linen' },
+      ar: { name: 'كتان نسمة النيل' }
+    }
+  },
+  {
+    slug: 'red-sea-swim-shorts',
+    price: '55.00',
+    stock: 110,
+    images: ['https://placehold.co/600x800/171717/ffffff?text=Swim+Shorts'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: { name: 'Red Sea Swim Shorts' },
+      ar: { name: 'شورت سباحة البحر الأحمر' }
+    }
+  },
+  {
+    slug: 'sahara-desert-boots',
+    price: '150.00',
+    stock: 50,
+    images: ['https://placehold.co/600x800/f3f4f6/171717?text=Desert+Boots'],
+    categorySlug: 'shoes',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: { name: 'Sahara Desert Boots' },
+      ar: { name: 'بوت الصحراء' }
+    }
+  },
+  {
+    slug: 'vintage-denim-jacket',
+    price: '89.00',
+    stock: 40,
+    images: ['https://placehold.co/400x400/e5e5e5/171717?text=Denim'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: { name: 'Vintage Denim Jacket' },
+      ar: { name: 'جاكيت جينز فينتاج' }
+    }
+  },
+  {
+    slug: 'urban-cargo-pants',
+    price: '65.00',
+    stock: 70,
+    images: ['https://placehold.co/400x400/171717/ffffff?text=Cargo'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: { name: 'Urban Cargo Pants' },
+      ar: { name: 'بنطال كارغو' }
+    }
+  },
+  {
+    slug: 'boxy-fit-tee',
+    price: '35.00',
+    stock: 80,
+    images: ['https://placehold.co/400x400/d4d4d4/171717?text=Boxy+Tee'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: { name: 'Boxy Fit Tee' },
+      ar: { name: 'تيشيرت بوكس' }
+    }
+  },
+  {
+    slug: 'canvas-tote-bag',
+    price: '25.00',
+    stock: 90,
+    images: ['https://placehold.co/400x400/f3f4f6/171717?text=Tote'],
+    categorySlug: 'bags',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: { name: 'Canvas Tote Bag' },
+      ar: { name: 'حقيبة قماش' }
+    }
+  },
+  {
+    slug: 'beanie-hat',
+    price: '15.00',
+    stock: 120,
+    images: ['https://placehold.co/400x400/333333/ffffff?text=Beanie'],
+    categorySlug: 'accessories',
+    brandSlug: 'turkey-style',
+    translations: {
+      en: { name: 'Beanie Hat' },
+      ar: { name: 'قبعة بيني' }
+    }
+  },
+  {
+    slug: 'womens-collection-look',
+    price: '220.00',
+    stock: 55,
+    images: ['https://images.unsplash.com/photo-1544022613-e87ca75a784a?q=80&w=1974&auto=format&fit=crop'],
+    categorySlug: 'womens-fashion',
+    brandSlug: 'istanbul-trends',
+    translations: {
+      en: { name: 'Women\'s Collection' },
+      ar: { name: 'مجموعة نسائية' }
+    }
+  },
+  {
+    slug: 'shoes-accessories-look',
+    price: '260.00',
+    stock: 45,
+    images: ['https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=2012&auto=format&fit=crop'],
+    categorySlug: 'shoes',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: { name: 'Shoes & Accessories' },
+      ar: { name: 'أحذية وإكسسوارات' }
+    }
+  },
+  {
+    slug: 'summer-collection-look',
+    price: '240.00',
+    stock: 50,
+    images: ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070&auto=format&fit=crop'],
+    categorySlug: 'mens-fashion',
+    brandSlug: 'anatolian-crafts',
+    translations: {
+      en: { name: 'Summer Collection' },
+      ar: { name: 'مجموعة الصيف' }
+    }
+  },
+  {
+    slug: 'winter-collection-look',
+    price: '280.00',
+    stock: 50,
+    images: ['https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1974&auto=format&fit=crop'],
+    categorySlug: 'winter-collection',
+    brandSlug: 'modern-ottoman',
+    translations: {
+      en: { name: 'Winter Collection' },
+      ar: { name: 'مجموعة الشتاء' }
+    }
+  }
+]
+
+const storefrontHomeSeed = {
+  hero: {
+    title: 'NEW COLLECTION',
+    subtitle: 'Summer 2024',
+    ctaLabel: 'GO TO SHOP',
+    ctaTo: '/products',
+    slides: [
+      {
+        title: 'NEW',
+        subtitle: 'Summer 2024',
+        image: 'https://placehold.co/1200x800/e5e5e5/171717?text=Man+In+White',
+        image2: 'https://placehold.co/1200x800/1e293b/ffffff?text=Man+In+Black',
+        ctaLabel: 'GO TO SHOP',
+        ctaTo: '/products'
+      }
+    ]
+  },
+  galleryImages: [
+    'https://placehold.co/600x800/e5e5e5/171717?text=Street+Style+1',
+    'https://placehold.co/600x800/171717/ffffff?text=Street+Style+2',
+    'https://placehold.co/600x800/d4d4d4/171717?text=Street+Style+3'
+  ],
+  reviews: [
+    {
+      id: 1,
+      user: 'Alex D.',
+      msg: 'Exceptional quality. My new wardrobe staple!',
+      time: '14:02',
+      avatar: 'https://placehold.co/100x100/333/fff?text=AD',
+      platform: 'facebook'
+    },
+    {
+      id: 2,
+      user: 'Jordan M.',
+      msg: 'Fast delivery and premium fabric feel.',
+      time: 'Yesterday',
+      avatar: 'https://placehold.co/100x100/333/fff?text=JM',
+      platform: 'facebook'
+    },
+    {
+      id: 3,
+      user: 'Casey S.',
+      msg: 'Love the minimalist aesthetic. 10/10',
+      time: 'Tuesday',
+      avatar: 'https://placehold.co/100x100/333/fff?text=KS',
+      platform: 'facebook'
+    }
+  ]
+}
+
 const customers = [
   {
     name: 'Alex Smith',
@@ -827,6 +1134,7 @@ async function seedProducts(categoryMap, brandMap) {
         categoryId,
         brandId,
         isPublished: true,
+        isHeroFeatured: product.isHeroFeatured ?? false,
         isArchived: false
       },
       create: {
@@ -840,12 +1148,127 @@ async function seedProducts(categoryMap, brandMap) {
         categoryId,
         brandId,
         isPublished: true,
+        isHeroFeatured: product.isHeroFeatured ?? false,
         isArchived: false
       }
     })
 
     await upsertProductTranslations(record.id, product.translations)
   }
+}
+
+const upsertStorefrontContent = async (key, data) => {
+  try {
+    await prisma.storefrontContent.upsert({
+      where: { key },
+      update: { data },
+      create: { key, data }
+    })
+  } catch (error) {
+    if (error?.code === 'P2021') {
+      console.warn(`StorefrontContent table not found. Skipping seed for ${key}.`)
+      return
+    }
+    throw error
+  }
+}
+
+async function seedStorefrontContent(categoryMap, brandMap) {
+  const storefrontProductMap = new Map()
+
+  for (const product of storefrontProducts) {
+    const categoryId = categoryMap.get(product.categorySlug)
+    const brandId = brandMap.get(product.brandSlug)
+
+    if (!categoryId) {
+      throw new Error(`Missing category for storefront product ${product.slug}`)
+    }
+    if (!brandId) {
+      throw new Error(`Missing brand for storefront product ${product.slug}`)
+    }
+
+    const price = new Prisma.Decimal(product.price)
+    const record = await prisma.product.upsert({
+      where: { slug: product.slug },
+      update: {
+        price,
+        salePrice: null,
+        discountPercentage: null,
+        stock: product.stock,
+        images: product.images,
+        rating: null,
+        categoryId,
+        brandId,
+        isPublished: true,
+        isHeroFeatured: product.isHeroFeatured ?? false,
+        isArchived: false
+      },
+      create: {
+        slug: product.slug,
+        price,
+        salePrice: null,
+        discountPercentage: null,
+        stock: product.stock,
+        images: product.images,
+        rating: null,
+        categoryId,
+        brandId,
+        isPublished: true,
+        isHeroFeatured: product.isHeroFeatured ?? false,
+        isArchived: false
+      }
+    })
+
+    await upsertProductTranslations(record.id, product.translations)
+    storefrontProductMap.set(product.slug, record.id)
+  }
+
+  const pickIds = slugs => slugs.map(slug => storefrontProductMap.get(slug)).filter(Boolean)
+
+  const homeContent = {
+    ...storefrontHomeSeed,
+    sections: {
+      newArrivalProductIds: pickIds([
+        'embroidered-seersucker-shirt',
+        'basic-slim-fit-tshirt',
+        'henley-tshirt',
+        'crewneck-tshirt'
+      ]),
+      collectionProductIds: pickIds([
+        'basic-heavy-weight-tshirt',
+        'soft-wash-straight-fit-jeans',
+        'basic-heavy-weight-tshirt-oversized'
+      ]),
+      egyptProductIds: pickIds([
+        'cotton-giza-shirt',
+        'cairo-street-hoodie',
+        'nile-breeze-linen',
+        'red-sea-swim-shorts',
+        'sahara-desert-boots'
+      ]),
+      previousOrderProductIds: pickIds([
+        'vintage-denim-jacket',
+        'urban-cargo-pants',
+        'boxy-fit-tee',
+        'canvas-tote-bag',
+        'beanie-hat'
+      ])
+    }
+  }
+
+  await upsertStorefrontContent('home', homeContent)
+
+  const categoryContent = {
+    images: {
+      'womens-fashion': 'https://images.unsplash.com/photo-1544022613-e87ca75a784a?q=80&w=1974&auto=format&fit=crop',
+      'shoes': 'https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=2012&auto=format&fit=crop',
+      'accessories': 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=2070&auto=format&fit=crop',
+      'winter-collection': 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1974&auto=format&fit=crop'
+    },
+    featuredSlugs: ['womens-fashion', 'shoes', 'accessories', 'winter-collection']
+  }
+
+  await upsertStorefrontContent('categories', categoryContent)
 }
 
 const minutesAgoToDate = minutes => new Date(Date.now() - minutes * 60 * 1000)
@@ -886,6 +1309,8 @@ async function main() {
   console.log(`Seeded ${brandMap.size} brands`)
   await seedProducts(categoryMap, brandMap)
   console.log(`Seeded ${products.length} products`)
+  await seedStorefrontContent(categoryMap, brandMap)
+  console.log('Seeded storefront content')
   await seedCustomers()
   console.log(`Seeded ${customers.length} customers`)
   console.log('Seed complete!')
