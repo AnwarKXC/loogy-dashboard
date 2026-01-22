@@ -22,7 +22,7 @@ const isInWishlist = computed(() =>
   )
 )
 
-const handleAddToCart = async () => {
+const _handleAddToCart = async () => {
   await addToCart({
     title: props.title,
     price: props.salePrice ?? props.price,

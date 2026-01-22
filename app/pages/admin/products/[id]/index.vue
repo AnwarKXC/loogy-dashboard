@@ -292,13 +292,13 @@ const savings = computed(() => {
               </div>
 
               <!-- Translations Info -->
-              <div v-if="product.raw?.translations?.length" class="bg-muted/5 rounded-lg p-4 border border-default">
+              <div v-if="product.translationsRaw?.length" class="bg-muted/5 rounded-lg p-4 border border-default">
                 <h3 class="text-sm font-semibold text-muted uppercase tracking-wide mb-4">
-                  Translations ({{ product.raw.translations.length }})
+                  Translations ({{ product.translationsRaw.length }})
                 </h3>
                 <div class="space-y-3">
                   <div
-                    v-for="trans in product.raw.translations"
+                    v-for="trans in product.translationsRaw"
                     :key="trans.lang"
                     class="flex items-start gap-3 p-2 bg-background rounded"
                   >

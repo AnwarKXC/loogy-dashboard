@@ -5,6 +5,7 @@ import prisma from '../../../db'
 /**
  * Public guest checkout endpoint for Cash on Delivery orders.
  * No authentication required.
+ * Supports promo codes and dynamic pricing settings.
  */
 
 const guestOrderSchema = z.object({
@@ -23,7 +24,8 @@ const guestOrderSchema = z.object({
     price: z.number(),
     quantity: z.number().min(1),
     image: z.string().optional()
-  })).min(1, 'السلة فارغة')
+  })).min(1, 'السلة فارغة'),
+  promoCode: z.string().optional().nullable()
 })
 
 export default defineEventHandler(async (event) => {
@@ -38,7 +40,25 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { customer, items } = result.data
+  const { customer, items, promoCode } = result.data
+
+  // Get pricing settings
+  let pricingSettings = await prisma.pricingSettings.findFirst({
+    orderBy: { id: 'asc' }
+  })
+
+  if (!pricingSettings) {
+    pricingSettings = await prisma.pricingSettings.create({
+      data: {
+        shippingFee: 50,
+        minOrderValue: 0,
+        maxOrderValue: null,
+        bulkDiscountThreshold: null,
+        bulkDiscountPercentage: null,
+        currency: 'EGP'
+      }
+    })
+  }
 
   // Calculate totals and verify stock
   let subtotal = 0
@@ -81,8 +101,65 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const shippingCost = 80 // Fixed shipping cost
-  const totalAmount = subtotal + shippingCost
+  // Validate min/max order values
+  const minOrderValue = pricingSettings.minOrderValue ? Number(pricingSettings.minOrderValue) : 0
+  const maxOrderValue = pricingSettings.maxOrderValue ? Number(pricingSettings.maxOrderValue) : null
+
+  if (subtotal < minOrderValue) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `الحد الأدنى للطلب هو ${minOrderValue} جنيه`
+    })
+  }
+
+  if (maxOrderValue && subtotal > maxOrderValue) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `الحد الأقصى للطلب هو ${maxOrderValue} جنيه`
+    })
+  }
+
+  // Calculate bulk discount
+  let bulkDiscount = 0
+  const bulkThreshold = pricingSettings.bulkDiscountThreshold ? Number(pricingSettings.bulkDiscountThreshold) : null
+  const bulkPercentage = pricingSettings.bulkDiscountPercentage ? Number(pricingSettings.bulkDiscountPercentage) : null
+
+  if (bulkThreshold && bulkPercentage && subtotal >= bulkThreshold) {
+    bulkDiscount = (subtotal * bulkPercentage) / 100
+  }
+
+  // Validate and apply promo code
+  let promoDiscount = 0
+  let appliedPromoId: number | null = null
+
+  if (promoCode) {
+    const now = new Date()
+    const promo = await prisma.pricePromoCode.findUnique({
+      where: { code: promoCode.toUpperCase() }
+    })
+
+    if (promo && promo.isActive) {
+      // Check validity dates
+      const validFrom = !promo.validFrom || promo.validFrom <= now
+      const validTo = !promo.validTo || promo.validTo >= now
+      const hasUsage = !promo.usageLimit || promo.usageCount < promo.usageLimit
+
+      if (validFrom && validTo && hasUsage) {
+        const promoValue = Number(promo.value)
+        if (promo.applicationType === 'PERCENTAGE') {
+          promoDiscount = (subtotal * promoValue) / 100
+        } else {
+          promoDiscount = Math.min(promoValue, subtotal)
+        }
+        appliedPromoId = promo.id
+      }
+    }
+  }
+
+  // Calculate final totals
+  const totalDiscount = bulkDiscount + promoDiscount
+  const shippingCost = pricingSettings.shippingFee ? Number(pricingSettings.shippingFee) : 0
+  const totalAmount = Math.max(0, subtotal - totalDiscount + shippingCost)
 
   // Create guest order
   const order = await prisma.order.create({
@@ -94,6 +171,7 @@ export default defineEventHandler(async (event) => {
       shippingCountry: 'EG',
       paymentMethod: 'CASH',
       subtotal,
+      discount: totalDiscount > 0 ? totalDiscount : null,
       shippingCost,
       totalAmount,
       items: {
@@ -115,10 +193,24 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Increment promo code usage if applied
+  if (appliedPromoId) {
+    await prisma.pricePromoCode.update({
+      where: { id: appliedPromoId },
+      data: { usageCount: { increment: 1 } }
+    })
+  }
+
   return {
     success: true,
     orderId: order.id,
     orderNumber: `ORD-${order.id.toString().padStart(6, '0')}`,
-    message: 'تم إنشاء الطلب بنجاح. سنتواصل معك قريباً لتأكيد الشحن.'
+    message: 'تم إنشاء الطلب بنجاح. سنتواصل معك قريباً لتأكيد الشحن.',
+    summary: {
+      subtotal,
+      discount: totalDiscount,
+      shipping: shippingCost,
+      total: totalAmount
+    }
   }
 })

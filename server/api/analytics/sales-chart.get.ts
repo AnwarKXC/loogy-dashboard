@@ -1,5 +1,5 @@
 import { eventHandler, getQuery } from 'h3'
-import { startOfDay, subDays, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns'
+import { subDays, format, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns'
 import { z } from 'zod'
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'

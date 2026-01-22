@@ -63,8 +63,12 @@ const sendToWhatsApp = () => {
       <UModal v-model="isDialogOpen" :ui="{ width: 'sm:max-w-md' }">
         <template #header>
           <div class="space-y-1">
-            <p class="text-lg font-semibold">Send us a message</p>
-            <p class="text-sm text-muted">We'll open WhatsApp with your note and the page you're on.</p>
+            <p class="text-lg font-semibold">
+              Send us a message
+            </p>
+            <p class="text-sm text-muted">
+              We'll open WhatsApp with your note and the page you're on.
+            </p>
           </div>
         </template>
 

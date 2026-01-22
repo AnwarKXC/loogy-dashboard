@@ -10,16 +10,22 @@ const props = defineProps<{
 
 const UBadge = resolveComponent('UBadge')
 
-const sampleEmails = [
-  'james.anderson@example.com',
-  'mia.white@example.com',
-  'william.brown@example.com',
-  'emma.davis@example.com',
-  'ethan.harris@example.com'
-]
+interface OrderItem {
+  id: number
+  createdAt: string
+  status: string
+  customer: {
+    email: string
+  }
+  totalAmount: number
+}
+
+interface OrdersResponse {
+  items: OrderItem[]
+}
 
 const { data } = await useAsyncData('sales', async () => {
-  const response = await $fetch<any>('/api/orders', {
+  const response = await $fetch<OrdersResponse>('/api/orders', {
     query: {
       page: 1,
       pageSize: 5,
@@ -28,7 +34,7 @@ const { data } = await useAsyncData('sales', async () => {
     headers: useRequestHeaders(['cookie'])
   })
 
-  return response.items.map((order: any) => ({
+  return response.items.map(order => ({
     id: order.id,
     date: order.createdAt,
     status: order.status.toLowerCase(),

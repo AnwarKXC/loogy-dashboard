@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval, format } from 'date-fns'
+import { format } from 'date-fns'
 import { VisXYContainer, VisLine, VisAxis, VisArea, VisCrosshair, VisTooltip } from '@unovis/vue'
 import type { Period, Range } from '~/types'
 
@@ -10,7 +10,7 @@ const props = defineProps<{
   range: Range
 }>()
 
-type DataRecord = {
+interface DataRecord {
   date: Date
   amount: number
 }
@@ -19,9 +19,14 @@ const { width } = useElementSize(cardRef)
 
 const data = ref<DataRecord[]>([])
 
+interface SalesChartItem {
+  date: string
+  revenue: number
+}
+
 watch([() => props.period, () => props.range], async () => {
   try {
-    const response = await $fetch<any[]>('/api/analytics/sales-chart', {
+    const response = await $fetch<SalesChartItem[]>('/api/analytics/sales-chart', {
       query: {
         start: props.range.start.toISOString(),
         end: props.range.end.toISOString(),
@@ -30,7 +35,7 @@ watch([() => props.period, () => props.range], async () => {
       headers: useRequestHeaders(['cookie'])
     })
 
-    data.value = response.map((d: any) => ({
+    data.value = response.map(d => ({
       date: new Date(d.date),
       amount: d.revenue
     }))

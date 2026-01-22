@@ -217,6 +217,7 @@ model Product {
   cartItems     CartItem[]
   wishlistItems WishlistItem[]
   orderItems    OrderItem[]
+  reviews       ProductReview[]
 
   @@index([categoryId, isPublished, isArchived, deletedAt]) // Common filter combo
   @@index([brandId, isPublished, isArchived, deletedAt])
@@ -598,4 +599,56 @@ model Chat {
 
   @@index([conversationId, createdAt])
   @@index([userId])
+}
+
+/**
+ * ------------------------------
+ * Reviews & Testimonials
+ * ------------------------------
+ */
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Product reviews from customers who ordered
+model ProductReview {
+  id           Int          @id @default(autoincrement())
+  productId    Int
+  orderId      Int? // Link to the order (optional for verified purchase badge)
+  userId       Int? // Customer who left the review
+  rating       Int // 1-5 stars
+  title        String?      @db.VarChar(255)
+  content      String?      @db.Text
+  customerName String?      @db.VarChar(100) // For guest reviews
+  isVerified   Boolean      @default(false) // Verified purchase
+  status       ReviewStatus @default(PENDING)
+  adminNote    String?      @db.Text // Internal note for moderation
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([orderId])
+}
+
+// Testimonials (screenshots from Facebook/WhatsApp, general reviews)
+model Testimonial {
+  id           Int      @id @default(autoincrement())
+  customerName String?  @db.VarChar(100)
+  content      String?  @db.Text // Text content (optional)
+  images       String[] @default([]) // Screenshot images
+  source       String?  @db.VarChar(50) // 'facebook', 'whatsapp', 'instagram', 'google', etc.
+  rating       Int? // Optional rating 1-5
+  isPublished  Boolean  @default(false)
+  displayOrder Int      @default(0) // For manual ordering
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isPublished, displayOrder])
+  @@index([source])
 }

@@ -98,24 +98,28 @@ async function handleSubmit(event: FormSubmitEvent<LoginSchema>) {
             v-model="state.password"
             type="password"
             class="w-full"
-
             placeholder="••••••••"
             autocomplete="current-password"
           />
         </UFormField>
 
-        <div v-if="errorMessage" class="text-sm text-danger-500">
-          {{ errorMessage }}
-        </div>
+        <UAlert
+          v-if="errorMessage"
+          color="error"
+          variant="soft"
+          icon="i-lucide-alert-circle"
+          :title="errorMessage"
+          class="text-sm"
+        />
 
         <UButton
           type="submit"
           color="primary"
           block
           :loading="loading"
-        >
-          Sign In
-        </UButton>
+          label="Sign In"
+          icon="i-lucide-log-in"
+        />
       </UForm>
     </UCard>
   </div>

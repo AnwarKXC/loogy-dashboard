@@ -454,6 +454,11 @@ const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
             </div>
           </div>
         </div>
+
+        <!-- Product Reviews Section -->
+        <div v-if="product" class="mt-16 max-w-4xl mx-auto border-t border-neutral-200 pt-8">
+          <ProductsProductReviews :product-id="product.id" />
+        </div>
       </div>
     </main>
   </div>

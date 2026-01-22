@@ -49,6 +49,25 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
   onSelect: () => {
     open.value = false
   }
+}, {
+  label: 'Reviews',
+  icon: 'i-lucide-star',
+  type: 'trigger',
+  children: [
+    {
+      label: 'Product Reviews',
+      to: `${adminBase}/reviews`,
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: 'Testimonials',
+      to: `${adminBase}/reviews/testimonials`,
+      onSelect: () => {
+        open.value = false
+      }
+    }
+  ]
 },
 {
   label: 'Pages',

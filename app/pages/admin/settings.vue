@@ -14,6 +14,26 @@ const links = [[{
   label: 'Notifications',
   icon: 'i-lucide-bell',
   to: '/admin/settings/notifications'
+}], [{
+  label: 'Store General',
+  icon: 'i-lucide-store',
+  to: '/admin/settings/store'
+}, {
+  label: 'Contact Info',
+  icon: 'i-lucide-phone',
+  to: '/admin/settings/contact'
+}, {
+  label: 'Social Links',
+  icon: 'i-lucide-share-2',
+  to: '/admin/settings/social'
+}], [{
+  label: 'Pricing',
+  icon: 'i-lucide-coins',
+  to: '/admin/settings/pricing'
+}, {
+  label: 'Promo Codes',
+  icon: 'i-lucide-ticket',
+  to: '/admin/settings/promo-codes'
 }]] satisfies NavigationMenuItem[][]
 </script>
 

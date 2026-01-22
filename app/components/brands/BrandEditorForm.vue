@@ -132,7 +132,7 @@ watch(logoImages, (next) => {
   }
 }, { deep: true })
 
-function onSubmit(event: FormSubmitEvent<Record<string, unknown>>) {
+function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
   emit('submit', {
     nameEn: state.nameEn,
     nameAr: state.nameAr || undefined,

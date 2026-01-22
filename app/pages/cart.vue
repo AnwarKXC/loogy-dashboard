@@ -16,13 +16,71 @@ type CartItem = {
   image?: string | null
 }
 
+type PricingSettings = {
+  shippingFee: number
+  freeShippingThreshold: number | null
+  minOrderValue: number | null
+  maxOrderValue: number | null
+  bulkDiscountEnabled: boolean
+  bulkDiscountThreshold: number | null
+  bulkDiscountPercent: number | null
+}
+
 const { data, pending, refresh } = await useFetch<{ items: CartItem[], subtotal: number }>('/api/public/cart')
+const { data: pricingData } = await useFetch<PricingSettings>('/api/public/pricing')
 
 const cartItems = computed<CartItem[]>(() => data.value?.items ?? [])
 const subtotal = computed(() => data.value?.subtotal ?? 0)
 
-const shipping = 15.00
-const total = computed(() => subtotal.value + shipping)
+// Dynamic pricing from settings
+const pricing = computed(() => pricingData.value ?? {
+  shippingFee: 15.00,
+  freeShippingThreshold: null,
+  minOrderValue: null,
+  maxOrderValue: null,
+  bulkDiscountEnabled: false,
+  bulkDiscountThreshold: null,
+  bulkDiscountPercent: null
+})
+
+// Free shipping if threshold reached
+const qualifiesForFreeShipping = computed(() => {
+  if (pricing.value.freeShippingThreshold && subtotal.value >= pricing.value.freeShippingThreshold) {
+    return true
+  }
+  return false
+})
+
+const shipping = computed(() => qualifiesForFreeShipping.value ? 0 : pricing.value.shippingFee)
+
+// Bulk discount calculation
+const bulkDiscount = computed(() => {
+  if (
+    pricing.value.bulkDiscountEnabled
+    && pricing.value.bulkDiscountThreshold
+    && pricing.value.bulkDiscountPercent
+    && subtotal.value >= pricing.value.bulkDiscountThreshold
+  ) {
+    return subtotal.value * (pricing.value.bulkDiscountPercent / 100)
+  }
+  return 0
+})
+
+// Amount remaining for free shipping
+const amountToFreeShipping = computed(() => {
+  if (!pricing.value.freeShippingThreshold) return null
+  if (qualifiesForFreeShipping.value) return null
+  return pricing.value.freeShippingThreshold - subtotal.value
+})
+
+// Amount remaining for bulk discount
+const amountToBulkDiscount = computed(() => {
+  if (!pricing.value.bulkDiscountEnabled || !pricing.value.bulkDiscountThreshold) return null
+  if (subtotal.value >= pricing.value.bulkDiscountThreshold) return null
+  return pricing.value.bulkDiscountThreshold - subtotal.value
+})
+
+const total = computed(() => subtotal.value - bulkDiscount.value + shipping.value)
 
 const updateQuantity = async (item: { productId: number, variantId?: number | null, quantity: number }, nextQty: number) => {
   if (nextQty < 1) return
@@ -138,13 +196,31 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
                   <span class="text-neutral-500">Subtotal</span>
                   <span class="font-bold">${{ subtotal.toFixed(2) }}</span>
                 </div>
-                <div class="flex justify-between text-sm">
-                  <span class="text-neutral-500">Shipping Estimate</span>
-                  <span class="font-bold">${{ shipping.toFixed(2) }}</span>
+
+                <!-- Bulk Discount -->
+                <div v-if="bulkDiscount > 0" class="flex justify-between text-sm text-green-600">
+                  <span>Bulk Discount ({{ pricing.bulkDiscountPercent }}%)</span>
+                  <span class="font-bold">-${{ bulkDiscount.toFixed(2) }}</span>
                 </div>
+
+                <!-- Shipping -->
+                <div class="flex justify-between text-sm">
+                  <span class="text-neutral-500">Shipping</span>
+                  <span v-if="qualifiesForFreeShipping" class="font-bold text-green-600">FREE</span>
+                  <span v-else class="font-bold">${{ shipping.toFixed(2) }}</span>
+                </div>
+
                 <div class="flex justify-between text-sm">
                   <span class="text-neutral-500">Tax</span>
                   <span class="font-bold text-neutral-400">Calculated at checkout</span>
+                </div>
+
+                <!-- Threshold hints -->
+                <div v-if="amountToFreeShipping && amountToFreeShipping > 0" class="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
+                  Add ${{ amountToFreeShipping.toFixed(2) }} more for free shipping!
+                </div>
+                <div v-if="amountToBulkDiscount && amountToBulkDiscount > 0" class="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
+                  Add ${{ amountToBulkDiscount.toFixed(2) }} more for {{ pricing.bulkDiscountPercent }}% bulk discount!
                 </div>
               </div>
 

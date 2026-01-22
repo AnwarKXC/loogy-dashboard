@@ -19,14 +19,18 @@ export const useCart = () => {
     if (loading.value) return
     loading.value = true
     try {
-      const response = await $fetch<{ items: Array<{
-        productId: number
-        variantId?: number | null
-        quantity: number
-        name: string
-        price: number
-        image?: string | null
-      }>; subtotal: number }>('/api/public/cart')
+      interface CartResponse {
+        items: Array<{
+          productId: number
+          variantId?: number | null
+          quantity: number
+          name: string
+          price: number
+          image?: string | null
+        }>
+        subtotal: number
+      }
+      const response = await $fetch<CartResponse>('/api/public/cart')
 
       lines.value = (response.items || []).map(item => ({
         title: item.name,

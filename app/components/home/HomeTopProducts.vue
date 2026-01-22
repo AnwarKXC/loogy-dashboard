@@ -6,10 +6,18 @@ const props = defineProps<{
   range: Range
 }>()
 
+interface TopProduct {
+  id: number
+  name: string
+  image: string | null
+  quantity: number
+  revenue: number
+}
+
 const { data: products } = await useAsyncData('top-products', async () => {
   const days = Math.ceil((props.range.end.getTime() - props.range.start.getTime()) / (1000 * 60 * 60 * 24)) || 30
 
-  return await $fetch<any[]>('/api/analytics/top-products', {
+  return await $fetch<TopProduct[]>('/api/analytics/top-products', {
     query: {
       days,
       limit: 5

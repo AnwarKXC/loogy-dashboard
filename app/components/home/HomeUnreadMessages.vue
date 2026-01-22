@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const unreadConversations: never[] = []
+// Messaging feature is currently disabled
 </script>
 
 <template>

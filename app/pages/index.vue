@@ -863,6 +863,10 @@ const brandsStatic = [
           </div>
         </div>
       </section>
+
+      <!-- Testimonials Section -->
+      <HomeTestimonialsSection />
+
       <!-- Contact Section -->
       <section id="contact" class="py-24 bg-neutral-50 border-t border-neutral-200">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">

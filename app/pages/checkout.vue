@@ -1,10 +1,28 @@
 // @ts-nocheck
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 
 definePageMeta({
   layout: 'storefront'
 })
+
+interface PricingSettings {
+  shippingFee: number
+  minOrderValue: number
+  maxOrderValue: number | null
+  bulkDiscountThreshold: number | null
+  bulkDiscountPercentage: number | null
+  currency: string
+}
+
+interface PromoValidation {
+  valid: boolean
+  code: string
+  applicationType: 'PERCENTAGE' | 'FIXED'
+  value: number
+  discountAmount: number
+  message: string
+}
 
 const toast = useToast()
 const { lines, subtotal, clear: clearCart } = useCart()
@@ -18,13 +36,116 @@ const form = reactive({
   payment: 'cod'
 })
 
-const shipping = ref(80)
-const total = computed(() => subtotal.value + shipping.value)
+// Pricing state
+const pricingSettings = ref<PricingSettings | null>(null)
+const pricingLoading = ref(true)
+
+// Promo code state
+const promoCode = ref('')
+const promoLoading = ref(false)
+const appliedPromo = ref<PromoValidation | null>(null)
+const promoError = ref('')
+
+// Fetch pricing settings on mount
+onMounted(async () => {
+  try {
+    pricingSettings.value = await $fetch<PricingSettings>('/api/public/pricing')
+  } catch {
+    // Use defaults if fetch fails
+    pricingSettings.value = {
+      shippingFee: 50,
+      minOrderValue: 0,
+      maxOrderValue: null,
+      bulkDiscountThreshold: null,
+      bulkDiscountPercentage: null,
+      currency: 'EGP'
+    }
+  } finally {
+    pricingLoading.value = false
+  }
+})
+
+// Calculate shipping (from settings)
+const shipping = computed(() => pricingSettings.value?.shippingFee ?? 50)
+
+// Calculate bulk discount
+const bulkDiscount = computed(() => {
+  if (!pricingSettings.value?.bulkDiscountThreshold || !pricingSettings.value?.bulkDiscountPercentage) {
+    return 0
+  }
+  if (subtotal.value >= pricingSettings.value.bulkDiscountThreshold) {
+    return (subtotal.value * pricingSettings.value.bulkDiscountPercentage) / 100
+  }
+  return 0
+})
+
+// Calculate promo discount
+const promoDiscount = computed(() => appliedPromo.value?.discountAmount ?? 0)
+
+// Total discount
+const totalDiscount = computed(() => bulkDiscount.value + promoDiscount.value)
+
+// Final total
+const total = computed(() => Math.max(0, subtotal.value - totalDiscount.value + shipping.value))
+
+// Min order validation
+const belowMinOrder = computed(() => {
+  if (!pricingSettings.value?.minOrderValue) return false
+  return subtotal.value < pricingSettings.value.minOrderValue
+})
+
+// Max order validation
+const aboveMaxOrder = computed(() => {
+  if (!pricingSettings.value?.maxOrderValue) return false
+  return subtotal.value > pricingSettings.value.maxOrderValue
+})
+
 const isSubmitting = ref(false)
 const orderComplete = ref(false)
 const orderNumber = ref('')
 
 const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
+
+// Apply promo code
+const applyPromoCode = async () => {
+  if (!promoCode.value.trim()) {
+    promoError.value = 'أدخل كود الخصم'
+    return
+  }
+
+  promoLoading.value = true
+  promoError.value = ''
+
+  try {
+    const result = await $fetch<PromoValidation>('/api/public/promo/validate', {
+      method: 'POST',
+      body: {
+        code: promoCode.value.trim(),
+        subtotal: subtotal.value
+      }
+    })
+
+    appliedPromo.value = result
+    toast.add({
+      title: 'تم تطبيق الكود',
+      description: result.message,
+      color: 'success'
+    })
+  } catch (error: unknown) {
+    const dataMessage = (error as { data?: { statusMessage?: string } })?.data?.statusMessage
+    promoError.value = typeof dataMessage === 'string' ? dataMessage : 'كود غير صحيح'
+    appliedPromo.value = null
+  } finally {
+    promoLoading.value = false
+  }
+}
+
+// Remove promo code
+const removePromoCode = () => {
+  appliedPromo.value = null
+  promoCode.value = ''
+  promoError.value = ''
+}
 
 const placeOrder = async () => {
   if (!form.name || !form.phone || !form.address) {
@@ -45,6 +166,24 @@ const placeOrder = async () => {
     return
   }
 
+  if (belowMinOrder.value) {
+    toast.add({
+      title: 'الحد الأدنى للطلب',
+      description: `الحد الأدنى للطلب هو ${formatPrice(pricingSettings.value?.minOrderValue ?? 0)}`,
+      color: 'warning'
+    })
+    return
+  }
+
+  if (aboveMaxOrder.value) {
+    toast.add({
+      title: 'الحد الأقصى للطلب',
+      description: `الحد الأقصى للطلب هو ${formatPrice(pricingSettings.value?.maxOrderValue ?? 0)}`,
+      color: 'warning'
+    })
+    return
+  }
+
   isSubmitting.value = true
   try {
     const response = await $fetch('/api/public/orders', {
@@ -58,7 +197,8 @@ const placeOrder = async () => {
           notes: form.notes
         },
         paymentMethod: form.payment,
-        items: lines.value
+        items: lines.value,
+        promoCode: appliedPromo.value?.code ?? null
       }
     })
 
@@ -210,14 +350,73 @@ const placeOrder = async () => {
 
             <UDivider />
 
+            <!-- Promo Code Section -->
+            <div class="space-y-2">
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                كود الخصم
+              </p>
+              <div v-if="appliedPromo" class="flex items-center justify-between bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-ticket-check" class="size-5 text-green-600" />
+                  <span class="font-mono font-semibold text-green-700 dark:text-green-400">{{ appliedPromo.code }}</span>
+                </div>
+                <UButton
+                  icon="i-lucide-x"
+                  color="neutral"
+                  variant="ghost"
+                  size="xs"
+                  @click="removePromoCode"
+                />
+              </div>
+              <div v-else class="flex gap-2">
+                <UInput
+                  v-model="promoCode"
+                  placeholder="أدخل الكود"
+                  class="flex-1 uppercase"
+                  :disabled="promoLoading"
+                  @keyup.enter="applyPromoCode"
+                />
+                <UButton
+                  label="تطبيق"
+                  :loading="promoLoading"
+                  @click="applyPromoCode"
+                />
+              </div>
+              <p v-if="promoError" class="text-xs text-red-500">
+                {{ promoError }}
+              </p>
+            </div>
+
+            <UDivider />
+
             <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
               <span>الإجمالي</span>
               <span>{{ formatPrice(subtotal) }}</span>
             </div>
+
+            <!-- Show bulk discount if applicable -->
+            <div v-if="bulkDiscount > 0" class="flex justify-between text-sm text-green-600 dark:text-green-400">
+              <span>خصم الكمية ({{ pricingSettings?.bulkDiscountPercentage }}%)</span>
+              <span>- {{ formatPrice(bulkDiscount) }}</span>
+            </div>
+
+            <!-- Show promo discount if applicable -->
+            <div v-if="promoDiscount > 0" class="flex justify-between text-sm text-green-600 dark:text-green-400">
+              <span>خصم الكود</span>
+              <span>- {{ formatPrice(promoDiscount) }}</span>
+            </div>
+
             <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
               <span>الشحن</span>
               <span>{{ formatPrice(shipping) }}</span>
             </div>
+
+            <!-- Min order warning -->
+            <div v-if="belowMinOrder" class="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-700 dark:text-yellow-400">
+              <UIcon name="i-lucide-alert-triangle" class="inline size-4" />
+              الحد الأدنى للطلب: {{ formatPrice(pricingSettings?.minOrderValue ?? 0) }}
+            </div>
+
             <UDivider />
             <div class="flex justify-between font-bold text-lg text-gray-900 dark:text-gray-100">
               <span>الإجمالي الكلي</span>

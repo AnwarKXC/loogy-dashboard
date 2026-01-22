@@ -278,6 +278,7 @@ export interface TranslationWithSEO {
   lang: string
   name: string
   description?: string | null
+  shortDescription?: string | null
   metaTitle?: string | null
   metaDescription?: string | null
   metaKeywords?: string | null
@@ -328,4 +329,59 @@ export interface BrandEditorValues {
   ogDescriptionAr?: string
   ogImageEn?: string
   ogImageAr?: string
+}
+
+// Pricing & Promo Codes
+export type PromoCodeStatus = 'active' | 'inactive' | 'expired'
+export type PromoCodeApplicationType = 'PERCENTAGE' | 'FIXED'
+
+export interface PromoCodeListItem {
+  id: number
+  code: string
+  applicationType: PromoCodeApplicationType
+  value: string
+  validFrom: string | null
+  validTo: string | null
+  usageLimit: number | null
+  usageCount: number
+  isActive: boolean
+  status: PromoCodeStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PromoCodeListResponse {
+  items: PromoCodeListItem[]
+  pagination: {
+    page: number
+    pageSize: number
+    totalItems: number
+    totalPages: number
+  }
+}
+
+export interface PromoCodeEditorValues {
+  code: string
+  applicationType: PromoCodeApplicationType
+  value: number
+  validFrom?: Date | null
+  validTo?: Date | null
+  usageLimit?: number | null
+  isActive: boolean
+}
+
+export interface PricingSettings {
+  id: number
+  shippingFee: string | null
+  minOrderValue: string | null
+  maxOrderValue: string | null
+  bulkDiscountThreshold: string | null
+  bulkDiscountPercentage: string | null
+  currency: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PricingSettingsResponse {
+  settings: PricingSettings
 }

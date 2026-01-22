@@ -6,16 +6,23 @@ const props = defineProps<{
   range: Range
 }>()
 
-function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  })
+interface AnalyticsOverviewData {
+  orders: {
+    value: number
+    variation: number
+  }
+  customers: {
+    value: number
+    variation: number
+  }
+  products: {
+    available: number
+    total: number
+  }
 }
 
 const { data: stats } = await useAsyncData<Stat[]>('home-stats', async () => {
-  const data = await $fetch<any>('/api/analytics/overview', {
+  const data = await $fetch<AnalyticsOverviewData>('/api/analytics/overview', {
     query: {
       start: props.range.start.toISOString(),
       end: props.range.end.toISOString()

@@ -147,7 +147,7 @@ export default eventHandler(async (event) => {
   }
 
   // Update product first
-  const product = await prisma.product.update({
+  const _product = await prisma.product.update({
     where: { id: params.id },
     data,
     include: getProductInclude()

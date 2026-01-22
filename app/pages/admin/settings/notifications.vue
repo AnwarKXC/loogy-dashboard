@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const toast = useToast()
 
-const { data: preferences, refresh } = await useFetch('/api/settings/notifications')
+const { data: preferences } = await useFetch('/api/settings/notifications')
 
 const state = reactive({
   notifyOrders: preferences.value?.notifyOrders ?? true,
@@ -15,7 +15,7 @@ async function onChange() {
       body: state
     })
     toast.add({ title: 'Preferences updated', color: 'success' })
-  } catch (error) {
+  } catch {
     toast.add({ title: 'Failed to update preferences', color: 'error' })
   }
 }
