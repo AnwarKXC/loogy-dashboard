@@ -18,6 +18,14 @@ type Testimonial = {
   createdAt: string
 }
 
+type TestimonialsResponse = {
+  testimonials: Testimonial[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
@@ -36,7 +44,7 @@ const sourceFilter = computed({
   }
 })
 
-const { data, refresh, status: fetchStatus } = await useFetch('/api/testimonials', {
+const { data, refresh, status: fetchStatus } = await useFetch<TestimonialsResponse>('/api/testimonials', {
   query: computed(() => ({
     page: page.value,
     limit: 20,
@@ -44,7 +52,7 @@ const { data, refresh, status: fetchStatus } = await useFetch('/api/testimonials
   }))
 })
 
-const testimonials = computed(() => (data.value?.testimonials ?? []) as Testimonial[])
+const testimonials = computed(() => data.value?.testimonials ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const totalPages = computed(() => data.value?.totalPages ?? 1)
 
@@ -299,180 +307,177 @@ async function deleteTestimonial(testimonial: Testimonial) {
 </script>
 
 <template>
-  <UDashboardPanel id="testimonials">
-    <template #header>
-      <UDashboardNavbar title="Testimonials">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-        <template #right>
+  <div class="flex items-center justify-end gap-4 -mt-6">
+    <USelect
+      v-model="sourceFilter"
+      :items="sourceOptions"
+      placeholder="Filter by source"
+      class="w-40"
+    />
+    <UButton
+      icon="i-lucide-plus"
+      label="Add Testimonial"
+      @click="openCreate"
+    />
+  </div>
+  <div class="p-4">
+    <USkeleton v-if="fetchStatus === 'pending'" class="h-96 w-full" />
+
+    <div v-else-if="testimonials.length === 0" class="text-center py-12">
+      <UIcon name="i-lucide-message-square-quote" class="text-4xl text-gray-400 mb-2" />
+      <p class="text-gray-500">
+        No testimonials found
+      </p>
+      <UButton class="mt-4" @click="openCreate">
+        Add your first testimonial
+      </UButton>
+    </div>
+
+    <UTable
+      v-else
+      :data="testimonials"
+      :columns="columns"
+      class="w-full"
+    />
+
+    <div v-if="totalPages > 1" class="flex justify-center mt-6">
+      <UPagination v-model="page" :total="total" :items-per-page="20" />
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <UModal
+    v-model:open="isModalOpen"
+    :title="isEditing ? 'Edit Testimonial' : 'Add Testimonial'"
+  >
+    <template #body>
+      <UForm
+        :schema="schema"
+        :state="state"
+        class="space-y-4"
+        @submit="onSubmit"
+      >
+        <UFormField label="Customer Name" name="customerName">
+          <UInput
+            v-model="state.customerName"
+            placeholder="Customer name (optional)"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Source" name="source">
           <USelect
-            v-model="sourceFilter"
-            :items="sourceOptions"
-            placeholder="Filter by source"
-            class="w-40"
+            v-model="state.source"
+            :items="sourceOptions.filter(s => s.value)"
+            value-key="value"
+            class="w-full"
           />
-          <UButton
-            icon="i-lucide-plus"
-            label="Add Testimonial"
-            @click="openCreate"
+        </UFormField>
+
+        <UFormField label="Rating" name="rating">
+          <div class="flex gap-2">
+            <UButton
+              v-for="star in 5"
+              :key="star"
+              :color="state.rating && state.rating >= star ? 'warning' : 'neutral'"
+              :variant="state.rating && state.rating >= star ? 'solid' : 'outline'"
+              size="sm"
+              @click="state.rating = star"
+            >
+              ★
+            </UButton>
+            <UButton
+              v-if="state.rating"
+              size="sm"
+              variant="ghost"
+              @click="state.rating = null"
+            >
+              Clear
+            </UButton>
+          </div>
+        </UFormField>
+
+        <UFormField label="Text Content" name="content">
+          <UTextarea
+            v-model="state.content"
+            placeholder="Testimonial text (optional if you have images)"
+            :rows="3"
+            class="w-full"
           />
-        </template>
-      </UDashboardNavbar>
+        </UFormField>
+
+        <UFormField label="Images" name="images">
+          <div class="space-y-2">
+            <div class="flex gap-2">
+              <UInput
+                v-model="imageInput"
+                placeholder="Enter image URL"
+                class="flex-1"
+                @keyup.enter="addImage"
+              />
+              <UButton
+                icon="i-lucide-plus"
+                @click="addImage"
+              />
+            </div>
+            <div v-if="state.images.length > 0" class="flex flex-wrap gap-2 mt-2">
+              <div
+                v-for="(img, i) in state.images"
+                :key="i"
+                class="relative"
+              >
+                <img
+                  :src="img"
+                  class="w-20 h-20 object-cover rounded"
+                  :alt="`Image ${i + 1}`"
+                >
+                <button
+                  type="button"
+                  class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                  @click="removeImage(i)"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          </div>
+        </UFormField>
+
+        <UFormField label="Display Order" name="displayOrder">
+          <UInput
+            v-model.number="state.displayOrder"
+            type="number"
+            class="w-full"
+          />
+          <template #help>
+            Lower numbers appear first
+          </template>
+        </UFormField>
+
+        <UFormField name="isPublished">
+          <UCheckbox
+            v-model="state.isPublished"
+            label="Published (visible on storefront)"
+          />
+        </UFormField>
+      </UForm>
     </template>
 
-    <template #body>
-      <div class="p-4">
-        <USkeleton v-if="fetchStatus === 'pending'" class="h-96 w-full" />
-
-        <UTable
-          v-else
-          :data="testimonials"
-          :columns="columns"
-          class="w-full"
-        />
-
-        <div v-if="totalPages > 1" class="flex justify-center mt-6">
-          <UPagination v-model="page" :total="total" :items-per-page="20" />
-        </div>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton
+          variant="outline"
+          @click="isModalOpen = false"
+        >
+          Cancel
+        </UButton>
+        <UButton
+          :loading="saving"
+          @click="onSubmit({ data: state } as FormSubmitEvent<Schema>)"
+        >
+          {{ isEditing ? 'Save Changes' : 'Create' }}
+        </UButton>
       </div>
     </template>
-
-    <!-- Create/Edit Modal -->
-    <UModal v-model:open="isModalOpen">
-      <template #content>
-        <div class="p-6">
-          <h3 class="text-lg font-semibold mb-4">
-            {{ isEditing ? 'Edit Testimonial' : 'Add Testimonial' }}
-          </h3>
-
-          <UForm
-            :schema="schema"
-            :state="state"
-            class="space-y-4"
-            @submit="onSubmit"
-          >
-            <UFormField label="Customer Name" name="customerName">
-              <UInput
-                v-model="state.customerName"
-                placeholder="Customer name (optional)"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField label="Source" name="source">
-              <USelect
-                v-model="state.source"
-                :items="sourceOptions.filter(s => s.value)"
-                value-key="value"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField label="Rating" name="rating">
-              <div class="flex gap-2">
-                <UButton
-                  v-for="star in 5"
-                  :key="star"
-                  :color="state.rating && state.rating >= star ? 'warning' : 'neutral'"
-                  :variant="state.rating && state.rating >= star ? 'solid' : 'outline'"
-                  size="sm"
-                  @click="state.rating = star"
-                >
-                  ★
-                </UButton>
-                <UButton
-                  v-if="state.rating"
-                  size="sm"
-                  variant="ghost"
-                  @click="state.rating = null"
-                >
-                  Clear
-                </UButton>
-              </div>
-            </UFormField>
-
-            <UFormField label="Text Content" name="content">
-              <UTextarea
-                v-model="state.content"
-                placeholder="Testimonial text (optional if you have images)"
-                :rows="3"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField label="Images" name="images">
-              <div class="space-y-2">
-                <div class="flex gap-2">
-                  <UInput
-                    v-model="imageInput"
-                    placeholder="Enter image URL"
-                    class="flex-1"
-                    @keyup.enter="addImage"
-                  />
-                  <UButton
-                    icon="i-lucide-plus"
-                    @click="addImage"
-                  />
-                </div>
-                <div v-if="state.images.length > 0" class="flex flex-wrap gap-2 mt-2">
-                  <div
-                    v-for="(img, i) in state.images"
-                    :key="i"
-                    class="relative"
-                  >
-                    <img
-                      :src="img"
-                      class="w-20 h-20 object-cover rounded"
-                      :alt="`Image ${i + 1}`"
-                    >
-                    <button
-                      type="button"
-                      class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
-                      @click="removeImage(i)"
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </UFormField>
-
-            <UFormField label="Display Order" name="displayOrder">
-              <UInput
-                v-model.number="state.displayOrder"
-                type="number"
-                class="w-full"
-              />
-              <template #help>
-                Lower numbers appear first
-              </template>
-            </UFormField>
-
-            <UFormField name="isPublished">
-              <UCheckbox
-                v-model="state.isPublished"
-                label="Published (visible on storefront)"
-              />
-            </UFormField>
-
-            <div class="flex justify-end gap-2 pt-4">
-              <UButton
-                variant="outline"
-                @click="isModalOpen = false"
-              >
-                Cancel
-              </UButton>
-              <UButton
-                type="submit"
-                :loading="saving"
-              >
-                {{ isEditing ? 'Save Changes' : 'Create' }}
-              </UButton>
-            </div>
-          </UForm>
-        </div>
-      </template>
-    </UModal>
-  </UDashboardPanel>
+  </UModal>
 </template>

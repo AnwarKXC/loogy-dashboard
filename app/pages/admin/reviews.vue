@@ -3,22 +3,14 @@ import type { NavigationMenuItem } from '@nuxt/ui'
 
 const links = [[
   {
-    label: 'Storefront',
-    icon: 'i-lucide-monitor',
-    to: '/admin/front',
+    label: 'Reviews',
+    icon: 'i-lucide-message-circle',
+    to: '/admin/reviews',
     exact: true
   }, {
-    label: 'Layout',
-    icon: 'i-lucide-layout',
-    to: '/admin/front/layout'
-  }, {
-    label: 'Categories',
-    icon: 'i-lucide-layers',
-    to: '/admin/front/categories'
-  }, {
-    label: 'SEO',
-    icon: 'i-lucide-search-check',
-    to: '/admin/front/seo'
+    label: 'Testimonials',
+    icon: 'i-lucide-quote',
+    to: '/admin/reviews/testimonials'
   }
 ]] satisfies NavigationMenuItem[][]
 </script>

@@ -342,65 +342,61 @@ const filterOptions = [
     </template>
 
     <!-- Stock Adjustment Modal -->
-    <UModal v-model:open="isModalOpen">
-      <template #content>
-        <div class="p-6">
-          <h3 class="text-lg font-semibold mb-4">
-            Adjust Stock
-          </h3>
-
-          <div v-if="editingProduct" class="space-y-4">
-            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <UAvatar
-                :src="editingProduct.image ?? undefined"
-                :alt="editingProduct.name"
-                size="lg"
-              />
-              <div>
-                <p class="font-medium">
-                  {{ editingProduct.name }}
-                </p>
-                <p class="text-sm text-gray-500">
-                  Current stock: {{ editingProduct.stock }}
-                </p>
-              </div>
-            </div>
-
-            <UFormField label="New Stock Quantity">
-              <UInput
-                v-model.number="newStock"
-                type="number"
-                min="0"
-                placeholder="Enter new stock"
-              />
-            </UFormField>
-
-            <div class="flex items-center gap-2 text-sm">
-              <span>Change:</span>
-              <UBadge
-                :color="newStock > editingProduct.stock ? 'success' : newStock < editingProduct.stock ? 'error' : 'neutral'"
-              >
-                {{ newStock >= editingProduct.stock ? '+' : '' }}{{ newStock - editingProduct.stock }}
-              </UBadge>
-            </div>
-
-            <UFormField label="Note (optional)">
-              <UTextarea
-                v-model="adjustmentNote"
-                placeholder="Reason for adjustment (e.g., Restock, Damaged goods)"
-                :rows="2"
-              />
-            </UFormField>
-
-            <div class="flex justify-end gap-2 mt-4">
-              <UButton variant="ghost" @click="isModalOpen = false">
-                Cancel
-              </UButton>
-              <UButton :loading="saving" @click="saveStock">
-                Save
-              </UButton>
+    <UModal v-model:open="isModalOpen" title="Adjust Stock">
+      <template #body>
+        <div v-if="editingProduct" class="space-y-4">
+          <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <UAvatar
+              :src="editingProduct.image ?? undefined"
+              :alt="editingProduct.name"
+              size="lg"
+            />
+            <div>
+              <p class="font-medium">
+                {{ editingProduct.name }}
+              </p>
+              <p class="text-sm text-gray-500">
+                Current stock: {{ editingProduct.stock }}
+              </p>
             </div>
           </div>
+
+          <UFormField label="New Stock Quantity">
+            <UInput
+              v-model.number="newStock"
+              type="number"
+              min="0"
+              placeholder="Enter new stock"
+            />
+          </UFormField>
+
+          <div class="flex items-center gap-2 text-sm">
+            <span>Change:</span>
+            <UBadge
+              :color="newStock > editingProduct.stock ? 'success' : newStock < editingProduct.stock ? 'error' : 'neutral'"
+            >
+              {{ newStock >= editingProduct.stock ? '+' : '' }}{{ newStock - editingProduct.stock }}
+            </UBadge>
+          </div>
+
+          <UFormField label="Note (optional)">
+            <UTextarea
+              v-model="adjustmentNote"
+              placeholder="Reason for adjustment (e.g., Restock, Damaged goods)"
+              :rows="2"
+            />
+          </UFormField>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton variant="ghost" @click="isModalOpen = false">
+            Cancel
+          </UButton>
+          <UButton :loading="saving" @click="saveStock">
+            Save
+          </UButton>
         </div>
       </template>
     </UModal>

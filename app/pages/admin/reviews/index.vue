@@ -24,6 +24,14 @@ type ProductReview = {
   productImage: string | null
 }
 
+type ReviewsResponse = {
+  reviews: ProductReview[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
 const toast = useToast()
 const route = useRoute()
 const router = useRouter()
@@ -42,7 +50,7 @@ const statusFilter = computed({
   }
 })
 
-const { data, refresh, status: fetchStatus } = await useFetch('/api/reviews', {
+const { data, refresh, status: fetchStatus } = await useFetch<ReviewsResponse>('/api/reviews', {
   query: computed(() => ({
     page: page.value,
     limit: 20,
@@ -50,7 +58,7 @@ const { data, refresh, status: fetchStatus } = await useFetch('/api/reviews', {
   }))
 })
 
-const reviews = computed(() => (data.value?.reviews ?? []) as ProductReview[])
+const reviews = computed(() => data.value?.reviews ?? [])
 const total = computed(() => data.value?.total ?? 0)
 const totalPages = computed(() => data.value?.totalPages ?? 1)
 
@@ -196,131 +204,124 @@ async function deleteReview(review: ProductReview) {
 </script>
 
 <template>
-  <UDashboardPanel id="reviews">
-    <template #header>
-      <UDashboardNavbar title="Product Reviews">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-        <template #right>
-          <USelect
-            v-model="statusFilter"
-            :items="statusOptions"
-            placeholder="Filter by status"
-            class="w-40"
-          />
-        </template>
-      </UDashboardNavbar>
-    </template>
+  <div class="flex items-center justify-end gap-4 -mt-6">
+    <USelect
+      v-model="statusFilter"
+      :items="statusOptions"
+      placeholder="Filter by status"
+      class="w-40"
+    />
+  </div>
+  <div class="p-4">
+    <USkeleton v-if="fetchStatus === 'pending'" class="h-96 w-full" />
+    <div v-else-if="reviews.length === 0" class="text-center py-12">
+      <UIcon name="i-lucide-star" class="text-4xl text-gray-400 mb-2" />
+      <p class="text-gray-500">
+        No reviews found
+      </p>
+    </div>
 
+    <UTable
+      v-else
+      :data="reviews"
+      :columns="columns"
+      class="w-full"
+    />
+
+    <div v-if="totalPages > 1" class="flex justify-center mt-6">
+      <UPagination v-model="page" :total="total" :items-per-page="20" />
+    </div>
+  </div>
+
+  <!-- Review Detail Modal -->
+  <UModal v-model:open="isModalOpen" title="Review Details">
     <template #body>
-      <div class="p-4">
-        <USkeleton v-if="fetchStatus === 'pending'" class="h-96 w-full" />
-
-        <UTable
-          v-else
-          :data="reviews"
-          :columns="columns"
-          class="w-full"
-        />
-
-        <div v-if="totalPages > 1" class="flex justify-center mt-6">
-          <UPagination v-model="page" :total="total" :items-per-page="20" />
+      <div v-if="selectedReview" class="space-y-4">
+        <div class="flex items-center justify-between">
+          <UBadge :color="statusColors[selectedReview.status]">
+            {{ selectedReview.status }}
+          </UBadge>
         </div>
+
+        <div class="flex items-center gap-4">
+          <img
+            v-if="selectedReview.productImage"
+            :src="selectedReview.productImage"
+            class="w-16 h-16 rounded object-cover"
+            :alt="selectedReview.productName"
+          >
+          <div>
+            <p class="font-medium">
+              {{ selectedReview.productName }}
+            </p>
+            <p class="text-yellow-500 text-xl">
+              {{ renderStars(selectedReview.rating) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-500">Customer:</span>
+            <span>{{ selectedReview.customerName || 'Anonymous' }}</span>
+            <UBadge v-if="selectedReview.isVerified" color="success" size="xs">
+              Verified Purchase
+            </UBadge>
+          </div>
+          <div v-if="selectedReview.orderId">
+            <span class="text-sm text-gray-500">Order ID:</span>
+            <NuxtLink
+              :to="`/admin/orders/${selectedReview.orderId}`"
+              class="text-blue-600 hover:underline ml-1"
+            >
+              #{{ selectedReview.orderId }}
+            </NuxtLink>
+          </div>
+        </div>
+
+        <div v-if="selectedReview.title" class="border-t pt-4">
+          <p class="font-semibold">
+            {{ selectedReview.title }}
+          </p>
+        </div>
+
+        <div v-if="selectedReview.content" class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+          <p class="whitespace-pre-wrap">
+            {{ selectedReview.content }}
+          </p>
+        </div>
+
+        <UFormField label="Admin Note (Internal)" name="adminNote">
+          <UTextarea
+            v-model="modalNote"
+            placeholder="Add internal notes about this review..."
+            :rows="2"
+            class="w-full"
+          />
+        </UFormField>
       </div>
     </template>
 
-    <!-- Review Detail Modal -->
-    <UModal v-model:open="isModalOpen">
-      <template #content>
-        <div v-if="selectedReview" class="p-6 space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">
-              Review Details
-            </h3>
-            <UBadge :color="statusColors[selectedReview.status]">
-              {{ selectedReview.status }}
-            </UBadge>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <img
-              v-if="selectedReview.productImage"
-              :src="selectedReview.productImage"
-              class="w-16 h-16 rounded object-cover"
-              :alt="selectedReview.productName"
-            >
-            <div>
-              <p class="font-medium">
-                {{ selectedReview.productName }}
-              </p>
-              <p class="text-yellow-500 text-xl">
-                {{ renderStars(selectedReview.rating) }}
-              </p>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-500">Customer:</span>
-              <span>{{ selectedReview.customerName || 'Anonymous' }}</span>
-              <UBadge v-if="selectedReview.isVerified" color="success" size="xs">
-                Verified Purchase
-              </UBadge>
-            </div>
-            <div v-if="selectedReview.orderId">
-              <span class="text-sm text-gray-500">Order ID:</span>
-              <NuxtLink
-                :to="`/admin/orders/${selectedReview.orderId}`"
-                class="text-blue-600 hover:underline ml-1"
-              >
-                #{{ selectedReview.orderId }}
-              </NuxtLink>
-            </div>
-          </div>
-
-          <div v-if="selectedReview.title" class="border-t pt-4">
-            <p class="font-semibold">
-              {{ selectedReview.title }}
-            </p>
-          </div>
-
-          <div v-if="selectedReview.content" class="bg-gray-50 p-4 rounded-lg">
-            <p class="whitespace-pre-wrap">
-              {{ selectedReview.content }}
-            </p>
-          </div>
-
-          <UFormField label="Admin Note (Internal)" name="adminNote">
-            <UTextarea
-              v-model="modalNote"
-              placeholder="Add internal notes about this review..."
-              :rows="2"
-              class="w-full"
-            />
-          </UFormField>
-
-          <div class="flex justify-end gap-2 pt-4 border-t">
-            <UButton
-              v-if="selectedReview.status !== 'REJECTED'"
-              color="error"
-              variant="outline"
-              :loading="saving"
-              @click="updateStatus(selectedReview, 'REJECTED')"
-            >
-              Reject
-            </UButton>
-            <UButton
-              v-if="selectedReview.status !== 'APPROVED'"
-              color="success"
-              :loading="saving"
-              @click="updateStatus(selectedReview, 'APPROVED')"
-            >
-              Approve
-            </UButton>
-          </div>
-        </div>
-      </template>
-    </UModal>
-  </UDashboardPanel>
+    <template #footer>
+      <div v-if="selectedReview" class="flex justify-end gap-2">
+        <UButton
+          v-if="selectedReview.status !== 'REJECTED'"
+          color="error"
+          variant="outline"
+          :loading="saving"
+          @click="updateStatus(selectedReview, 'REJECTED')"
+        >
+          Reject
+        </UButton>
+        <UButton
+          v-if="selectedReview.status !== 'APPROVED'"
+          color="success"
+          :loading="saving"
+          @click="updateStatus(selectedReview, 'APPROVED')"
+        >
+          Approve
+        </UButton>
+      </div>
+    </template>
+  </UModal>
 </template>

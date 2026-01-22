@@ -241,397 +241,356 @@ const getPageLabel = (key: string) => pageOptions.find(p => p.value === key)?.la
 </script>
 
 <template>
-  <UDashboardPanel id="seo-settings">
-    <template #header>
-      <UDashboardNavbar title="Page SEO">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-        <template #actions>
-          <UButton
-            icon="i-lucide-plus"
-            label="Add SEO"
-            @click="openCreate"
+  <div class="space-y-6 p-4 -mt-6">
+    <UCard>
+      <template #header>
+        <div>
+          <p class="text-sm text-muted">
+            Manage SEO settings for your storefront pages
+          </p>
+          <h2 class="text-lg font-semibold">
+            SEO Settings
+          </h2>
+        </div>
+      </template>
+
+      <div class="flex items-center justify-end gap-4 ">
+        <UButton
+          icon="i-lucide-plus"
+          label="Add SEO"
+          @click="openCreate"
+        />
+      </div>
+      <USkeleton
+        v-if="status === 'pending'"
+        class="h-64"
+      />
+      <UTable
+        v-else
+        :data="pages"
+        :columns="columns"
+      />
+    </UCard>
+  </div>
+
+  <!-- Create Modal -->
+  <UModal v-model:open="createOpen" title="Add Page SEO">
+    <template #body>
+      <UForm
+        :schema="seoSchema"
+        :state="state"
+        class="space-y-4"
+        @submit="handleSubmit"
+      >
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UFormField
+            label="Page"
+            name="pageKey"
+          >
+            <USelect
+              v-model="state.pageKey"
+              :items="pageOptions"
+              class="w-full"
+            />
+          </UFormField>
+
+          <UFormField
+            label="Language"
+            name="lang"
+          >
+            <USelect
+              v-model="state.lang"
+              :items="langOptions"
+              class="w-full"
+            />
+          </UFormField>
+        </div>
+
+        <UFormField
+          label="Title"
+          name="title"
+          :hint="`${state.title.length}/${MAX_SEO_TITLE_LENGTH}`"
+        >
+          <UInput
+            v-model="state.title"
+            placeholder="Page title for search engines"
+            class="w-full"
           />
-        </template>
-      </UDashboardNavbar>
+        </UFormField>
+
+        <UFormField
+          label="Description"
+          name="description"
+          :hint="`${state.description.length}/${MAX_SEO_DESCRIPTION_LENGTH}`"
+        >
+          <UTextarea
+            v-model="state.description"
+            placeholder="Meta description..."
+            :rows="2"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Keywords"
+          name="keywords"
+        >
+          <UInput
+            v-model="state.keywords"
+            placeholder="keyword1, keyword2, keyword3"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UDivider label="Open Graph" />
+
+        <UFormField
+          label="OG Title"
+          name="ogTitle"
+        >
+          <UInput
+            v-model="state.ogTitle"
+            placeholder="Title for social sharing"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="OG Description"
+          name="ogDescription"
+        >
+          <UTextarea
+            v-model="state.ogDescription"
+            placeholder="Description for social sharing"
+            :rows="2"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="OG Image URL"
+          name="ogImage"
+        >
+          <UInput
+            v-model="state.ogImage"
+            placeholder="https://..."
+            class="w-full"
+          />
+        </UFormField>
+
+        <UDivider label="Advanced" />
+
+        <UFormField
+          label="Canonical URL"
+          name="canonicalUrl"
+        >
+          <UInput
+            v-model="state.canonicalUrl"
+            placeholder="https://..."
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Robots"
+          name="robots"
+        >
+          <UInput
+            v-model="state.robots"
+            placeholder="index, follow"
+            class="w-full"
+          />
+        </UFormField>
+      </UForm>
     </template>
 
-    <template #body>
-      <div class="space-y-6 p-4">
-        <UCard>
-          <template #header>
-            <div>
-              <p class="text-sm text-muted">
-                Manage SEO settings for your storefront pages
-              </p>
-              <h2 class="text-lg font-semibold">
-                SEO Settings
-              </h2>
-            </div>
-          </template>
-
-          <USkeleton
-            v-if="status === 'pending'"
-            class="h-64"
-          />
-
-          <UTable
-            v-else
-            :data="pages"
-            :columns="columns"
-          />
-        </UCard>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton variant="ghost" @click="createOpen = false">
+          Cancel
+        </UButton>
+        <UButton
+          icon="i-lucide-save"
+          label="Save SEO"
+          :loading="formLoading"
+          @click="handleSubmit"
+        />
       </div>
     </template>
+  </UModal>
 
-    <!-- Create Modal -->
-    <UModal v-model:open="createOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold">
-                Add Page SEO
-              </h3>
-              <UButton
-                icon="i-lucide-x"
-                color="neutral"
-                variant="ghost"
-                @click="createOpen = false"
-              />
-            </div>
-          </template>
-
-          <UForm
-            :schema="seoSchema"
-            :state="state"
-            class="space-y-4"
-            @submit="handleSubmit"
+  <!-- Edit Modal -->
+  <UModal v-model:open="editOpen" title="Edit Page SEO">
+    <template #body>
+      <UForm
+        :schema="seoSchema"
+        :state="state"
+        class="space-y-4"
+        @submit="handleSubmit"
+      >
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UFormField
+            label="Page"
+            name="pageKey"
           >
-            <div class="grid gap-4 sm:grid-cols-2">
-              <UFormField
-                label="Page"
-                name="pageKey"
-              >
-                <USelect
-                  v-model="state.pageKey"
-                  :items="pageOptions"
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField
-                label="Language"
-                name="lang"
-              >
-                <USelect
-                  v-model="state.lang"
-                  :items="langOptions"
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-
-            <UFormField
-              label="Title"
-              name="title"
-              :hint="`${state.title.length}/${MAX_SEO_TITLE_LENGTH}`"
-            >
-              <UInput
-                v-model="state.title"
-                placeholder="Page title for search engines"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Description"
-              name="description"
-              :hint="`${state.description.length}/${MAX_SEO_DESCRIPTION_LENGTH}`"
-            >
-              <UTextarea
-                v-model="state.description"
-                placeholder="Meta description..."
-                :rows="2"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Keywords"
-              name="keywords"
-            >
-              <UInput
-                v-model="state.keywords"
-                placeholder="keyword1, keyword2, keyword3"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UDivider label="Open Graph" />
-
-            <UFormField
-              label="OG Title"
-              name="ogTitle"
-            >
-              <UInput
-                v-model="state.ogTitle"
-                placeholder="Title for social sharing"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="OG Description"
-              name="ogDescription"
-            >
-              <UTextarea
-                v-model="state.ogDescription"
-                placeholder="Description for social sharing"
-                :rows="2"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="OG Image URL"
-              name="ogImage"
-            >
-              <UInput
-                v-model="state.ogImage"
-                placeholder="https://..."
-                class="w-full"
-              />
-            </UFormField>
-
-            <UDivider label="Advanced" />
-
-            <UFormField
-              label="Canonical URL"
-              name="canonicalUrl"
-            >
-              <UInput
-                v-model="state.canonicalUrl"
-                placeholder="https://..."
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Robots"
-              name="robots"
-            >
-              <UInput
-                v-model="state.robots"
-                placeholder="index, follow"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UButton
-              type="submit"
-              size="lg"
-              icon="i-lucide-save"
-              label="Save SEO"
-              :loading="formLoading"
+            <USelect
+              v-model="state.pageKey"
+              :items="pageOptions"
+              disabled
+              class="w-full"
             />
-          </UForm>
-        </UCard>
-      </template>
-    </UModal>
+          </UFormField>
 
-    <!-- Edit Modal -->
-    <UModal v-model:open="editOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <div class="flex items-center justify-between">
-              <h3 class="font-semibold">
-                Edit Page SEO
-              </h3>
-              <UButton
-                icon="i-lucide-x"
-                color="neutral"
-                variant="ghost"
-                @click="editOpen = false"
-              />
-            </div>
-          </template>
-
-          <UForm
-            :schema="seoSchema"
-            :state="state"
-            class="space-y-4"
-            @submit="handleSubmit"
+          <UFormField
+            label="Language"
+            name="lang"
           >
-            <div class="grid gap-4 sm:grid-cols-2">
-              <UFormField
-                label="Page"
-                name="pageKey"
-              >
-                <USelect
-                  v-model="state.pageKey"
-                  :items="pageOptions"
-                  disabled
-                  class="w-full"
-                />
-              </UFormField>
-
-              <UFormField
-                label="Language"
-                name="lang"
-              >
-                <USelect
-                  v-model="state.lang"
-                  :items="langOptions"
-                  disabled
-                  class="w-full"
-                />
-              </UFormField>
-            </div>
-
-            <UFormField
-              label="Title"
-              name="title"
-              :hint="`${state.title.length}/${MAX_SEO_TITLE_LENGTH}`"
-            >
-              <UInput
-                v-model="state.title"
-                placeholder="Page title for search engines"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Description"
-              name="description"
-              :hint="`${state.description.length}/${MAX_SEO_DESCRIPTION_LENGTH}`"
-            >
-              <UTextarea
-                v-model="state.description"
-                placeholder="Meta description..."
-                :rows="2"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Keywords"
-              name="keywords"
-            >
-              <UInput
-                v-model="state.keywords"
-                placeholder="keyword1, keyword2, keyword3"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UDivider label="Open Graph" />
-
-            <UFormField
-              label="OG Title"
-              name="ogTitle"
-            >
-              <UInput
-                v-model="state.ogTitle"
-                placeholder="Title for social sharing"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="OG Description"
-              name="ogDescription"
-            >
-              <UTextarea
-                v-model="state.ogDescription"
-                placeholder="Description for social sharing"
-                :rows="2"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="OG Image URL"
-              name="ogImage"
-            >
-              <UInput
-                v-model="state.ogImage"
-                placeholder="https://..."
-                class="w-full"
-              />
-            </UFormField>
-
-            <UDivider label="Advanced" />
-
-            <UFormField
-              label="Canonical URL"
-              name="canonicalUrl"
-            >
-              <UInput
-                v-model="state.canonicalUrl"
-                placeholder="https://..."
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              label="Robots"
-              name="robots"
-            >
-              <UInput
-                v-model="state.robots"
-                placeholder="index, follow"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UButton
-              type="submit"
-              size="lg"
-              icon="i-lucide-save"
-              label="Update SEO"
-              :loading="formLoading"
+            <USelect
+              v-model="state.lang"
+              :items="langOptions"
+              disabled
+              class="w-full"
             />
-          </UForm>
-        </UCard>
-      </template>
-    </UModal>
+          </UFormField>
+        </div>
 
-    <!-- Delete Confirmation -->
-    <UModal v-model:open="deleteOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <h3 class="font-semibold">
-              Delete SEO Settings
-            </h3>
-          </template>
+        <UFormField
+          label="Title"
+          name="title"
+          :hint="`${state.title.length}/${MAX_SEO_TITLE_LENGTH}`"
+        >
+          <UInput
+            v-model="state.title"
+            placeholder="Page title for search engines"
+            class="w-full"
+          />
+        </UFormField>
 
-          <p class="text-sm text-muted">
-            Are you sure you want to delete SEO settings for
-            <strong class="text-highlighted">{{ getPageLabel(selectedSEO?.pageKey ?? '') }} ({{ selectedSEO?.lang }})</strong>?
-          </p>
+        <UFormField
+          label="Description"
+          name="description"
+          :hint="`${state.description.length}/${MAX_SEO_DESCRIPTION_LENGTH}`"
+        >
+          <UTextarea
+            v-model="state.description"
+            placeholder="Meta description..."
+            :rows="2"
+            class="w-full"
+          />
+        </UFormField>
 
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton
-                color="neutral"
-                variant="ghost"
-                label="Cancel"
-                @click="deleteOpen = false"
-              />
-              <UButton
-                color="error"
-                label="Delete"
-                :loading="deleteLoading"
-                @click="confirmDelete"
-              />
-            </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
-  </UDashboardPanel>
+        <UFormField
+          label="Keywords"
+          name="keywords"
+        >
+          <UInput
+            v-model="state.keywords"
+            placeholder="keyword1, keyword2, keyword3"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UDivider label="Open Graph" />
+
+        <UFormField
+          label="OG Title"
+          name="ogTitle"
+        >
+          <UInput
+            v-model="state.ogTitle"
+            placeholder="Title for social sharing"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="OG Description"
+          name="ogDescription"
+        >
+          <UTextarea
+            v-model="state.ogDescription"
+            placeholder="Description for social sharing"
+            :rows="2"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="OG Image URL"
+          name="ogImage"
+        >
+          <UInput
+            v-model="state.ogImage"
+            placeholder="https://..."
+            class="w-full"
+          />
+        </UFormField>
+
+        <UDivider label="Advanced" />
+
+        <UFormField
+          label="Canonical URL"
+          name="canonicalUrl"
+        >
+          <UInput
+            v-model="state.canonicalUrl"
+            placeholder="https://..."
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField
+          label="Robots"
+          name="robots"
+        >
+          <UInput
+            v-model="state.robots"
+            placeholder="index, follow"
+            class="w-full"
+          />
+        </UFormField>
+      </UForm>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <UButton variant="ghost" @click="editOpen = false">
+          Cancel
+        </UButton>
+        <UButton
+          icon="i-lucide-save"
+          label="Update SEO"
+          :loading="formLoading"
+          @click="handleSubmit"
+        />
+      </div>
+    </template>
+  </UModal>
+
+  <!-- Delete Confirmation -->
+  <UModal v-model:open="deleteOpen" title="Delete SEO Settings">
+    <template #body>
+      <p class="text-sm text-muted">
+        Are you sure you want to delete SEO settings for
+        <strong class="text-highlighted">{{ getPageLabel(selectedSEO?.pageKey ?? '') }} ({{ selectedSEO?.lang }})</strong>?
+      </p>
+    </template>
+
+    <template #footer>
+      <div class="flex justify-end gap-3">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          label="Cancel"
+          @click="deleteOpen = false"
+        />
+        <UButton
+          color="error"
+          label="Delete"
+          :loading="deleteLoading"
+          @click="confirmDelete"
+        />
+      </div>
+    </template>
+  </UModal>
 </template>
