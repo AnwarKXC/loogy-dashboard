@@ -1,9 +1,13 @@
-// @ts-nocheck
 <script setup lang="ts">
 import { computed, reactive, ref, onMounted } from 'vue'
 
 definePageMeta({
   layout: 'storefront'
+})
+
+useSeoMeta({
+  title: 'إتمام الشراء',
+  robots: 'noindex, nofollow'
 })
 
 interface PricingSettings {

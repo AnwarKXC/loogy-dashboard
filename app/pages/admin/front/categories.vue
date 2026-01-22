@@ -285,7 +285,6 @@ function fromImageArray(arr: string[]): string | undefined {
               class="flex-1"
             />
             <UButton
-              size="sm"
               color="primary"
               variant="soft"
               icon="i-lucide-plus"

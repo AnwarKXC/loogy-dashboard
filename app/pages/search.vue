@@ -73,7 +73,7 @@ const sortOptions = [
         />
         <div class="flex items-center gap-2 justify-end">
           <span class="text-sm text-gray-500 dark:text-gray-400">ترتيب</span>
-          <USelectMenu v-model="sort" :options="sortOptions" size="sm" />
+          <USelectMenu v-model="sort" :options="sortOptions" />
         </div>
       </div>
     </UCard>

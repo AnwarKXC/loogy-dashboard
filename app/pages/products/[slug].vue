@@ -10,6 +10,7 @@ const router = useRouter()
 const toast = useToast()
 const { add: addToCart } = useCart()
 const { items: wishlistItems, add: addToWishlist, remove: removeFromWishlist } = useWishlist()
+const config = useRuntimeConfig()
 
 type ProductDetail = {
   id: number
@@ -26,7 +27,11 @@ type ProductDetail = {
 
 const { data: productData, pending, error } = await useFetch<ProductDetail>(`/api/public/products/${route.params.slug}`)
 
-const product = computed(() => productData.value ?? null)
+if (error.value || !productData.value) {
+  throw createError({ statusCode: 404, statusMessage: 'Product Not Found', fatal: true })
+}
+
+const product = computed(() => productData.value!)
 const images = computed(() => (product.value?.images?.length
   ? product.value.images
   : [
@@ -37,6 +42,52 @@ const activeImage = ref('')
 watch(images, (list) => {
   activeImage.value = list[0] ?? ''
 }, { immediate: true })
+
+// --- SEO & Meta ---
+const title = computed(() => product.value.name)
+const description = computed(() => product.value.shortDescription || product.value.description || `Buy ${product.value.name} at the best price.`)
+const ogImage = computed(() => images.value[0])
+const currency = 'EGP' // Assuming EGP based on context
+
+useSeoMeta({
+  title: title,
+  ogTitle: title,
+  description: description,
+  ogDescription: description,
+  ogImage: ogImage,
+  twitterCard: 'summary_large_image',
+  twitterTitle: title,
+  twitterDescription: description,
+  twitterImage: ogImage
+})
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      children: computed(() => ({
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        'name': product.value.name,
+        'image': images.value,
+        'description': description.value,
+        'sku': product.value.id,
+        'brand': {
+          '@type': 'Brand',
+          'name': product.value.brand?.name || 'Generic'
+        },
+        'offers': {
+          '@type': 'Offer',
+          'url': `${config.public.siteUrl || ''}/products/${route.params.slug}`,
+          'priceCurrency': currency,
+          'price': product.value.salePrice ?? product.value.price,
+          'availability': product.value.status === 'out_of_stock' ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
+          'itemCondition': 'https://schema.org/NewCondition'
+        }
+      }))
+    }
+  ]
+})
 
 const quantity = ref(1)
 
@@ -68,7 +119,11 @@ const isInWishlist = computed(() => {
 const toggleWishlist = async () => {
   if (!product.value) return
   if (isInWishlist.value) {
-    await removeFromWishlist(product.value.id, undefined)
+    const item = wishlistItems.value.find(i => i.productId === product.value.id)
+    if (item) {
+      // Pass variantId if it exists in the future, currently undefined
+      await removeFromWishlist(product.value.id, undefined)
+    }
   } else {
     await addToWishlist({
       title: product.value.name,

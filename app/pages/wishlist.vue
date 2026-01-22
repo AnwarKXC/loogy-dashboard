@@ -3,6 +3,14 @@ definePageMeta({
   layout: 'storefront'
 })
 
+useSeoMeta({
+  title: 'قائمة المتمنيات',
+  robots: 'noindex, nofollow'
+})
+
+const { add: addToCartComposible } = useCart()
+const toast = useToast()
+
 const fallbackImage = 'https://placehold.co/600x750/f3f4f6/171717?text=Product'
 
 type WishlistItem = {
@@ -21,28 +29,35 @@ const { data, pending, refresh } = await useFetch<{ items: WishlistItem[] }>('/a
 const wishlistItems = computed<WishlistItem[]>(() => data.value?.items ?? [])
 
 const removeItem = async (item: { productId: number, variantId?: number | null }) => {
-  await $fetch('/api/public/wishlist', {
-    method: 'DELETE',
-    body: {
-      productId: item.productId,
-      variantId: item.variantId ?? undefined
-    }
-  })
-
-  await refresh()
+  try {
+    await $fetch('/api/public/wishlist', {
+      method: 'DELETE',
+      body: {
+        productId: item.productId,
+        variantId: item.variantId ?? undefined
+      }
+    })
+    toast.add({ title: 'تم الحذف من المفضلة', color: 'green' })
+    await refresh()
+  } catch (err) {
+    toast.add({ title: 'حدث خطأ أثناء الحذف', color: 'red' })
+  }
 }
 
-const addToCart = async (item: { productId: number, variantId?: number | null }) => {
-  await $fetch('/api/public/cart', {
-    method: 'POST',
-    body: {
+const addToCart = async (item: WishlistItem) => {
+  try {
+    await addToCartComposible({
+      title: item.name,
+      price: item.price,
+      quantity: 1,
+      image: item.image ?? undefined,
       productId: item.productId,
-      variantId: item.variantId ?? undefined,
-      quantity: 1
-    }
-  })
-
-  await refresh()
+      variantId: item.variantId ?? undefined
+    })
+    toast.add({ title: 'تمت الإضافة إلى السلة', color: 'green' })
+  } catch (err) {
+    toast.add({ title: 'حدث خطأ', description: 'لم نتمكن من إضافة المنتج للسلة', color: 'red' })
+  }
 }
 </script>
 

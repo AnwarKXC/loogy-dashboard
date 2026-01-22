@@ -1,4 +1,3 @@
-// @ts-nocheck
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
@@ -11,8 +10,26 @@ definePageMeta({
 const route = useRoute()
 const slug = route.params.slug as string
 
-const { data: categoryData } = await useFetch(`/api/public/storefront/categories/${slug}`)
+interface CategoryDetail {
+  id: number
+  name: string
+  slug: string
+  image?: string | null
+  description?: string | null
+}
 
+// Fetch Category Details
+const { data: categoryData, error: categoryError } = await useFetch<CategoryDetail>(`/api/public/storefront/categories/${slug}`)
+
+if (!categoryData.value || categoryError.value) {
+  throw createError({
+    statusCode: 404,
+    statusMessage: 'Category Not Found',
+    fatal: true
+  })
+}
+
+// Fetch Products in Category
 const { data: productsData, pending } = await useFetch('/api/public/products', {
   query: { categorySlug: slug, pageSize: 12 }
 })
@@ -30,9 +47,70 @@ const products = computed(() =>
   }))
 )
 
+// Computed Properties
 const categoryName = computed(() => categoryData.value?.name || slug)
+const categoryImage = computed(() => categoryData.value?.image)
+const categoryDesc = computed(() => categoryData.value?.description || `تسوق أفضل المنتجات في قسم ${categoryName.value}.`)
 const productCount = computed(() => productsData.value?.pagination?.totalItems || 0)
 const filterLink = computed(() => `/products?category=${slug}`)
+
+// SEO & Meta
+useSeoMeta({
+  title: categoryName,
+  ogTitle: categoryName,
+  description: categoryDesc,
+  ogDescription: categoryDesc,
+  ogImage: categoryImage,
+  twitterCard: 'summary_large_image'
+})
+
+// Schema.org
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      children: computed(() => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        'name': categoryName.value,
+        'description': categoryDesc.value,
+        'image': categoryImage.value,
+        'mainEntity': {
+          '@type': 'ItemList',
+          'itemListElement': products.value.map((prod, index) => ({
+            '@type': 'ListItem',
+            'position': index + 1,
+            'url': `https://example.com${prod.to}`, // Needs absolute URL in real app
+            'name': prod.title
+          }))
+        },
+        'breadcrumb': {
+          '@type': 'BreadcrumbList',
+          'itemListElement': [
+            {
+              '@type': 'ListItem',
+              'position': 1,
+              'name': 'Home',
+              'item': 'https://example.com'
+            },
+            {
+              '@type': 'ListItem',
+              'position': 2,
+              'name': 'Categories',
+              'item': 'https://example.com/categories'
+            },
+            {
+              '@type': 'ListItem',
+              'position': 3,
+              'name': categoryName.value,
+              'item': `https://example.com/categories/${slug}`
+            }
+          ]
+        }
+      }))
+    }
+  ]
+})
 </script>
 
 <template>

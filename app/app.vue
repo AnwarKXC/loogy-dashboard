@@ -1,17 +1,17 @@
 <script setup lang="ts">
 const colorMode = useColorMode()
 const route = useRoute()
-
+const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
 // Prefer dark mode for admin, allow storefront to follow user preference
 const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+
+// Dynamic setup for Layout direction and Language
 
 watchEffect(() => {
   if (isAdminRoute.value) {
     colorMode.preference = 'dark'
   }
 })
-
-const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
 
 onMounted(() => {
   if ('serviceWorker' in navigator) {
@@ -24,7 +24,8 @@ onMounted(() => {
       })
   }
 })
-
+const { locale } = useI18n()
+const dir = computed(() => (locale.value === 'ar' ? 'rtl' : 'ltr'))
 useHead({
   meta: [
     { charset: 'utf-8' },
@@ -34,17 +35,25 @@ useHead({
   link: [
     { rel: 'icon', href: '/favicon.ico' }
   ],
-  htmlAttrs: {
-    lang: 'en'
-  }
+  htmlAttrs: computed(() => ({
+    lang: locale.value,
+    dir: dir.value
+  }))
 })
 
-const title = 'Nuxt Dashboard Template'
-const description = 'A professional dashboard template built with Nuxt UI, featuring multiple pages, data visualization, and comprehensive management capabilities for creating powerful admin interfaces.'
+// Default Meta - override in pages
+const title = computed(() => dir.value ? 'المتجر الإلكتروني' : 'Admin Dashboard')
+const description = computed(() => dir.value
+  ? 'تسوق أفضل المنتجات بأفضل الأسعار.'
+  : 'Professional Admin Dashboard'
+)
 
 useSeoMeta({
-  title,
-  description,
+  titleTemplate: (titleChunk) => {
+    return titleChunk ? `${titleChunk} | ${title.value}` : title.value
+  },
+  title: title,
+  description: description,
   ogTitle: title,
   ogDescription: description,
   ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
@@ -54,9 +63,8 @@ useSeoMeta({
 </script>
 
 <template>
-  <UApp>
+  <UApp :dir="dir">
     <NuxtLoadingIndicator />
-
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>

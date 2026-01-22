@@ -381,14 +381,14 @@ async function deleteTestimonial(testimonial: Testimonial) {
               :key="star"
               :color="state.rating && state.rating >= star ? 'warning' : 'neutral'"
               :variant="state.rating && state.rating >= star ? 'solid' : 'outline'"
-              size="sm"
+
               @click="state.rating = star"
             >
               ★
             </UButton>
             <UButton
               v-if="state.rating"
-              size="sm"
+
               variant="ghost"
               @click="state.rating = null"
             >

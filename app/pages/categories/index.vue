@@ -6,9 +6,8 @@ definePageMeta({
   layout: 'storefront'
 })
 
-const { data, pending, error } = await useFetch('/api/public/storefront/categories')
-
-type CategoryNode = {
+// Define TypeScript interfaces for API response
+interface CategoryNode {
   id: number
   slug: string
   name: string
@@ -16,6 +15,20 @@ type CategoryNode = {
   image?: string | null
   _count?: { products?: number }
   children?: CategoryNode[]
+}
+
+interface CategoriesResponse {
+  categories: CategoryNode[]
+  featured: CategoryNode[]
+}
+
+// Fetch data with proper typing
+const { data, pending, error } = await useFetch<CategoriesResponse>('/api/public/storefront/categories')
+
+// Handle 404/Error if necessary (though index usually returns 200 with empty list)
+if (error.value) {
+  // If strict error handling is needed, but usually we just show the alert in template
+  console.error('Failed to load categories', error.value)
 }
 
 const categories = computed<CategoryNode[]>(() => data.value?.categories ?? [])
@@ -29,6 +42,55 @@ const flattenCategories = (nodes: CategoryNode[], depth = 0): CategoryNode[] =>
 
 const flatCategories = computed(() => flattenCategories(categories.value))
 const topCategories = computed(() => (featured.value.length ? featured.value : flatCategories.value.slice(0, 8)))
+
+// SEO Meta
+const pageTitle = 'كل الفئات'
+const pageDescription = 'استعرض جميع فئات المنتجات المتاحة في متجرنا. اعثر على ما تبحث عنه بسهولة من خلال تصفح القوائم المصنفة.'
+
+useSeoMeta({
+  title: pageTitle,
+  ogTitle: pageTitle,
+  description: pageDescription,
+  ogDescription: pageDescription,
+  ogType: 'website',
+  twitterCard: 'summary_large_image'
+})
+
+// Structured Data (Schema.org)
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        'name': pageTitle,
+        'description': pageDescription,
+        'isPartOf': {
+          '@type': 'WebSite',
+          'name': 'The Store' // You might want to pull this from app config
+        },
+        'breadcrumb': {
+          '@type': 'BreadcrumbList',
+          'itemListElement': [
+            {
+              '@type': 'ListItem',
+              'position': 1,
+              'name': 'Home',
+              'item': 'https://example.com' // Should be dynamically set
+            },
+            {
+              '@type': 'ListItem',
+              'position': 2,
+              'name': 'Categories',
+              'item': 'https://example.com/categories'
+            }
+          ]
+        }
+      })
+    }
+  ]
+})
 </script>
 
 <template>

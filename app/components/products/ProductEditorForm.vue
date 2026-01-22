@@ -1387,7 +1387,7 @@ defineExpose({
             <UButton
               variant="ghost"
               color="primary"
-              size="sm"
+
               icon="i-lucide-sparkles"
               class="shrink-0"
               :loading="generationLoading.descriptions || generationLoading.shortDescriptions"
@@ -1481,7 +1481,7 @@ defineExpose({
             <UButton
               variant="ghost"
               color="primary"
-              size="sm"
+
               icon="i-lucide-sparkles"
               class="shrink-0"
               :loading="generationLoading.all"

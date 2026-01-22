@@ -71,6 +71,54 @@ const { add: addToCart } = useCart()
 
 const home = computed<HomeResponse>(() => (homeData.value ?? {}) as HomeResponse)
 
+// SEO & Meta
+const pageTitle = computed(() => home.value?.hero?.title || 'المتجر الرئيسي')
+const pageDescription = computed(() => home.value?.hero?.subtitle || 'أفضل المنتجات بأفضل الأسعار. تسوق الآن واستمتع بتجربة فريدة.')
+
+useSeoMeta({
+  title: pageTitle,
+  ogTitle: pageTitle,
+  description: pageDescription,
+  ogDescription: pageDescription,
+  ogType: 'website',
+  twitterCard: 'summary_large_image'
+})
+
+// Schema.org
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      children: computed(() => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        'name': pageTitle.value,
+        'url': 'https://example.com', // Should be dynamic/env based
+        'potentialAction': {
+          '@type': 'SearchAction',
+          'target': 'https://example.com/products?search={search_term_string}',
+          'query-input': 'required name=search_term_string'
+        }
+      }))
+    },
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        'name': 'The Store',
+        'url': 'https://example.com',
+        'logo': 'https://example.com/logo.png', // Placeholder
+        'contactPoint': {
+          '@type': 'ContactPoint',
+          'telephone': '+1-401-555-1212',
+          'contactType': 'Customer service'
+        }
+      })
+    }
+  ]
+})
+
 const heroSlides = computed(() => {
   const hero = home.value.hero ?? {}
   const title = typeof hero.title === 'string' && hero.title.trim().length > 0 ? hero.title : 'NEW COLLECTION'
