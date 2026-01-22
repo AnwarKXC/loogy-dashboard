@@ -73,9 +73,9 @@ function hasMeaningfulContent(text: string, minimumCharacters = 80, minimumUniqu
     'excellent product',
     'designed for you',
     'ideal for everyone',
-    'مثالي للاستخدام اليومي',
-    'جودة عالية',
-    'اختيار رائع'
+    'perfect for everyday use',
+    'premium quality',
+    'excellent choice'
   ]
 
   const lowerText = normalized.toLowerCase()
@@ -106,7 +106,7 @@ Existing Arabic description: ${existingArabic || 'None provided.'}
 English search findings from Amazon.sa, Noon.com, Trendyol.com, and official brand sources:
 ${englishInsightsFormatted}
 
-Arabic search findings from أمازون السعودية, نون.كوم, ترينديول, and brand sites:
+Additional search findings from Amazon Saudi, Noon, Trendyol, and brand sites:
 ${arabicInsightsFormatted}
 
 CRITICAL INSTRUCTIONS:
@@ -117,7 +117,7 @@ CRITICAL INSTRUCTIONS:
 
 3. **Tone & Style**:
    - English: Conversational yet authoritative. Write like a knowledgeable sales associate who knows the product inside-out.
-   - Arabic: Modern Standard Arabic (فصحى حديثة) with natural phrasing shoppers expect in UAE/Saudi markets.
+   - Secondary Language: Modern Standard with natural phrasing shoppers expect in regional markets.
    - Both: Avoid corporate jargon, shipping promises, or vague superlatives. Be specific.
 
 4. **Structure**:
@@ -137,11 +137,11 @@ CRITICAL INSTRUCTIONS:
 
 EXAMPLE (for reference only, adapt to actual product):
 {
-  "nameAr": "سكيتشرز أونو - بين الحياة وما بعدها",
+  "nameAr": "Skechers UNO - Between Life and Beyond",
   "descriptionEn": "Celebrate the eternal connection with the Skechers Street™ UNO - Between Life and Beyond, a special edition inspired by Día de los Muertos. This iconic lace-up showcases a smooth duraleather upper adorned with traditional symbols: spirit guide dogs, festive marigolds, and papel picado motifs that honor those we remember. Equipped with a Skechers Air-Cooled Memory Foam® insole and translucent Skech-Air® midsole for all-day comfort. Perfect for collectors and culture enthusiasts seeking a meaningful statement sneaker.",
-  "descriptionAr": "احتفل بالرابطة الأبدية مع حذاء سكيتشرز ستريت™ أونو - بين الحياة وما بعدها، إصدار خاص مستوحى من يوم الموتى المكسيكي. يتميز هذا الحذاء بتصميم من الجلد المتين المزين برموز تقليدية: كلاب الأرواح المرشدة، زهور القطيفة الاحتفالية، وزخارف الورق المقصوص التي تكرّم من نتذكرهم. مجهز بنعل داخلي من الفوم الذاكر المبرّد بالهواء® ونعل أوسط شفاف من تقنية Skech-Air® لراحة طوال اليوم. مثالي لهواة الجمع ومحبي الثقافة الباحثين عن حذاء رياضي مميز وذو معنى.",
+  "descriptionAr": "Celebrate the eternal connection with the Skechers Street UNO - Between Life and Beyond, a special edition inspired by Day of the Dead. Features durable leather design with traditional symbols: spirit guide dogs, festive marigolds, and paper cut decorations. Equipped with Air-Cooled Memory Foam insole for all-day comfort. Perfect for collectors seeking a unique statement sneaker.",
   "shortDescriptionEn": "Limited-edition Día de los Muertos tribute with Air-Cooled Memory Foam® comfort. Secure this iconic design before it's gone.",
-  "shortDescriptionAr": "إصدار محدود يحتفي بيوم الموتى مع راحة الفوم الذاكر المبرّد بالهواء®. احصل على هذا التصميم المميز قبل نفاد الكمية.",
+  "shortDescriptionAr": "Limited edition celebrating Day of the Dead with Air-Cooled Memory Foam comfort. Get this iconic design before it sells out.",
   "keywords": [
     "skechers uno between life and beyond",
     "dia de los muertos sneakers",

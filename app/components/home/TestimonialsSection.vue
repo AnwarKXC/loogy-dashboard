@@ -41,18 +41,18 @@ function openImage(img: string) {
   <section class="py-16 bg-white">
     <div class="container mx-auto px-4 sm:px-6 lg:px-8">
       <h2 class="text-3xl font-serif font-black uppercase text-center mb-4">
-        آراء عملائنا
+        Customer Reviews
       </h2>
       <p class="text-center text-neutral-500 mb-12">
-        ماذا يقول عملاؤنا عن تجربتهم معنا
+        What our customers say about their experience with us
       </p>
 
       <div v-if="status === 'pending'" class="text-center py-8">
-        جاري التحميل...
+        Loading...
       </div>
 
       <div v-else-if="testimonials.length === 0" class="text-center py-8 text-neutral-500">
-        لا توجد تقييمات حتى الآن
+        No reviews yet
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -74,7 +74,7 @@ function openImage(img: string) {
               </div>
               <div>
                 <p class="font-medium">
-                  {{ testimonial.customerName || 'عميل' }}
+                  {{ testimonial.customerName || 'Customer' }}
                 </p>
                 <p v-if="testimonial.source" class="text-xs text-neutral-500">
                   {{ testimonial.source }}
@@ -111,7 +111,7 @@ function openImage(img: string) {
           to="/testimonials"
           class="inline-block px-6 py-3 border border-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-100 transition-colors"
         >
-          عرض كل التقييمات
+          View All Reviews
         </NuxtLink>
       </div>
     </div>

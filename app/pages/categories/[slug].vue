@@ -49,7 +49,7 @@ const products = computed(() =>
 // Computed Properties
 const categoryName = computed(() => categoryData.value?.name || slug)
 const categoryImage = computed(() => categoryData.value?.image)
-const categoryDesc = computed(() => categoryData.value?.description || `تسوق أفضل المنتجات في قسم ${categoryName.value}.`)
+const categoryDesc = computed(() => categoryData.value?.description || `Shop the best products in ${categoryName.value}.`)
 const productCount = computed(() => productsData.value?.pagination?.totalItems || 0)
 const filterLink = computed(() => `/products?category=${slug}`)
 
@@ -81,8 +81,8 @@ useSchemaOrg([
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'الفئات', item: '/categories' },
+      { name: 'Home', item: '/' },
+      { name: 'Categories', item: '/categories' },
       { name: () => categoryName.value }
     ]
   }),
@@ -111,24 +111,24 @@ useSchemaOrg([
           {{ categoryName }}
         </h1>
         <p class="text-gray-600 dark:text-gray-400">
-          تصفح المنتجات في هذه الفئة.
+          Browse products in this category.
         </p>
       </div>
       <UButton :to="filterLink" icon="i-lucide-filter" variant="soft">
-        الفلاتر
+        Filters
       </UButton>
     </div>
 
     <div v-if="pending" class="text-gray-600 dark:text-gray-400">
-      جاري تحميل المنتجات...
+      Loading products...
     </div>
     <div v-else-if="productCount === 0" class="text-center py-12">
       <UIcon name="i-lucide-package" class="h-12 w-12 mx-auto text-gray-400 dark:text-gray-500" />
       <p class="mt-3 text-gray-600 dark:text-gray-400">
-        لا توجد منتجات في هذه الفئة حالياً.
+        No products in this category currently.
       </p>
       <UButton to="/products" class="mt-4" color="primary">
-        تصفح كل المنتجات
+        Browse all products
       </UButton>
     </div>
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

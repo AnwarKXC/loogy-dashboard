@@ -31,11 +31,11 @@ const navItems = computed<NavigationMenuItem[]>(() => {
   const links = layout.value.navLinks?.length
     ? layout.value.navLinks
     : [
-        { label: 'الرئيسية', to: '/' },
-        { label: 'المنتجات', to: '/products' },
-        { label: 'الفئات', to: '/categories' },
-        { label: 'العروض', to: '/#deals' },
-        { label: 'تواصل معنا', to: '/#contact' }
+        { label: 'Home', to: '/' },
+        { label: 'Products', to: '/products' },
+        { label: 'Categories', to: '/categories' },
+        { label: 'Deals', to: '/#deals' },
+        { label: 'Contact Us', to: '/#contact' }
       ]
 
   return links.map(link => ({
@@ -54,7 +54,7 @@ const layoutActions = computed(() => layout.value.actions ?? {})
 
 const isDark = computed(() => colorMode.value === 'dark')
 const modeIcon = computed(() => isDark.value ? 'i-lucide-sun' : 'i-lucide-moon')
-const modeLabel = computed(() => isDark.value ? 'التبديل للوضع الفاتح' : 'التبديل للوضع الداكن')
+const modeLabel = computed(() => isDark.value ? 'Switch to light mode' : 'Switch to dark mode')
 
 const toggleMode = () => {
   colorMode.preference = isDark.value ? 'light' : 'dark'
@@ -103,7 +103,7 @@ const wishlistCount = computed(() => wishlistItems.value.length)
             variant="ghost"
             color="neutral"
             icon="i-lucide-search"
-            aria-label="بحث"
+            aria-label="Search"
             class="hidden sm:inline-flex"
           />
           <UButton
@@ -122,7 +122,7 @@ const wishlistCount = computed(() => wishlistItems.value.length)
               variant="ghost"
               color="neutral"
               icon="i-lucide-heart"
-              aria-label="المفضلة"
+              aria-label="Wishlist"
             />
             <span
               v-if="wishlistCount"
@@ -137,7 +137,7 @@ const wishlistCount = computed(() => wishlistItems.value.length)
               variant="ghost"
               color="neutral"
               icon="i-lucide-shopping-bag"
-              aria-label="السلة"
+              aria-label="Cart"
             />
             <span
               v-if="cartCount"

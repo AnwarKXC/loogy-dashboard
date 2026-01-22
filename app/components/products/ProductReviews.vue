@@ -38,7 +38,7 @@ const stats = computed(() => (data.value?.stats ?? {
 const totalPages = computed(() => data.value?.totalPages ?? 1)
 
 function formatDate(date: string) {
-  return new Date(date).toLocaleDateString('ar-EG', {
+  return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -71,17 +71,17 @@ const loadMore = () => {
 <template>
   <div class="py-8">
     <h3 class="text-2xl font-serif font-black uppercase mb-8 text-center">
-      تقييمات العملاء
+      Customer Reviews
     </h3>
 
     <div v-if="status === 'pending'" class="text-center py-8 text-neutral-500">
-      جاري التحميل...
+      Loading...
     </div>
 
     <div v-else-if="stats.totalReviews === 0" class="text-center py-8 text-neutral-500">
-      <p>لا توجد تقييمات حتى الآن</p>
+      <p>No reviews yet</p>
       <p class="text-sm mt-2">
-        كن أول من يقيم هذا المنتج
+        Be the first to review this product
       </p>
     </div>
 
@@ -97,7 +97,7 @@ const loadMore = () => {
             {{ renderStars(Math.round(stats.averageRating)) }}
           </div>
           <div class="text-sm text-neutral-500 mt-1">
-            {{ stats.totalReviews }} تقييم
+            {{ stats.totalReviews }} reviews
           </div>
         </div>
 
@@ -127,12 +127,12 @@ const loadMore = () => {
         >
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
-              <span class="font-medium">{{ review.customerName || 'عميل' }}</span>
+              <span class="font-medium">{{ review.customerName || 'Customer' }}</span>
               <span
                 v-if="review.isVerified"
                 class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full"
               >
-                عملية شراء موثقة
+                Verified Purchase
               </span>
             </div>
             <span class="text-sm text-neutral-500">{{ formatDate(review.createdAt) }}</span>
@@ -158,7 +158,7 @@ const loadMore = () => {
           class="px-6 py-2 border border-neutral-300 rounded-full text-sm font-medium hover:bg-neutral-100 transition-colors"
           @click="loadMore"
         >
-          تحميل المزيد
+          Load More
         </button>
       </div>
     </div>

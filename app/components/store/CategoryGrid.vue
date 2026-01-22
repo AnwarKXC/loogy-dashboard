@@ -10,14 +10,14 @@ const props = defineProps<{
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          فئات مختارة
+          Featured Categories
         </p>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ props.title || 'تسوق حسب الفئة' }}
+          {{ props.title || 'Shop by Category' }}
         </h2>
       </div>
       <ULink to="/categories" class="text-primary font-medium text-sm flex items-center gap-1">
-        كل الفئات
+        All Categories
         <UIcon name="i-lucide-arrow-left" class="size-4" />
       </ULink>
     </div>
@@ -40,7 +40,7 @@ const props = defineProps<{
         <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
         <div class="absolute bottom-3 right-3 left-3 text-white">
           <p class="font-bold text-lg drop-shadow">{{ cat.name }}</p>
-          <p class="text-xs text-white/80">تصفح التفاصيل</p>
+          <p class="text-xs text-white/80">Browse collection</p>
         </div>
       </NuxtLink>
     </div>

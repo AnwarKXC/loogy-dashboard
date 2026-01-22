@@ -4,7 +4,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'قائمة المتمنيات',
+  title: 'Wishlist',
   robots: 'noindex, nofollow'
 })
 
@@ -37,10 +37,10 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
         variantId: item.variantId ?? undefined
       }
     })
-    toast.add({ title: 'تم الحذف من المفضلة', color: 'green' })
+    toast.add({ title: 'Removed from wishlist', color: 'green' })
     await refresh()
   } catch (err) {
-    toast.add({ title: 'حدث خطأ أثناء الحذف', color: 'red' })
+    toast.add({ title: 'Error removing item', color: 'red' })
   }
 }
 
@@ -54,9 +54,9 @@ const addToCart = async (item: WishlistItem) => {
       productId: item.productId,
       variantId: item.variantId ?? undefined
     })
-    toast.add({ title: 'تمت الإضافة إلى السلة', color: 'green' })
+    toast.add({ title: 'Added to cart', color: 'green' })
   } catch (err) {
-    toast.add({ title: 'حدث خطأ', description: 'لم نتمكن من إضافة المنتج للسلة', color: 'red' })
+    toast.add({ title: 'Error', description: 'Could not add product to cart', color: 'red' })
   }
 }
 </script>

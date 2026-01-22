@@ -64,29 +64,29 @@ export default defineEventHandler(async (event) => {
 })
 
 function getDefaultTitle(pageKey: string, lang: 'EN' | 'AR'): string {
-  const titles: Record<string, Record<'EN' | 'AR', string>> = {
-    home: { EN: 'Welcome to Our Store', AR: 'مرحباً بك في متجرنا' },
-    products: { EN: 'Browse Products', AR: 'تصفح المنتجات' },
-    categories: { EN: 'Shop by Category', AR: 'تسوق حسب الفئة' },
-    cart: { EN: 'Shopping Cart', AR: 'سلة التسوق' },
-    checkout: { EN: 'Checkout', AR: 'الدفع' },
-    wishlist: { EN: 'My Wishlist', AR: 'قائمة الأمنيات' },
-    about: { EN: 'About Us', AR: 'من نحن' },
-    contact: { EN: 'Contact Us', AR: 'اتصل بنا' }
+  const titles: Record<string, string> = {
+    home: 'Welcome to Our Store',
+    products: 'Browse Products',
+    categories: 'Shop by Category',
+    cart: 'Shopping Cart',
+    checkout: 'Checkout',
+    wishlist: 'My Wishlist',
+    about: 'About Us',
+    contact: 'Contact Us'
   }
   
-  return titles[pageKey]?.[lang] || titles[pageKey]?.['EN'] || pageKey
+  return titles[pageKey] || pageKey
 }
 
 function getDefaultDescription(pageKey: string, lang: 'EN' | 'AR'): string {
-  const descriptions: Record<string, Record<'EN' | 'AR', string>> = {
-    home: { EN: 'Discover amazing products at great prices', AR: 'اكتشف منتجات رائعة بأسعار مميزة' },
-    products: { EN: 'Browse our wide selection of products', AR: 'تصفح مجموعتنا الواسعة من المنتجات' },
-    categories: { EN: 'Find products organized by category', AR: 'ابحث عن المنتجات حسب الفئة' },
-    cart: { EN: 'Review items in your shopping cart', AR: 'مراجعة المنتجات في سلة التسوق' },
-    checkout: { EN: 'Complete your purchase securely', AR: 'أكمل عملية الشراء بأمان' },
-    wishlist: { EN: 'Your saved favorite items', AR: 'المنتجات المفضلة المحفوظة' }
+  const descriptions: Record<string, string> = {
+    home: 'Discover amazing products at great prices',
+    products: 'Browse our wide selection of products',
+    categories: 'Find products organized by category',
+    cart: 'Review items in your shopping cart',
+    checkout: 'Complete your purchase securely',
+    wishlist: 'Your saved favorite items'
   }
   
-  return descriptions[pageKey]?.[lang] || descriptions[pageKey]?.['EN'] || ''
+  return descriptions[pageKey] || ''
 }

@@ -6,7 +6,7 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'إتمام الشراء',
+  title: 'Checkout',
   robots: 'noindex, nofollow'
 })
 
@@ -108,12 +108,12 @@ const isSubmitting = ref(false)
 const orderComplete = ref(false)
 const orderNumber = ref('')
 
-const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
+const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 
 // Apply promo code
 const applyPromoCode = async () => {
   if (!promoCode.value.trim()) {
-    promoError.value = 'أدخل كود الخصم'
+    promoError.value = 'Enter promo code'
     return
   }
 
@@ -131,13 +131,13 @@ const applyPromoCode = async () => {
 
     appliedPromo.value = result
     toast.add({
-      title: 'تم تطبيق الكود',
+      title: 'Code Applied',
       description: result.message,
       color: 'success'
     })
   } catch (error: unknown) {
     const dataMessage = (error as { data?: { statusMessage?: string } })?.data?.statusMessage
-    promoError.value = typeof dataMessage === 'string' ? dataMessage : 'كود غير صحيح'
+    promoError.value = typeof dataMessage === 'string' ? dataMessage : 'Invalid code'
     appliedPromo.value = null
   } finally {
     promoLoading.value = false
@@ -154,8 +154,8 @@ const removePromoCode = () => {
 const placeOrder = async () => {
   if (!form.name || !form.phone || !form.address) {
     toast.add({
-      title: 'اكمل البيانات',
-      description: 'الاسم، الهاتف والعنوان مطلوبة لإتمام الطلب',
+      title: 'Complete Your Information',
+      description: 'Name, phone, and address are required to complete the order',
       color: 'warning'
     })
     return
@@ -163,8 +163,8 @@ const placeOrder = async () => {
 
   if (lines.value.length === 0) {
     toast.add({
-      title: 'السلة فارغة',
-      description: 'أضف منتجات للسلة قبل إتمام الطلب',
+      title: 'Cart is Empty',
+      description: 'Add products to cart before completing the order',
       color: 'warning'
     })
     return
@@ -172,8 +172,8 @@ const placeOrder = async () => {
 
   if (belowMinOrder.value) {
     toast.add({
-      title: 'الحد الأدنى للطلب',
-      description: `الحد الأدنى للطلب هو ${formatPrice(pricingSettings.value?.minOrderValue ?? 0)}`,
+      title: 'Minimum Order',
+      description: `Minimum order is ${formatPrice(pricingSettings.value?.minOrderValue ?? 0)}`,
       color: 'warning'
     })
     return
@@ -181,8 +181,8 @@ const placeOrder = async () => {
 
   if (aboveMaxOrder.value) {
     toast.add({
-      title: 'الحد الأقصى للطلب',
-      description: `الحد الأقصى للطلب هو ${formatPrice(pricingSettings.value?.maxOrderValue ?? 0)}`,
+      title: 'Maximum Order',
+      description: `Maximum order is ${formatPrice(pricingSettings.value?.maxOrderValue ?? 0)}`,
       color: 'warning'
     })
     return
@@ -211,7 +211,7 @@ const placeOrder = async () => {
     await clearCart()
 
     toast.add({
-      title: 'تم إنشاء الطلب بنجاح',
+      title: 'Order Created Successfully',
       description: response.message,
       color: 'success'
     })
@@ -221,10 +221,10 @@ const placeOrder = async () => {
       ? dataMessage
       : error instanceof Error
         ? error.message
-        : 'حاول مرة أخرى أو تواصل معنا عبر واتساب'
+        : 'Please try again or contact us via WhatsApp'
 
     toast.add({
-      title: 'تعذر إنشاء الطلب',
+      title: 'Failed to Create Order',
       description: message,
       color: 'error'
     })
@@ -243,21 +243,21 @@ const placeOrder = async () => {
       </div>
       <div class="space-y-2">
         <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          تم إنشاء الطلب بنجاح!
+          Order Created Successfully!
         </h1>
         <p class="text-gray-600 dark:text-gray-400">
-          رقم الطلب: <span class="font-mono font-semibold">{{ orderNumber }}</span>
+          Order Number: <span class="font-mono font-semibold">{{ orderNumber }}</span>
         </p>
         <p class="text-gray-600 dark:text-gray-400">
-          سنتواصل معك قريباً لتأكيد الشحن والدفع عند الاستلام.
+          We'll contact you soon to confirm shipping and cash on delivery.
         </p>
       </div>
       <div class="flex justify-center gap-3">
         <UButton to="/" color="primary" icon="i-lucide-home">
-          العودة للرئيسية
+          Back to Home
         </UButton>
         <UButton to="/products" variant="soft" icon="i-lucide-shopping-bag">
-          تصفح المنتجات
+          Browse Products
         </UButton>
       </div>
     </div>
@@ -266,38 +266,38 @@ const placeOrder = async () => {
     <template v-else>
       <div class="flex items-center justify-between">
         <h1 class="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-          إتمام الطلب
+          Complete Order
         </h1>
-        <ULink to="/cart" class="text-primary">العودة للسلة</ULink>
+        <ULink to="/cart" class="text-primary">Back to Cart</ULink>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-8">
         <UCard class="space-y-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <div class="space-y-1">
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              بيانات العميل
+              Customer Data
             </p>
             <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              معلومات الشحن
+              Shipping Information
             </h2>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UInput v-model="form.name" placeholder="الاسم الكامل" />
-            <UInput v-model="form.phone" placeholder="رقم الهاتف" />
-            <UInput v-model="form.governorate" placeholder="المحافظة" />
-            <UInput v-model="form.address" class="md:col-span-2" placeholder="العنوان بالتفصيل" />
-            <UTextarea v-model="form.notes" class="md:col-span-2" placeholder="ملاحظات إضافية (اختياري)" />
+            <UInput v-model="form.name" placeholder="Full Name" />
+            <UInput v-model="form.phone" placeholder="Phone Number" />
+            <UInput v-model="form.governorate" placeholder="Governorate" />
+            <UInput v-model="form.address" class="md:col-span-2" placeholder="Detailed Address" />
+            <UTextarea v-model="form.notes" class="md:col-span-2" placeholder="Additional Notes (Optional)" />
           </div>
 
           <div class="space-y-3">
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              طريقة الدفع
+              Payment Method
             </p>
             <URadioGroup
               v-model="form.payment"
               :options="[
-                { label: 'الدفع عند الاستلام', value: 'cod' },
-                { label: 'بطاقة عبر Paymob', value: 'paymob' }
+                { label: 'Cash on Delivery', value: 'cod' },
+                { label: 'Card via Paymob', value: 'paymob' }
               ]"
             />
           </div>
@@ -311,18 +311,18 @@ const placeOrder = async () => {
               :disabled="!lines.length"
               @click="placeOrder"
             >
-              إتمام الشراء
+              Complete Purchase
             </UButton>
           </div>
         </UCard>
 
         <UCard class="h-fit space-y-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            ملخص الطلب
+            Order Summary
           </h2>
 
           <div v-if="!lines.length" class="text-gray-500 dark:text-gray-400 text-sm">
-            لا توجد منتجات في السلة.
+            No products in cart.
           </div>
 
           <div v-else class="space-y-3">
@@ -357,7 +357,7 @@ const placeOrder = async () => {
             <!-- Promo Code Section -->
             <div class="space-y-2">
               <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                كود الخصم
+                Promo Code
               </p>
               <div v-if="appliedPromo" class="flex items-center justify-between bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                 <div class="flex items-center gap-2">
@@ -375,13 +375,13 @@ const placeOrder = async () => {
               <div v-else class="flex gap-2">
                 <UInput
                   v-model="promoCode"
-                  placeholder="أدخل الكود"
+                  placeholder="Enter Code"
                   class="flex-1 uppercase"
                   :disabled="promoLoading"
                   @keyup.enter="applyPromoCode"
                 />
                 <UButton
-                  label="تطبيق"
+                  label="Apply"
                   :loading="promoLoading"
                   @click="applyPromoCode"
                 />
@@ -394,36 +394,36 @@ const placeOrder = async () => {
             <UDivider />
 
             <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-              <span>الإجمالي</span>
+              <span>Subtotal</span>
               <span>{{ formatPrice(subtotal) }}</span>
             </div>
 
             <!-- Show bulk discount if applicable -->
             <div v-if="bulkDiscount > 0" class="flex justify-between text-sm text-green-600 dark:text-green-400">
-              <span>خصم الكمية ({{ pricingSettings?.bulkDiscountPercentage }}%)</span>
+              <span>Bulk Discount ({{ pricingSettings?.bulkDiscountPercentage }}%)</span>
               <span>- {{ formatPrice(bulkDiscount) }}</span>
             </div>
 
             <!-- Show promo discount if applicable -->
             <div v-if="promoDiscount > 0" class="flex justify-between text-sm text-green-600 dark:text-green-400">
-              <span>خصم الكود</span>
+              <span>Promo Discount</span>
               <span>- {{ formatPrice(promoDiscount) }}</span>
             </div>
 
             <div class="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-              <span>الشحن</span>
+              <span>Shipping</span>
               <span>{{ formatPrice(shipping) }}</span>
             </div>
 
             <!-- Min order warning -->
             <div v-if="belowMinOrder" class="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs text-yellow-700 dark:text-yellow-400">
               <UIcon name="i-lucide-alert-triangle" class="inline size-4" />
-              الحد الأدنى للطلب: {{ formatPrice(pricingSettings?.minOrderValue ?? 0) }}
+              Minimum Order: {{ formatPrice(pricingSettings?.minOrderValue ?? 0) }}
             </div>
 
             <UDivider />
             <div class="flex justify-between font-bold text-lg text-gray-900 dark:text-gray-100">
-              <span>الإجمالي الكلي</span>
+              <span>Total</span>
               <span class="text-primary">{{ formatPrice(total) }}</span>
             </div>
           </div>

@@ -27,7 +27,7 @@ const resolvedLinks = computed(() => ({
   <section id="contact" class="space-y-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-4 shadow-sm">
     <h2 class="text-xl font-semibold flex items-center gap-2">
       <UIcon name="i-lucide-share-2" class="text-primary" />
-      تابعنا على السوشيال
+      Follow us on social media
     </h2>
     <div class="flex flex-wrap gap-3">
       <UButton

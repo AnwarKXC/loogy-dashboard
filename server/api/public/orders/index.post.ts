@@ -10,10 +10,10 @@ import prisma from '../../../db'
 
 const guestOrderSchema = z.object({
   customer: z.object({
-    name: z.string().min(1, 'الاسم مطلوب'),
-    phone: z.string().min(10, 'رقم الهاتف غير صحيح'),
+    name: z.string().min(1, 'Name is required'),
+    phone: z.string().min(10, 'Invalid phone number'),
     governorate: z.string().optional(),
-    address: z.string().min(1, 'العنوان مطلوب'),
+    address: z.string().min(1, 'Address is required'),
     notes: z.string().optional()
   }),
   paymentMethod: z.enum(['cod']).default('cod'),
@@ -24,7 +24,7 @@ const guestOrderSchema = z.object({
     price: z.number(),
     quantity: z.number().min(1),
     image: z.string().optional()
-  })).min(1, 'السلة فارغة'),
+  })).min(1, 'Cart is empty'),
   promoCode: z.string().optional().nullable()
 })
 
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   if (!result.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'بيانات غير صحيحة',
+      statusMessage: 'Invalid data',
       data: result.error.flatten()
     })
   }
@@ -78,14 +78,14 @@ export default defineEventHandler(async (event) => {
     if (!product) {
       throw createError({
         statusCode: 400,
-        statusMessage: `المنتج "${item.title}" غير موجود`
+        statusMessage: `Product "${item.title}" not found`
       })
     }
 
     if (product.stock < item.quantity) {
       throw createError({
         statusCode: 400,
-        statusMessage: `المنتج "${item.title}" غير متوفر بالكمية المطلوبة`
+        statusMessage: `Product "${item.title}" is not available in the requested quantity`
       })
     }
 
@@ -108,14 +108,14 @@ export default defineEventHandler(async (event) => {
   if (subtotal < minOrderValue) {
     throw createError({
       statusCode: 400,
-      statusMessage: `الحد الأدنى للطلب هو ${minOrderValue} جنيه`
+      statusMessage: `Minimum order value is ${minOrderValue} EGP`
     })
   }
 
   if (maxOrderValue && subtotal > maxOrderValue) {
     throw createError({
       statusCode: 400,
-      statusMessage: `الحد الأقصى للطلب هو ${maxOrderValue} جنيه`
+      statusMessage: `Maximum order value is ${maxOrderValue} EGP`
     })
   }
 
@@ -167,7 +167,7 @@ export default defineEventHandler(async (event) => {
       customerName: customer.name,
       shippingPhone: customer.phone,
       shippingStreet: `${customer.address}${customer.notes ? ` (${customer.notes})` : ''}`,
-      shippingCity: customer.governorate || 'مصر',
+      shippingCity: customer.governorate || 'Egypt',
       shippingCountry: 'EG',
       paymentMethod: 'CASH',
       subtotal,
@@ -205,7 +205,7 @@ export default defineEventHandler(async (event) => {
     success: true,
     orderId: order.id,
     orderNumber: `ORD-${order.id.toString().padStart(6, '0')}`,
-    message: 'تم إنشاء الطلب بنجاح. سنتواصل معك قريباً لتأكيد الشحن.',
+    message: 'Order created successfully. We will contact you soon to confirm shipping.',
     summary: {
       subtotal,
       discount: totalDiscount,

@@ -4,8 +4,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'عربة التسوق',
-  description: 'راجع منتجاتك في السلة واستكمل عملية الشراء.',
+  title: 'Shopping Cart',
+  description: 'Review your cart items and complete your purchase.',
   robots: 'noindex, nofollow'
 })
 

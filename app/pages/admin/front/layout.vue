@@ -56,11 +56,11 @@ const defaultData: LayoutData = {
     homeUrl: '/'
   },
   navLinks: [
-    { label: 'الرئيسية', to: '/' },
-    { label: 'المنتجات', to: '/products' },
-    { label: 'الفئات', to: '/categories' },
-    { label: 'العروض', to: '/#deals' },
-    { label: 'تواصل معنا', to: '/#contact' }
+    { label: 'Home', to: '/' },
+    { label: 'Products', to: '/products' },
+    { label: 'Categories', to: '/categories' },
+    { label: 'Deals', to: '/#deals' },
+    { label: 'Contact Us', to: '/#contact' }
   ],
   actions: {
     showSearch: true,

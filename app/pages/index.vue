@@ -72,14 +72,14 @@ const { add: addToCart } = useCart()
 const home = computed<HomeResponse>(() => (homeData.value ?? {}) as HomeResponse)
 
 // SEO & Meta using Nuxt SEO
-const pageTitle = computed(() => home.value?.hero?.title || 'المتجر الرئيسي - تسوق أفضل المنتجات')
+const pageTitle = computed(() => home.value?.hero?.title || 'Main Store - Shop the Best Products')
 const pageDescription = computed(() => {
   const heroSubtitle = home.value?.hero?.subtitle
   // Ensure description is at least 120 characters for SEO
   if (heroSubtitle && heroSubtitle.length >= 50) {
     return heroSubtitle
   }
-  return 'تسوق أفضل المنتجات بأسعار تنافسية وجودة عالية. اكتشف تشكيلتنا الواسعة من الملابس والأحذية والإكسسوارات. شحن سريع لجميع المحافظات ودفع عند الاستلام.'
+  return 'Shop the best products at competitive prices with high quality. Discover our wide range of clothing, shoes, and accessories. Fast shipping to all locations and cash on delivery.'
 })
 
 useSeoMeta({
@@ -248,7 +248,7 @@ const handleAddToCart = async (item: { id: number, name: string, price: number, 
     })
 
     toast.add({
-      title: 'تمت الإضافة إلى السلة',
+      title: 'Added to Cart',
       description: item.name,
       color: 'success'
     })
@@ -258,10 +258,10 @@ const handleAddToCart = async (item: { id: number, name: string, price: number, 
       ? dataMessage
       : error instanceof Error
         ? error.message
-        : 'حاول مرة أخرى'
+        : 'Please try again'
 
     toast.add({
-      title: 'تعذر الإضافة للسلة',
+      title: 'Failed to Add to Cart',
       description: message,
       color: 'error'
     })
@@ -925,10 +925,10 @@ const brandsStatic = [
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
           <div class="max-w-3xl mx-auto text-center space-y-6">
             <h2 class="text-3xl sm:text-4xl font-serif font-black uppercase">
-              تواصل معنا
+              Contact Us
             </h2>
             <p class="text-neutral-500 text-lg">
-              نحن هنا لمساعدتك في كل خطوة. تواصل معنا عبر البريد الإلكتروني أو واتساب للرد السريع.
+              We are here to help you every step of the way. Contact us via email or WhatsApp for a quick response.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
               <NuxtLink

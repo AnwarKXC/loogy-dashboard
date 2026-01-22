@@ -27,7 +27,7 @@ const hasItems = computed(() => props.items.length > 0)
         {{ title }}
       </h2>
       <ULink :to="viewAllLink || '/products'" class="text-primary font-medium text-sm flex items-center gap-1">
-        المزيد
+        More
         <UIcon name="i-lucide-arrow-left" class="size-4" />
       </ULink>
     </div>

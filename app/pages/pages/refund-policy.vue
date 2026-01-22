@@ -4,8 +4,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'سياسة الاستبدال والاسترجاع',
-  description: 'تعرف على شروط الاستبدال والاسترجاع وكيفية إرجاع المنتجات.',
+  title: 'Exchange and Return Policy',
+  description: 'Learn about our exchange and return terms and how to return products.',
   robots: 'index, follow'
 })
 
@@ -13,13 +13,13 @@ useSeoMeta({
 useSchemaOrg([
   defineWebPage({
     '@type': 'WebPage',
-    'name': 'سياسة الاستبدال والاسترجاع',
-    'description': 'تعرف على شروط الاستبدال والاسترجاع وكيفية إرجاع المنتجات.'
+    'name': 'Exchange and Return Policy',
+    'description': 'Learn about our exchange and return terms and how to return products.'
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'سياسة الاستبدال والاسترجاع' }
+      { name: 'Home', item: '/' },
+      { name: 'Exchange and Return Policy' }
     ]
   })
 ])
@@ -27,9 +27,9 @@ useSchemaOrg([
 
 <template>
   <UContainer class="py-12 space-y-6 prose prose-slate dark:prose-invert max-w-3xl">
-    <h1>سياسة الاستبدال والاسترجاع</h1>
-    <p>يمكنك طلب الاسترجاع أو الاستبدال خلال 14 يومًا من تاريخ الاستلام بشرط بقاء المنتج في حالته الأصلية مع التغليف والفاتورة.</p>
-    <p>رسوم الشحن في حالة الاسترجاع يتحملها العميل ما لم يكن المنتج به عيب تصنيع.</p>
-    <p>للبدء برجاء التواصل معنا عبر واتساب أو البريد المسجل في صفحة التواصل.</p>
+    <h1>Exchange and Return Policy</h1>
+    <p>You can request a return or exchange within 14 days from the date of receipt, provided the product remains in its original condition with packaging and invoice.</p>
+    <p>Shipping costs for returns are borne by the customer unless the product has a manufacturing defect.</p>
+    <p>To initiate a return, please contact us via WhatsApp or the email listed on our contact page.</p>
   </UContainer>
 </template>

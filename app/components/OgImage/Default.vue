@@ -25,19 +25,19 @@ defineProps<{
 
       <!-- Tagline -->
       <p class="text-2xl text-neutral-300 max-w-2xl">
-        {{ description || 'أفضل المنتجات بأفضل الأسعار. شحن سريع لجميع المحافظات.' }}
+        {{ description || 'Best products at best prices. Fast shipping to all governorates.' }}
       </p>
 
       <!-- Features -->
       <div class="flex gap-8 mt-12 text-sm uppercase tracking-wider text-neutral-400">
         <span class="flex items-center gap-2">
-          <span class="text-xl">🚚</span> شحن سريع
+          <span class="text-xl">🚚</span> Fast Shipping
         </span>
         <span class="flex items-center gap-2">
-          <span class="text-xl">💯</span> جودة عالية
+          <span class="text-xl">💯</span> High Quality
         </span>
         <span class="flex items-center gap-2">
-          <span class="text-xl">🔒</span> دفع آمن
+          <span class="text-xl">🔒</span> Secure Payment
         </span>
       </div>
     </div>

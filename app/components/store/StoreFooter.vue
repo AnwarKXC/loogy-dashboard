@@ -13,10 +13,10 @@ type LayoutFooter = {
 const footer = computed<LayoutFooter>(() => layoutData.value?.layout?.footer ?? {})
 
 const fallbackLinks = [
-  { label: 'سياسة الخصوصية', to: '/pages/privacy-policy' },
-  { label: 'سياسة الاسترجاع', to: '/pages/refund-policy' },
-  { label: 'الشحن', to: '/pages/shipping-policy' },
-  { label: 'الشروط والأحكام', to: '/pages/terms-and-conditions' }
+  { label: 'Privacy Policy', to: '/pages/privacy-policy' },
+  { label: 'Refund Policy', to: '/pages/refund-policy' },
+  { label: 'Shipping', to: '/pages/shipping-policy' },
+  { label: 'Terms and Conditions', to: '/pages/terms-and-conditions' }
 ]
 
 const links = computed(() => footer.value.links?.length ? footer.value.links : fallbackLinks)
@@ -28,10 +28,10 @@ const socials = computed(() => footer.value.socials ?? [])
     <template #left>
       <div class="space-y-1">
         <p class="text-sm text-gray-600 dark:text-gray-300">
-          {{ footer.copyright || `© ${new Date().getFullYear()} Loogy. جميع الحقوق محفوظة.` }}
+          {{ footer.copyright || `© ${new Date().getFullYear()} Loogy. All rights reserved.` }}
         </p>
         <p class="text-xs text-gray-500 dark:text-gray-400">
-          {{ footer.description || 'أسرع متجر إلكتروني بدعم كامل للوضع الليلي مع بوابة دفع Paymob.' }}
+          {{ footer.description || 'The fastest online store with full dark mode support and Paymob payment gateway.' }}
         </p>
       </div>
     </template>

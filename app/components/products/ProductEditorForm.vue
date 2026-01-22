@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
@@ -292,9 +292,9 @@ const SEO_HOOKS = ['Shop Now', 'Fast Delivery', 'Limited Stock', 'Secure Checkou
 const SEO_OPENERS = ['Discover', 'Experience', 'Shop', 'Upgrade with', 'Get your']
 const SEO_CLOSERS = ['Order today for fast delivery.', 'Hassle-free returns guaranteed.', 'Secure checkout in seconds.', 'Limited stock — act now.', 'Join thousands of happy customers.']
 const COPY_FEATURES = ['Crafted for daily use', 'Built with durable materials', 'Designed for effortless comfort', 'Ready for modern lifestyles', 'Optimized for reliable performance']
-const COPY_AR_OPENERS = ['اكتشف', 'استمتع بـ', 'ترقَّ إلى', 'احصل على', 'اجعل']
-const COPY_AR_HOOKS = ['شحن سريع', 'عرض محدود', 'دفع آمن', 'أفضل سعر', 'خدمة موثوقة']
-const COPY_AR_CLOSERS = ['اطلبه الآن واستفد من الشحن السريع.', 'استمتع بتجربة سلسة وخدمة موثوقة.', 'اجعله اختيارك اليوم وتمتع بضمان الجودة.', 'لا تفوت الفرصة، الكمية محدودة.', 'اختيار مثالي لعملائك يومياً.']
+const COPY_AR_OPENERS = ['Discover', 'Enjoy', 'Upgrade to', 'Get', 'Make it']
+const COPY_AR_HOOKS = ['Fast Shipping', 'Limited Offer', 'Secure Payment', 'Best Price', 'Trusted Service']
+const COPY_AR_CLOSERS = ['Order now and enjoy fast shipping.', 'Enjoy a seamless experience with trusted service.', 'Make it your choice today with quality guarantee.', 'Do not miss out, limited quantity available.', 'A perfect choice for your customers daily.']
 
 const lastGeneratedContent = reactive({
   seoTitle: null as string | null,
@@ -721,11 +721,11 @@ function generateProductCopy(randomize = false) {
   const descriptionEn = truncateText(`${englishIntroParts.join(' — ')}. ${englishBody}. ${englishClosing}`.replace(/\s+/g, ' ').trim(), MAX_DESCRIPTION_LENGTH)
   const shortDescriptionEn = truncateText(`${nameEn} — ${hook.toLowerCase()}.`, MAX_SHORT_DESCRIPTION_LENGTH)
 
-  const arabicNameFragment = brandName ? `${nameAr} من ${brandName}` : nameAr
-  const categoryFragmentAr = categoryName ? `المثالي لـ ${categoryName.toLowerCase()}` : 'المصمم للاستخدام اليومي'
-  const arabicBody = `${arabicNameFragment} يجمع بين الجودة والتفاصيل العملية لتلبية احتياجات عملائك.`
+  const arabicNameFragment = brandName ? `${nameAr} by ${brandName}` : nameAr
+  const categoryFragmentAr = categoryName ? `perfect for ${categoryName.toLowerCase()}` : 'designed for everyday use'
+  const arabicBody = `${arabicNameFragment} combines quality and practical details to meet your needs.`
   const descriptionAr = truncateText(`${arabicOpener} ${arabicNameFragment}. ${arabicBody} ${categoryFragmentAr}. ${arabicCloser}`.replace(/\s+/g, ' ').trim(), MAX_DESCRIPTION_LENGTH)
-  const shortDescriptionAr = truncateText(`${arabicNameFragment} مع ${arabicHook} وخدمة موثوقة.`, MAX_SHORT_DESCRIPTION_LENGTH)
+  const shortDescriptionAr = truncateText(`${arabicNameFragment} with ${arabicHook} and reliable service.`, MAX_SHORT_DESCRIPTION_LENGTH)
 
   return {
     descriptionEn,
@@ -1282,10 +1282,10 @@ defineExpose({
               />
             </UFormField>
 
-            <UFormField label="اسم المنتج" name="nameAr" dir="rtl">
+            <UFormField label="Product name (Arabic)" name="nameAr" dir="rtl">
               <UInput
                 v-model="state.nameAr"
-                placeholder=" شنطه"
+                placeholder="Product name in Arabic"
                 class="w-full"
                 dir="rtl"
               />
@@ -1411,7 +1411,7 @@ defineExpose({
           <UFormField :help="`${descriptionArLength}/${MAX_DESCRIPTION_LENGTH} characters`" label="Description (Arabic)" name="descriptionAr">
             <UTextarea
               v-model="state.descriptionAr"
-              placeholder="وصف المنتج"
+              placeholder="Product description in Arabic"
               :rows="6"
               class="w-full"
             />
@@ -1429,13 +1429,13 @@ defineExpose({
 
             <UFormField
               :help="`${shortDescriptionArLength}/${MAX_SHORT_DESCRIPTION_LENGTH} characters`"
-              label="وصف قصير"
+              label="Short description (Arabic)"
               name="shortDescriptionAr"
               dir="rtl"
             >
               <UTextarea
                 v-model="state.shortDescriptionAr"
-                placeholder="هذا المنتج حذاء رياضي"
+                placeholder="Short product summary in Arabic"
                 :rows="3"
                 dir="rtl"
                 class="w-full"
@@ -1611,7 +1611,7 @@ defineExpose({
               >
                 <UInput
                   v-model="state.seoTitleAr"
-                  placeholder="عنوان الصفحة لمحركات البحث"
+                  placeholder="Page title for search engines in Arabic"
                   dir="rtl"
                   class="w-full"
                 />
@@ -1639,7 +1639,7 @@ defineExpose({
               >
                 <UTextarea
                   v-model="state.seoDescriptionAr"
-                  placeholder="وصف لمحركات البحث"
+                  placeholder="Description for search engines in Arabic"
                   :rows="2"
                   dir="rtl"
                   class="w-full"
@@ -1665,7 +1665,7 @@ defineExpose({
               >
                 <UInput
                   v-model="state.seoKeywordsAr"
-                  placeholder="كلمة1، كلمة2، كلمة3"
+                  placeholder="keyword1, keyword2, keyword3"
                   dir="rtl"
                   class="w-full"
                 />
@@ -1692,7 +1692,7 @@ defineExpose({
               >
                 <UInput
                   v-model="state.ogTitleAr"
-                  placeholder="عنوان للمشاركة الاجتماعية"
+                  placeholder="Title for social sharing in Arabic"
                   dir="rtl"
                   class="w-full"
                 />
@@ -1718,7 +1718,7 @@ defineExpose({
               >
                 <UTextarea
                   v-model="state.ogDescriptionAr"
-                  placeholder="وصف للمشاركة الاجتماعية"
+                  placeholder="Description for social sharing in Arabic"
                   :rows="2"
                   dir="rtl"
                   class="w-full"

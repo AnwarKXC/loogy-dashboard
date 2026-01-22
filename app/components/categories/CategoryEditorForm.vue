@@ -181,7 +181,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
       <UFormField label="Category name (Arabic)" name="nameAr">
         <UInput
           v-model="state.nameAr"
-          placeholder="اسم القسم"
+          placeholder="Category name in Arabic"
           dir="rtl"
           class="w-full"
         />
@@ -211,7 +211,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
       <UFormField label="Description (Arabic)" name="descriptionAr">
         <UTextarea
           v-model="state.descriptionAr"
-          placeholder="وصف الفئة..."
+          placeholder="Category description in Arabic"
           dir="rtl"
           :rows="3"
           class="w-full"
@@ -241,7 +241,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
         <UFormField label="SEO Title (Arabic)" name="seoTitleAr" :hint="`${state.seoTitleAr.length}/${MAX_SEO_TITLE_LENGTH}`">
           <UInput
             v-model="state.seoTitleAr"
-            placeholder="عنوان SEO"
+            placeholder="SEO title in Arabic"
             dir="rtl"
             class="w-full"
           />
@@ -262,7 +262,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
         <UFormField label="SEO Description (Arabic)" name="seoDescriptionAr" :hint="`${state.seoDescriptionAr.length}/${MAX_SEO_DESCRIPTION_LENGTH}`">
           <UTextarea
             v-model="state.seoDescriptionAr"
-            placeholder="وصف ميتا..."
+            placeholder="Meta description in Arabic"
             dir="rtl"
             :rows="2"
             class="w-full"
@@ -279,7 +279,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
         <UFormField label="SEO Keywords (Arabic)" name="seoKeywordsAr">
           <UInput
             v-model="state.seoKeywordsAr"
-            placeholder="كلمة1، كلمة2، كلمة3"
+            placeholder="keyword1, keyword2, keyword3"
             dir="rtl"
             class="w-full"
           />
@@ -297,7 +297,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
         <UFormField label="OG Title (Arabic)" name="ogTitleAr">
           <UInput
             v-model="state.ogTitleAr"
-            placeholder="عنوان للمشاركة"
+            placeholder="Sharing title in Arabic"
             dir="rtl"
             class="w-full"
           />
@@ -318,7 +318,7 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
         <UFormField label="OG Description (Arabic)" name="ogDescriptionAr">
           <UTextarea
             v-model="state.ogDescriptionAr"
-            placeholder="وصف للمشاركة..."
+            placeholder="Sharing description in Arabic"
             dir="rtl"
             :rows="2"
             class="w-full"

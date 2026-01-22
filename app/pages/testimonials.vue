@@ -4,31 +4,31 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'آراء العملاء',
-  description: 'اقرأ تجارب عملائنا الحقيقية مع منتجاتنا وخدماتنا. تقييمات حقيقية من عملاء راضين عن جودة المنتجات وسرعة التوصيل.',
-  ogTitle: 'آراء العملاء',
-  ogDescription: 'اقرأ تجارب عملائنا الحقيقية مع منتجاتنا وخدماتنا.',
+  title: 'Customer Reviews',
+  description: 'Read real experiences from our customers with our products and services. Genuine reviews from satisfied customers about product quality and fast delivery.',
+  ogTitle: 'Customer Reviews',
+  ogDescription: 'Read real experiences from our customers with our products and services.',
   twitterCard: 'summary',
   robots: 'index, follow'
 })
 
 // Dynamic OG Image
 defineOgImageComponent('Default', {
-  title: 'آراء العملاء',
-  description: 'تجارب حقيقية من عملائنا'
+  title: 'Customer Reviews',
+  description: 'Real experiences from our customers'
 })
 
 // Schema.org
 useSchemaOrg([
   defineWebPage({
     '@type': 'WebPage',
-    'name': 'آراء العملاء',
-    'description': 'اقرأ تجارب عملائنا الحقيقية مع منتجاتنا وخدماتنا.'
+    'name': 'Customer Reviews',
+    'description': 'Read real experiences from our customers with our products and services.'
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'آراء العملاء' }
+      { name: 'Home', item: '/' },
+      { name: 'Customer Reviews' }
     ]
   })
 ])
@@ -70,11 +70,11 @@ const sourceIcons: Record<string, string> = {
 }
 
 const sourceOptions = [
-  { label: 'الكل', value: undefined },
-  { label: 'فيسبوك', value: 'facebook' },
-  { label: 'واتساب', value: 'whatsapp' },
-  { label: 'انستجرام', value: 'instagram' },
-  { label: 'جوجل', value: 'google' }
+  { label: 'All', value: undefined },
+  { label: 'Facebook', value: 'facebook' },
+  { label: 'WhatsApp', value: 'whatsapp' },
+  { label: 'Instagram', value: 'instagram' },
+  { label: 'Google', value: 'google' }
 ]
 
 // Image modal
@@ -92,10 +92,10 @@ function openImage(img: string) {
     <main class="flex-grow pt-20 pb-24">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <h1 class="text-4xl lg:text-5xl font-serif font-black uppercase text-center mb-4">
-          آراء عملائنا
+          Customer Reviews
         </h1>
         <p class="text-center text-neutral-500 mb-8 max-w-2xl mx-auto">
-          اطلع على تجارب عملائنا الحقيقية من مختلف منصات التواصل الاجتماعي
+          View real customer experiences from various social media platforms
         </p>
 
         <!-- Filter -->
@@ -117,13 +117,13 @@ function openImage(img: string) {
 
         <div v-if="status === 'pending'" class="text-center py-16">
           <p class="text-neutral-500">
-            جاري التحميل...
+            Loading...
           </p>
         </div>
 
         <div v-else-if="testimonials.length === 0" class="text-center py-16">
           <p class="text-neutral-500">
-            لا توجد تقييمات حتى الآن
+            No reviews yet
           </p>
         </div>
 
@@ -146,7 +146,7 @@ function openImage(img: string) {
                 </div>
                 <div>
                   <p class="font-semibold">
-                    {{ testimonial.customerName || 'عميل' }}
+                    {{ testimonial.customerName || 'Customer' }}
                   </p>
                   <p v-if="testimonial.source" class="text-xs text-neutral-500 capitalize">
                     {{ testimonial.source }}
@@ -184,17 +184,17 @@ function openImage(img: string) {
             class="px-4 py-2 border border-neutral-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100 transition-colors"
             @click="page--"
           >
-            السابق
+            Previous
           </button>
           <span class="px-4 py-2 text-neutral-600">
-            صفحة {{ page }} من {{ totalPages }}
+            Page {{ page }} of {{ totalPages }}
           </span>
           <button
             :disabled="page >= totalPages"
             class="px-4 py-2 border border-neutral-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-neutral-100 transition-colors"
             @click="page++"
           >
-            التالي
+            Next
           </button>
         </div>
       </div>

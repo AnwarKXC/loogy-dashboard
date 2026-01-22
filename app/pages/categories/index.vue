@@ -42,8 +42,8 @@ const flatCategories = computed(() => flattenCategories(categories.value))
 const topCategories = computed(() => (featured.value.length ? featured.value : flatCategories.value.slice(0, 8)))
 
 // SEO using Nuxt SEO
-const pageTitle = 'كل الفئات'
-const pageDescription = 'استعرض جميع فئات المنتجات المتاحة في متجرنا. اعثر على ما تبحث عنه بسهولة من خلال تصفح القوائم المصنفة.'
+const pageTitle = 'All Categories'
+const pageDescription = 'Browse all product categories available in our store. Find what you are looking for easily by exploring the categorized lists.'
 
 useSeoMeta({
   title: pageTitle,
@@ -70,8 +70,8 @@ useSchemaOrg([
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'الفئات' }
+      { name: 'Home', item: '/' },
+      { name: 'Categories' }
     ]
   }),
   defineItemList({
@@ -92,13 +92,13 @@ useSchemaOrg([
   <UContainer class="py-12 space-y-10">
     <header class="space-y-2">
       <p class="text-sm uppercase tracking-wide text-gray-500 dark:text-gray-400">
-        الكتالوج
+        CATALOG
       </p>
       <h1 class="text-3xl font-semibold text-gray-900 dark:text-gray-100">
-        تصفح حسب الفئة
+        Browse by Category
       </h1>
       <p class="text-gray-600 dark:text-gray-400">
-        استعرض جميع الفئات من الكتالوج. الأعداد تتحدث تلقائياً مع تغير المنتجات.
+        Browse all categories from the catalog. The counts update automatically with product changes.
       </p>
     </header>
 
@@ -106,17 +106,17 @@ useSchemaOrg([
       v-if="error"
       color="red"
       icon="i-lucide-alert-triangle"
-      title="تعذر تحميل الفئات"
-      :description="error?.message || 'حاول مرة أخرى.'"
+      title="Failed to load categories"
+      :description="error?.message || 'Please try again.'"
     />
 
     <div v-else class="space-y-10">
       <div>
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            فئات مميزة
+            Featured Categories
           </h2>
-          <span class="text-sm text-gray-600 dark:text-gray-400">{{ topCategories.length }} فئة</span>
+          <span class="text-sm text-gray-600 dark:text-gray-400">{{ topCategories.length }} categories</span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -132,7 +132,7 @@ useSchemaOrg([
             <div class="flex items-start justify-between gap-3">
               <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">
-                  {{ cat.depth ? `فئة فرعية • المستوى ${cat.depth}` : 'المستوى الرئيسي' }}
+                  {{ cat.depth ? `Subcategory • Level ${cat.depth}` : 'Main Level' }}
                 </p>
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
                   {{ cat.name }}
@@ -143,11 +143,11 @@ useSchemaOrg([
                 size="xs"
                 variant="ghost"
                 icon="i-lucide-arrow-up-right"
-                aria-label="فتح الفئة"
+                aria-label="Open category"
               />
             </div>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              {{ cat._count?.products || 0 }} منتج
+              {{ cat._count?.products || 0 }} products
             </p>
           </UCard>
         </div>
@@ -155,14 +155,14 @@ useSchemaOrg([
 
       <div class="space-y-3">
         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          كل الفئات
+          All Categories
         </h2>
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700 bg-white dark:bg-gray-800">
           <div
             v-if="pending"
             class="p-4 text-gray-600 dark:text-gray-400"
           >
-            جاري تحميل الفئات...
+            Loading categories...
           </div>
           <div
             v-for="cat in flatCategories"
@@ -176,7 +176,7 @@ useSchemaOrg([
                 {{ cat.name }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ cat.depth ? `المستوى ${cat.depth}` : 'رئيسي' }} • {{ cat._count?.products || 0 }} منتج
+                {{ cat.depth ? `Level ${cat.depth}` : 'Main' }} • {{ cat._count?.products || 0 }} products
               </p>
             </div>
             <UButton
@@ -184,7 +184,7 @@ useSchemaOrg([
               variant="ghost"
               size="xs"
               icon="i-lucide-chevron-right"
-              aria-label="عرض الفئة"
+              aria-label="View category"
             />
           </div>
         </div>

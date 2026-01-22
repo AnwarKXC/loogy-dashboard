@@ -18,10 +18,10 @@ const carouselRef = ref()
     <div class="flex items-center justify-between px-2">
       <div class="space-y-1">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          آراء العملاء
+          Customer Reviews
         </h2>
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          ما يقوله عملاؤنا عنا
+          What our customers say about us
         </p>
       </div>
       <div class="flex gap-2">

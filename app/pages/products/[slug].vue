@@ -44,7 +44,7 @@ watch(images, (list) => {
 
 // --- SEO & Meta using Nuxt SEO ---
 const title = computed(() => product.value.name)
-const description = computed(() => product.value.shortDescription || product.value.description || `اشترِ ${product.value.name} بأفضل سعر.`)
+const description = computed(() => product.value.shortDescription || product.value.description || `Buy ${product.value.name} at the best price.`)
 const currency = 'EGP'
 const productPrice = computed(() => product.value.salePrice ?? product.value.price)
 
@@ -91,9 +91,9 @@ useSchemaOrg([
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'المنتجات', item: '/products' },
-      { name: () => product.value.category?.name || 'فئة', item: () => `/categories/${product.value.category?.slug || ''}` },
+      { name: 'Home', item: '/' },
+      { name: 'Products', item: '/products' },
+      { name: () => product.value.category?.name || 'Category', item: () => `/categories/${product.value.category?.slug || ''}` },
       { name: () => product.value.name }
     ]
   })
@@ -115,9 +115,9 @@ const discountPercent = computed(() => {
 
 const availabilityLabel = computed(() => {
   const status = product.value?.status
-  if (status === 'out_of_stock') return 'غير متوفر'
-  if (status === 'low_stock') return 'كمية محدودة'
-  return 'متوفر'
+  if (status === 'out_of_stock') return 'Out of Stock'
+  if (status === 'low_stock') return 'Limited Quantity'
+  return 'In Stock'
 })
 
 const isInWishlist = computed(() => {
@@ -156,7 +156,7 @@ const handleAddToCart = async (redirect = false) => {
     })
 
     toast.add({
-      title: 'تمت الإضافة إلى السلة',
+      title: 'Added to Cart',
       description: product.value.name,
       color: 'success'
     })
@@ -166,8 +166,8 @@ const handleAddToCart = async (redirect = false) => {
     }
   } catch (error: any) {
     toast.add({
-      title: 'تعذر الإضافة للسلة',
-      description: error?.data?.message || error?.message || 'حاول مرة أخرى',
+      title: 'Failed to Add to Cart',
+      description: error?.data?.message || error?.message || 'Please try again',
       color: 'error'
     })
   }
@@ -190,8 +190,8 @@ const placeOrder = async () => {
 
   if (!orderForm.value.name || !orderForm.value.phone || !orderForm.value.address) {
     toast.add({
-      title: 'اكمل البيانات',
-      description: 'الاسم، الهاتف والعنوان مطلوبة لإتمام الطلب',
+      title: 'Complete Your Information',
+      description: 'Name, phone, and address are required to complete the order',
       color: 'warning'
     })
     return
@@ -227,14 +227,14 @@ const placeOrder = async () => {
     orderNumber.value = response.orderNumber
 
     toast.add({
-      title: 'تم إنشاء الطلب بنجاح',
+      title: 'Order Created Successfully',
       description: response.message,
       color: 'success'
     })
   } catch (error: any) {
     toast.add({
-      title: 'تعذر إنشاء الطلب',
-      description: error?.data?.message || error?.message || 'حاول مرة أخرى',
+      title: 'Failed to Create Order',
+      description: error?.data?.message || error?.message || 'Please try again',
       color: 'error'
     })
   } finally {
@@ -242,7 +242,7 @@ const placeOrder = async () => {
   }
 }
 
-const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
+const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 </script>
 
 <template>
@@ -250,10 +250,10 @@ const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
     <main class="flex-grow pt-20 pb-24">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div v-if="pending" class="py-24 text-center text-neutral-500">
-          جاري تحميل المنتج...
+          Loading product...
         </div>
         <div v-else-if="error" class="py-24 text-center text-red-600">
-          {{ error?.message || 'تعذر تحميل المنتج' }}
+          {{ error?.message || 'Failed to load product' }}
         </div>
         <div v-else class="flex flex-col lg:flex-row gap-12 lg:gap-24">
           <!-- LEFT: Product Visuals -->
@@ -316,7 +316,7 @@ const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
                     <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">{{ availabilityLabel }}</span>
                   </div>
                   <div class="text-xs font-mono font-bold text-neutral-500">
-                    {{ product?.shortDescription || 'توصيل سريع لكل المحافظات' }}
+                    {{ product?.shortDescription || 'Fast delivery to all governorates' }}
                   </div>
                 </div>
               </div>
@@ -324,7 +324,7 @@ const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
               <!-- Quantity + Actions -->
               <div class="mb-12 space-y-6">
                 <p class="text-sm text-neutral-600">
-                  {{ product?.description || 'تفاصيل إضافية عن المنتج ستظهر هنا.' }}
+                  {{ product?.description || 'Additional product details will appear here.' }}
                 </p>
 
                 <div class="flex flex-wrap items-center gap-4">
@@ -391,17 +391,17 @@ const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
                     <UIcon name="i-heroicons-check" class="w-8 h-8 text-green-600" />
                   </div>
                   <p class="text-lg font-bold">
-                    تم إنشاء الطلب بنجاح
+                    Order Created Successfully
                   </p>
                   <p class="text-sm text-neutral-500">
-                    رقم الطلب: {{ orderNumber }}
+                    Order Number: {{ orderNumber }}
                   </p>
                   <div class="flex flex-col sm:flex-row gap-3 justify-center">
                     <NuxtLink to="/" class="bg-neutral-900 text-white px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-amber-700 transition">
-                      العودة للرئيسية
+                      Back to Home
                     </NuxtLink>
                     <NuxtLink to="/products" class="border border-neutral-300 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-amber-700 hover:text-amber-700 transition">
-                      متابعة التسوق
+                      Continue Shopping
                     </NuxtLink>
                   </div>
                 </div>
@@ -457,7 +457,7 @@ const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
                     <textarea
                       v-model="orderForm.notes"
                       rows="3"
-                      placeholder="ملاحظات إضافية (اختياري)"
+                      placeholder="Additional notes (optional)"
                       class="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm focus:outline-none focus:border-black font-medium transition-colors"
                     />
                   </div>

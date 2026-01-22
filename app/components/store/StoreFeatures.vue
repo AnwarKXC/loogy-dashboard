@@ -3,10 +3,10 @@
     <div class="flex items-center justify-between">
       <div>
         <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          لماذا تختارنا
+          Why Choose Us
         </p>
         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          مميزاتنا
+          Our Features
         </h2>
       </div>
     </div>
@@ -19,10 +19,10 @@
           </div>
           <div class="space-y-1">
             <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-              شحن سريع وآمن
+              Fast and Safe Shipping
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              تسليم لكل المحافظات مع تتبع فوري وإشعارات.
+              Delivery to all areas with real-time tracking and notifications.
             </p>
           </div>
         </div>
@@ -35,10 +35,10 @@
           </div>
           <div class="space-y-1">
             <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-              منتجات أصلية 100%
+              100% Authentic Products
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              ضمان مطابقة الوصف والصور مع دعم ما بعد البيع.
+              Guaranteed to match description and images with after-sales support.
             </p>
           </div>
         </div>
@@ -51,10 +51,10 @@
           </div>
           <div class="space-y-1">
             <h3 class="font-semibold text-gray-900 dark:text-gray-100">
-              استبدال واسترجاع سهل
+              Easy Returns and Exchanges
             </h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              سياسة مرنة خلال 14 يوم مع دعم واتساب مباشر.
+              Flexible policy within 14 days with direct WhatsApp support.
             </p>
           </div>
         </div>

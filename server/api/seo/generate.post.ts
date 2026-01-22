@@ -17,9 +17,9 @@ const FALLBACK_FEATURE_SENTENCES = [
   'Designed to handle busy schedules without sacrificing style.'
 ]
 const FALLBACK_CTA_EN = 'Secure this limited-edition release before it sells out.'
-const FALLBACK_CTA_AR = 'احصل على هذا الإصدار المحدود قبل نفاد الكمية.'
+const FALLBACK_CTA_AR = 'Get this limited edition before it runs out.'
 const SHIPPING_KEYWORDS_EN = ['ship', 'shipping', 'delivery', 'deliveries', 'return', 'returns', 'courier', 'same day', 'fast delivery', 'express delivery']
-const SHIPPING_KEYWORDS_AR = ['شحن', 'التسليم', 'تسليم', 'التوصيل', 'توصيل', 'التوصيلات', 'إرجاع', 'ارجاع', 'إعادة', 'سريع التوصيل', 'توصيل سريع']
+const SHIPPING_KEYWORDS_AR = ['ship', 'shipping', 'delivery', 'deliveries', 'return', 'returns', 'fast shipping', 'express', 'quick delivery']
 
 const requestSchema = z.object({
   name: z.string().trim().min(1, 'Product name is required'),
@@ -306,7 +306,7 @@ async function gatherInsightsFromPrimarySources(query: string, locale: 'en' | 'a
     const brandQueries = [
       `${context.brand} official ${locale === 'ar' ? 'arabic' : 'site'}`,
       `${context.brand} ${context.name ?? ''}`.trim(),
-      `${context.brand} ${context.name ?? ''} specs ${locale === 'ar' ? 'مواصفات' : 'features'}`.trim()
+      `${context.brand} ${context.name ?? ''} specs ${locale === 'ar' ? 'specifications' : 'features'}`.trim()
     ]
 
     for (const brandQuery of brandQueries) {
@@ -460,7 +460,7 @@ function buildArabicKeywordSet({
   }
 
   if (nameAr) {
-    addKeyword(`حذاء ${nameAr}`)
+    addKeyword(`shoes ${nameAr}`)
   }
 
   for (const extra of extras ?? []) {
@@ -473,7 +473,7 @@ function buildArabicKeywordSet({
     }
 
     const segments = insight.text
-      .split(/[،,.؛!؟]/u)
+      .split(/[,,.;!?]/u)
       .map(segment => segment.trim())
       .filter(segment => segment.length > 0 && segment.length < 80)
 
@@ -552,7 +552,7 @@ function extractSentences(text: string, limit: number) {
   }
 
   const rawSentences = normalized
-    .split(/[.!؟?؛]+/u)
+    .split(/[.!?;]+/u)
     .map(sentence => sentence.trim())
     .filter(sentence => sentence.length > 0)
 
@@ -676,7 +676,7 @@ function scoreInsight(insight: InsightRecord, context: { name: string, brand?: s
 
   const featureKeywords = [
     'memory foam', 'air-cooled', 'duraleather', 'lace-up', 'special edition', 'limited edition',
-    'مطاط', 'جلد', 'فوم', 'ذاكر', 'إصدار خاص', 'محدود', 'نعل', 'تصميم'
+    'rubber', 'leather', 'foam', 'memory', 'special release', 'limited', 'sole', 'design'
   ]
 
   for (const keyword of featureKeywords) {

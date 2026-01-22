@@ -4,8 +4,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'الشروط والأحكام',
-  description: 'اقرأ الشروط والأحكام الخاصة باستخدام المتجر وإتمام الطلبات.',
+  title: 'Terms and Conditions',
+  description: 'Read the terms and conditions for using the store and completing orders.',
   robots: 'index, follow'
 })
 
@@ -13,13 +13,13 @@ useSeoMeta({
 useSchemaOrg([
   defineWebPage({
     '@type': 'WebPage',
-    'name': 'الشروط والأحكام',
-    'description': 'اقرأ الشروط والأحكام الخاصة باستخدام المتجر وإتمام الطلبات.'
+    'name': 'Terms and Conditions',
+    'description': 'Read the terms and conditions for using the store and completing orders.'
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'الشروط والأحكام' }
+      { name: 'Home', item: '/' },
+      { name: 'Terms and Conditions' }
     ]
   })
 ])
@@ -27,10 +27,10 @@ useSchemaOrg([
 
 <template>
   <UContainer class="py-12 space-y-6 prose prose-slate dark:prose-invert max-w-3xl">
-    <h1>الشروط والأحكام</h1>
-    <p>باستخدامك لهذا المتجر فأنت توافق على الشروط والأحكام التالية.</p>
-    <p>يجب تقديم بيانات صحيحة عند إنشاء الطلبات، ويحق للمتجر إلغاء أي طلب مشبوه أو مخالف.</p>
-    <p>الأسعار والخصومات قابلة للتغيير دون إشعار مسبق، ويتم اعتماد السعر عند إتمام الطلب.</p>
-    <p>أي نزاع يتم حله بالرجوع للقوانين المحلية المعمول بها.</p>
+    <h1>Terms and Conditions</h1>
+    <p>By using this store, you agree to the following terms and conditions.</p>
+    <p>You must provide accurate information when placing orders. The store reserves the right to cancel any suspicious or non-compliant orders.</p>
+    <p>Prices and discounts are subject to change without prior notice. The price at the time of order completion will be applied.</p>
+    <p>Any disputes will be resolved in accordance with applicable local laws.</p>
   </UContainer>
 </template>

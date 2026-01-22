@@ -39,7 +39,7 @@ const items = computed(() => props.slides.map(slide => ({
           <div class="max-w-2xl space-y-6 text-white" dir="rtl">
             <div class="overflow-hidden">
               <p class="text-sm font-medium tracking-[0.2em] text-primary-400 uppercase animate-fade-in-up">
-                موضة 2026
+                Fashion 2026
               </p>
             </div>
 
@@ -60,7 +60,7 @@ const items = computed(() => props.slides.map(slide => ({
                 class="px-8 font-bold text-gray-900 bg-white hover:bg-gray-100 transition-colors"
                 trailing-icon="i-lucide-arrow-left"
               >
-                تسوق المجموعة
+                Shop Collection
               </UButton>
               <UButton
                 to="/#deals"
@@ -69,7 +69,7 @@ const items = computed(() => props.slides.map(slide => ({
                 size="xl"
                 class="px-8 text-white border-white hover:bg-white/10 transition-colors"
               >
-                اكتشف العروض
+                Discover Deals
               </UButton>
             </div>
           </div>

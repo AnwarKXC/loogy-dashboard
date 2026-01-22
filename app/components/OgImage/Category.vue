@@ -19,7 +19,7 @@ defineProps<{
     <div class="relative z-10 w-full h-full flex flex-col justify-center p-16">
       <!-- Category Badge -->
       <span class="bg-emerald-600 text-white px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider w-max mb-6">
-        فئة المنتجات
+        Product Category
       </span>
 
       <!-- Title -->
@@ -35,7 +35,7 @@ defineProps<{
       <!-- Product Count -->
       <div v-if="productCount" class="flex items-center gap-2 text-xl text-neutral-400">
         <span class="text-3xl">📦</span>
-        <span>{{ productCount }} منتج متاح</span>
+        <span>{{ productCount }} products available</span>
       </div>
 
       <!-- Store Branding -->
@@ -44,8 +44,12 @@ defineProps<{
           <span class="text-3xl">🛒</span>
         </div>
         <div>
-          <p class="text-2xl font-bold">Loogy Store</p>
-          <p class="text-neutral-400">loogy.store</p>
+          <p class="text-2xl font-bold">
+            Loogy Store
+          </p>
+          <p class="text-neutral-400">
+            loogy.store
+          </p>
         </div>
       </div>
     </div>

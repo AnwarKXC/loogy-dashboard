@@ -4,8 +4,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'سياسة الشحن',
-  description: 'معلومات الشحن ومواعيد التوصيل ورسوم الشحن لجميع المحافظات.',
+  title: 'Shipping Policy',
+  description: 'Shipping information, delivery times, and shipping fees to all governorates.',
   robots: 'index, follow'
 })
 
@@ -13,13 +13,13 @@ useSeoMeta({
 useSchemaOrg([
   defineWebPage({
     '@type': 'WebPage',
-    'name': 'سياسة الشحن',
-    'description': 'معلومات الشحن ومواعيد التوصيل ورسوم الشحن لجميع المحافظات.'
+    'name': 'Shipping Policy',
+    'description': 'Shipping information, delivery times, and shipping fees to all governorates.'
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'سياسة الشحن' }
+      { name: 'Home', item: '/' },
+      { name: 'Shipping Policy' }
     ]
   })
 ])
@@ -27,9 +27,9 @@ useSchemaOrg([
 
 <template>
   <UContainer class="py-12 space-y-6 prose prose-slate dark:prose-invert max-w-3xl">
-    <h1>سياسة الشحن</h1>
-    <p>نوفر شحن سريع وآمن لكل المحافظات مع شركات موثوقة. يتم تجهيز الطلب خلال 24 ساعة عمل.</p>
-    <p>رسوم الشحن تظهر بوضوح في صفحة الدفع قبل إتمام الطلب. في حال التأخير يتم التواصل معك لتأكيد الموعد الجديد.</p>
-    <p>يرجى التأكد من صحة بيانات العنوان ورقم الهاتف لتسهيل عملية التوصيل.</p>
+    <h1>Shipping Policy</h1>
+    <p>We provide fast and secure shipping to all governorates through trusted carriers. Orders are processed within 24 business hours.</p>
+    <p>Shipping fees are clearly displayed on the checkout page before completing your order. In case of delays, we will contact you to confirm the new delivery time.</p>
+    <p>Please ensure your address and phone number are correct to facilitate the delivery process.</p>
   </UContainer>
 </template>

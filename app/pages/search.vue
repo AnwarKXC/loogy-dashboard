@@ -11,8 +11,8 @@ const route = useRoute()
 const searchMeta = computed(() => {
   const q = (route.query.q as string) || ''
   return {
-    title: q ? `نتائج البحث: ${q}` : 'البحث',
-    description: q ? `عرض نتائج البحث عن "${q}" في المتجر` : 'ابحث عن منتجاتك المفضلة'
+    title: q ? `Search Results: ${q}` : 'Search',
+    description: q ? `Showing search results for "${q}" in the store` : 'Search for your favorite products'
   }
 })
 
@@ -57,10 +57,10 @@ const products = computed(() =>
 const total = computed(() => data.value?.pagination?.totalItems || 0)
 
 const sortOptions = [
-  { label: 'الأبرز', value: 'featured' },
-  { label: 'الأحدث', value: 'newest' },
-  { label: 'السعر: من الأقل', value: 'price-asc' },
-  { label: 'السعر: من الأعلى', value: 'price-desc' }
+  { label: 'Featured', value: 'featured' },
+  { label: 'Newest', value: 'newest' },
+  { label: 'Price: Low to High', value: 'price-asc' },
+  { label: 'Price: High to Low', value: 'price-desc' }
 ]
 </script>
 
@@ -68,13 +68,13 @@ const sortOptions = [
   <UContainer class="py-12 space-y-8">
     <div class="space-y-2">
       <p class="text-sm text-gray-500 dark:text-gray-400">
-        ابحث عن المنتجات
+        Search for products
       </p>
       <h1 class="text-3xl font-semibold">
-        نتائج البحث
+        Search Results
       </h1>
       <p class="text-gray-600 dark:text-gray-300">
-        اكتب اسم المنتج أو الفئة للعثور على ما تريد.
+        Type a product name or category to find what you're looking for.
       </p>
     </div>
 
@@ -83,28 +83,28 @@ const sortOptions = [
         <UInput
           v-model="search"
           icon="i-lucide-search"
-          placeholder="بحث عن منتج..."
+          placeholder="Search for a product..."
           size="lg"
         />
         <div class="flex items-center gap-2 justify-end">
-          <span class="text-sm text-gray-500 dark:text-gray-400">ترتيب</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400">Sort</span>
           <USelectMenu v-model="sort" :options="sortOptions" />
         </div>
       </div>
     </UCard>
 
     <div v-if="error" class="text-red-500 text-sm">
-      {{ error?.message || 'تعذر تحميل النتائج' }}
+      {{ error?.message || 'Failed to load results' }}
     </div>
 
     <div v-else class="space-y-4">
       <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-        <span>عدد النتائج: {{ total }}</span>
-        <span v-if="pending">جاري التحميل...</span>
+        <span>Results: {{ total }}</span>
+        <span v-if="pending">Loading...</span>
       </div>
 
       <div v-if="!pending && !products.length" class="text-gray-500 dark:text-gray-300">
-        لا توجد نتائج مطابقة حالياً.
+        No matching results found.
       </div>
 
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

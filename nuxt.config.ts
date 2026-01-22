@@ -22,8 +22,8 @@ export default defineNuxtConfig({
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL || 'https://loogy.store',
     name: 'Loogy Store',
-    description: 'تسوق أفضل المنتجات بأسعار تنافسية. شحن سريع لجميع المحافظات.',
-    defaultLocale: 'ar'
+    description: 'Shop the best products at competitive prices. Fast shipping to all locations.',
+    defaultLocale: 'en'
   },
   runtimeConfig: {
     s3AccessKey: process.env.S3_ACCESS_KEY,
@@ -66,7 +66,7 @@ export default defineNuxtConfig({
       },
       {
         code: 'ar',
-        name: 'العربية',
+        name: 'Arabic',
         dir: 'rtl',
         file: 'ar.json'
       }

@@ -4,8 +4,8 @@ definePageMeta({
 })
 
 useSeoMeta({
-  title: 'سياسة الخصوصية',
-  description: 'اقرأ سياسة الخصوصية الخاصة بنا وكيف نحمي بياناتك الشخصية.',
+  title: 'Privacy Policy',
+  description: 'Read our privacy policy and how we protect your personal data.',
   robots: 'index, follow'
 })
 
@@ -13,13 +13,13 @@ useSeoMeta({
 useSchemaOrg([
   defineWebPage({
     '@type': 'WebPage',
-    'name': 'سياسة الخصوصية',
-    'description': 'اقرأ سياسة الخصوصية الخاصة بنا وكيف نحمي بياناتك الشخصية.'
+    'name': 'Privacy Policy',
+    'description': 'Read our privacy policy and how we protect your personal data.'
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'سياسة الخصوصية' }
+      { name: 'Home', item: '/' },
+      { name: 'Privacy Policy' }
     ]
   })
 ])
@@ -27,9 +27,9 @@ useSchemaOrg([
 
 <template>
   <UContainer class="py-12 space-y-6 prose prose-slate dark:prose-invert max-w-3xl">
-    <h1>سياسة الخصوصية</h1>
-    <p>نلتزم بحماية بياناتك الشخصية وعدم مشاركتها مع أي طرف ثالث إلا للضرورة مثل الشحن والدفع.</p>
-    <p>يتم استخدام بيانات الاتصال لتأكيد الطلبات وتحديثك بحالة الشحن. يمكنك طلب تعديل أو حذف بياناتك في أي وقت.</p>
-    <p>باستخدامك للمتجر فإنك توافق على سياسة الخصوصية هذه.</p>
+    <h1>Privacy Policy</h1>
+    <p>We are committed to protecting your personal data and not sharing it with any third party except when necessary, such as for shipping and payment.</p>
+    <p>Contact information is used to confirm orders and update you on shipping status. You can request to modify or delete your data at any time.</p>
+    <p>By using the store, you agree to this privacy policy.</p>
   </UContainer>
 </template>

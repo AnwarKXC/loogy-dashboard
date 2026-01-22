@@ -4,13 +4,13 @@
       <UIcon name="i-lucide-megaphone" class="h-4 w-4" />
       <div class="flex-1 overflow-hidden">
         <div class="flex gap-8 whitespace-nowrap animate-marquee">
-          <p>تنبيه هام: فى حالة الرفض يتم التواصل عبر الواتساب لإعادة الشحن أو الاستبدال.</p>
-          <p>شحن سريع وآمن لكل المحافظات • استرجاع سهل خلال 14 يوم</p>
-          <p>خصومات مميزة على الكولكشن الشتوي الآن</p>
+          <p>Important Notice: In case of rejection, please contact us via WhatsApp for reshipment or exchange.</p>
+          <p>Fast and secure shipping to all governorates • Easy returns within 14 days</p>
+          <p>Special discounts on the winter collection now</p>
         </div>
       </div>
       <ULink to="/#contact" class="hidden sm:inline-flex text-white/90 hover:text-white text-xs underline">
-        تواصل معنا
+        Contact Us
       </ULink>
     </div>
   </div>

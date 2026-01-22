@@ -9,14 +9,14 @@ const props = defineProps<{
     <div class="flex items-center justify-between">
       <div>
         <p class="text-sm text-gray-500 dark:text-gray-400">
-          فئات مميزة
+          Featured Categories
         </p>
         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          تصفح فئاتنا المميزة
+          Browse our featured categories
         </h2>
       </div>
       <ULink to="/categories" class="text-primary font-medium text-sm flex items-center gap-1">
-        كل الفئات
+        All Categories
         <UIcon name="i-lucide-arrow-left" class="size-4" />
       </ULink>
     </div>
@@ -38,9 +38,9 @@ const props = defineProps<{
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
         <div class="absolute bottom-4 right-4 left-4 text-white space-y-2">
           <p class="text-lg font-bold">{{ cat.name }}</p>
-          <p class="text-sm text-white/80">{{ cat.count || 0 }} منتج</p>
+          <p class="text-sm text-white/80">{{ cat.count || 0 }} products</p>
           <span class="inline-block text-sm bg-white/20 backdrop-blur px-3 py-1 rounded-full group-hover:bg-white/30 transition">
-            عرض التفاصيل
+            View Details
           </span>
         </div>
       </NuxtLink>

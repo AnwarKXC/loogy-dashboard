@@ -52,7 +52,7 @@ const discountPercent = computed(() => {
   return Math.round(((props.price - props.salePrice) / props.price) * 100)
 })
 
-const formatPrice = (value: number) => `${value.toLocaleString('ar-EG')} ج.م`
+const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 </script>
 
 <template>

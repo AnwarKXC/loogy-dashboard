@@ -34,7 +34,7 @@ export default defineEventHandler(async (event) => {
   if (!promoCode) {
     throw createError({
       statusCode: 404,
-      statusMessage: 'كود الخصم غير صحيح'
+      statusMessage: 'Invalid promo code'
     })
   }
 
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
   if (!promoCode.isActive) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'كود الخصم غير مفعل'
+      statusMessage: 'Promo code is not active'
     })
   }
 
@@ -50,14 +50,14 @@ export default defineEventHandler(async (event) => {
   if (promoCode.validFrom && promoCode.validFrom > now) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'كود الخصم لم يبدأ بعد'
+      statusMessage: 'Promo code is not yet valid'
     })
   }
 
   if (promoCode.validTo && promoCode.validTo < now) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'انتهت صلاحية كود الخصم'
+      statusMessage: 'Promo code has expired'
     })
   }
 
@@ -65,7 +65,7 @@ export default defineEventHandler(async (event) => {
   if (promoCode.usageLimit && promoCode.usageCount >= promoCode.usageLimit) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'تم استنفاد الحد الأقصى لاستخدام هذا الكود'
+      statusMessage: 'Promo code usage limit has been reached'
     })
   }
 
@@ -86,7 +86,7 @@ export default defineEventHandler(async (event) => {
     value: value,
     discountAmount: Math.round(discountAmount * 100) / 100,
     message: promoCode.applicationType === 'PERCENTAGE'
-      ? `خصم ${value}% تم تطبيقه`
-      : `خصم ${value} جنيه تم تطبيقه`
+      ? `${value}% discount applied`
+      : `${value} EGP discount applied`
   }
 })

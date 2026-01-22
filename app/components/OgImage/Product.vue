@@ -46,7 +46,7 @@ defineProps<{
         </div>
         <div>
           <p class="text-xl font-bold">Loogy Store</p>
-          <p class="text-neutral-400 text-sm">أفضل المنتجات بأفضل الأسعار</p>
+          <p class="text-neutral-400 text-sm">Best products at best prices</p>
         </div>
       </div>
     </div>

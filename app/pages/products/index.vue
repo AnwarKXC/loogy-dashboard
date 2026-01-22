@@ -13,10 +13,10 @@ const hasFilters = computed(() => {
 })
 
 useSeoMeta({
-  title: 'جميع المنتجات',
-  description: 'تصفح جميع منتجاتنا بأسعار تنافسية وجودة عالية. اختر من مئات المنتجات المميزة. شحن سريع لجميع المحافظات ودفع عند الاستلام.',
-  ogTitle: 'جميع المنتجات',
-  ogDescription: 'تصفح جميع منتجاتنا بأسعار تنافسية وجودة عالية.',
+  title: 'All Products',
+  description: 'Browse all our products at competitive prices and high quality. Choose from hundreds of featured products. Fast shipping to all governorates and cash on delivery.',
+  ogTitle: 'All Products',
+  ogDescription: 'Browse all our products at competitive prices and high quality.',
   twitterCard: 'summary_large_image',
   // Index main page, noindex filtered/search results
   robots: () => hasFilters.value ? 'noindex, follow' : 'index, follow'
@@ -24,20 +24,20 @@ useSeoMeta({
 
 // Dynamic OG Image
 defineOgImageComponent('Default', {
-  headline: 'تصفح جميع المنتجات'
+  headline: 'Browse All Products'
 })
 
 // Schema.org for Products Listing Page
 useSchemaOrg([
   defineWebPage({
     '@type': 'CollectionPage',
-    'name': 'جميع المنتجات',
-    'description': 'تصفح جميع منتجاتنا بأسعار تنافسية وجودة عالية. اختر من مئات المنتجات المميزة.'
+    'name': 'All Products',
+    'description': 'Browse all our products at competitive prices and high quality. Choose from hundreds of featured products.'
   }),
   defineBreadcrumb({
     itemListElement: [
-      { name: 'الرئيسية', item: '/' },
-      { name: 'جميع المنتجات' }
+      { name: 'Home', item: '/' },
+      { name: 'All Products' }
     ]
   })
 ])
@@ -309,15 +309,15 @@ const handleQuickAdd = async (product: ProductItem) => {
     })
 
     toast.add({
-      title: 'تمت الإضافة إلى السلة',
+      title: 'Added to Cart',
       description: product.name,
       color: 'success'
     })
   } catch (error: unknown) {
     const err = error as { data?: { message?: string }, message?: string }
     toast.add({
-      title: 'تعذر الإضافة للسلة',
-      description: err?.data?.message || err?.message || 'حاول مرة أخرى',
+      title: 'Failed to Add to Cart',
+      description: err?.data?.message || err?.message || 'Please try again',
       color: 'error'
     })
   }

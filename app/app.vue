@@ -55,12 +55,8 @@ useHead({
 })
 
 // Default SEO Meta (pages can override)
-const siteTitle = computed(() => locale.value === 'ar' ? 'المتجر الإلكتروني' : 'E-Commerce Store')
-const siteDescription = computed(() =>
-  locale.value === 'ar'
-    ? 'تسوق أفضل المنتجات بأفضل الأسعار.'
-    : 'Shop the best products at the best prices.'
-)
+const siteTitle = computed(() => 'E-Commerce Store')
+const siteDescription = computed(() => 'Shop the best products at the best prices.')
 
 useSeoMeta({
   titleTemplate: titleChunk => titleChunk ? `${titleChunk} | ${siteTitle.value}` : siteTitle.value,

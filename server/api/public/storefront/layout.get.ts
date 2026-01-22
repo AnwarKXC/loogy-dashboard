@@ -9,11 +9,11 @@ const DEFAULT_LAYOUT = {
     homeUrl: '/'
   },
   navLinks: [
-    { label: 'الرئيسية', to: '/' },
-    { label: 'المنتجات', to: '/products' },
-    { label: 'الفئات', to: '/categories' },
-    { label: 'العروض', to: '/#deals' },
-    { label: 'تواصل معنا', to: '/#contact' }
+    { label: 'Home', to: '/' },
+    { label: 'Products', to: '/products' },
+    { label: 'Categories', to: '/categories' },
+    { label: 'Deals', to: '/#deals' },
+    { label: 'Contact Us', to: '/#contact' }
   ],
   actions: {
     showSearch: true,
@@ -23,13 +23,13 @@ const DEFAULT_LAYOUT = {
     accountUrl: '/admin/login'
   },
   footer: {
-    copyright: `© ${new Date().getFullYear()} Loogy. جميع الحقوق محفوظة.`,
-    description: 'أسرع متجر إلكتروني بدعم كامل للوضع الليلي مع بوابة دفع Paymob.',
+    copyright: `© ${new Date().getFullYear()} Loogy. All rights reserved.`,
+    description: 'The fastest online store with full dark mode support and Paymob payment gateway.',
     links: [
-      { label: 'سياسة الخصوصية', to: '/pages/privacy-policy' },
-      { label: 'سياسة الاسترجاع', to: '/pages/refund-policy' },
-      { label: 'الشحن', to: '/pages/shipping-policy' },
-      { label: 'الشروط والأحكام', to: '/pages/terms-and-conditions' }
+      { label: 'Privacy Policy', to: '/pages/privacy-policy' },
+      { label: 'Refund Policy', to: '/pages/refund-policy' },
+      { label: 'Shipping', to: '/pages/shipping-policy' },
+      { label: 'Terms and Conditions', to: '/pages/terms-and-conditions' }
     ],
     socials: [
       { label: 'Facebook', icon: 'i-lucide-facebook', url: '' },
