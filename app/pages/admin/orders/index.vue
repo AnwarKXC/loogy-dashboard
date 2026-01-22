@@ -209,6 +209,46 @@ const pageSizeItems = [
 function handleRefresh() {
   return refresh()
 }
+
+const exporting = ref(false)
+
+async function handleExport(format: 'csv' | 'json') {
+  exporting.value = true
+  try {
+    const params = new URLSearchParams()
+    params.set('format', format)
+    if (statusFilter.value) params.set('status', statusFilter.value)
+    if (paymentFilter.value) params.set('paymentMethod', paymentFilter.value)
+
+    const response = await $fetch(`/api/orders/export?${params.toString()}`, {
+      responseType: format === 'csv' ? 'text' : 'json'
+    })
+
+    const blob = format === 'csv'
+      ? new Blob([response as string], { type: 'text/csv' })
+      : new Blob([JSON.stringify(response, null, 2)], { type: 'application/json' })
+
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `orders-export-${new Date().toISOString().split('T')[0]}.${format}`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    toast.add({
+      title: 'Export Complete',
+      description: `Orders exported as ${format.toUpperCase()}`,
+      color: 'success'
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to export orders'
+    toast.add({ title: 'Export Failed', description: message, color: 'error' })
+  } finally {
+    exporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -220,6 +260,21 @@ function handleRefresh() {
         </template>
 
         <template #right>
+          <UDropdownMenu
+            :items="[
+              { label: 'Export CSV', icon: 'i-lucide-file-spreadsheet', onSelect: () => handleExport('csv') },
+              { label: 'Export JSON', icon: 'i-lucide-file-json', onSelect: () => handleExport('json') }
+            ]"
+          >
+            <UButton
+              icon="i-lucide-download"
+              color="neutral"
+              variant="outline"
+              :loading="exporting"
+            >
+              Export
+            </UButton>
+          </UDropdownMenu>
           <UButton
             icon="i-lucide-refresh-ccw"
             color="neutral"

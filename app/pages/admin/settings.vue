@@ -34,6 +34,10 @@ const links = [[{
   label: 'Promo Codes',
   icon: 'i-lucide-ticket',
   to: '/admin/settings/promo-codes'
+}, {
+  label: 'Tax Settings',
+  icon: 'i-lucide-percent',
+  to: '/admin/settings/tax'
 }]] satisfies NavigationMenuItem[][]
 </script>
 

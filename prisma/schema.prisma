@@ -471,6 +471,55 @@ model SocialSettings {
   updatedAt     DateTime @updatedAt
 }
 
+/**
+ * ------------------------------
+ * Tax Configuration
+ * ------------------------------
+ */
+model TaxSettings {
+  id              Int      @id @default(autoincrement())
+  isEnabled       Boolean  @default(false)
+  taxRate         Decimal  @default(0) @db.Decimal(5, 2) // e.g., 14.00 for 14%
+  taxName         String   @default("VAT") // "VAT", "Sales Tax", etc.
+  taxNumber       String? // Business tax registration number
+  includedInPrice Boolean  @default(true) // Tax included in displayed price or added at checkout
+  applyToShipping Boolean  @default(false) // Apply tax to shipping costs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/**
+ * ------------------------------
+ * Inventory Tracking
+ * ------------------------------
+ */
+enum InventoryMovementType {
+  SALE
+  RESTOCK
+  ADJUSTMENT
+  RETURN
+  DAMAGE
+}
+
+model InventoryMovement {
+  id          Int                   @id @default(autoincrement())
+  productId   Int
+  variantId   Int?
+  type        InventoryMovementType
+  quantity    Int // Positive for in, negative for out
+  previousQty Int
+  newQty      Int
+  orderId     Int? // Reference to order if movement is from a sale
+  note        String?               @db.Text
+  createdById Int? // Admin who made the adjustment
+  createdAt   DateTime              @default(now())
+
+  @@index([productId, createdAt])
+  @@index([variantId, createdAt])
+  @@index([type, createdAt])
+  @@index([orderId])
+}
+
 model StorefrontContent {
   id        Int      @id @default(autoincrement())
   key       String   @unique

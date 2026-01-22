@@ -50,6 +50,13 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
     open.value = false
   }
 }, {
+  label: 'Inventory',
+  icon: 'i-lucide-warehouse',
+  to: `${adminBase}/inventory`,
+  onSelect: () => {
+    open.value = false
+  }
+}, {
   label: 'Reviews',
   icon: 'i-lucide-star',
   type: 'trigger',

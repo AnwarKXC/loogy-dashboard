@@ -198,6 +198,14 @@ async function handleShippingCountryBlur() {
 
         <template #right>
           <UButton
+            icon="i-lucide-file-text"
+            color="neutral"
+            variant="outline"
+            :to="`/admin/orders/${orderId}/invoice`"
+          >
+            Invoice
+          </UButton>
+          <UButton
             icon="i-lucide-arrow-left"
             color="neutral"
             variant="outline"
