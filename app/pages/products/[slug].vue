@@ -10,7 +10,6 @@ const router = useRouter()
 const toast = useToast()
 const { add: addToCart } = useCart()
 const { items: wishlistItems, add: addToWishlist, remove: removeFromWishlist } = useWishlist()
-const config = useRuntimeConfig()
 
 type ProductDetail = {
   id: number
@@ -43,51 +42,62 @@ watch(images, (list) => {
   activeImage.value = list[0] ?? ''
 }, { immediate: true })
 
-// --- SEO & Meta ---
+// --- SEO & Meta using Nuxt SEO ---
 const title = computed(() => product.value.name)
-const description = computed(() => product.value.shortDescription || product.value.description || `Buy ${product.value.name} at the best price.`)
-const ogImage = computed(() => images.value[0])
-const currency = 'EGP' // Assuming EGP based on context
+const description = computed(() => product.value.shortDescription || product.value.description || `اشترِ ${product.value.name} بأفضل سعر.`)
+const currency = 'EGP'
+const productPrice = computed(() => product.value.salePrice ?? product.value.price)
 
+// SEO Meta Tags
 useSeoMeta({
   title: title,
   ogTitle: title,
   description: description,
   ogDescription: description,
-  ogImage: ogImage,
   twitterCard: 'summary_large_image',
-  twitterTitle: title,
-  twitterDescription: description,
-  twitterImage: ogImage
+  robots: 'index, follow'
 })
 
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      children: computed(() => ({
-        '@context': 'https://schema.org',
-        '@type': 'Product',
-        'name': product.value.name,
-        'image': images.value,
-        'description': description.value,
-        'sku': product.value.id,
-        'brand': {
-          '@type': 'Brand',
-          'name': product.value.brand?.name || 'Generic'
-        },
-        'offers': {
-          '@type': 'Offer',
-          'url': `${config.public.siteUrl || ''}/products/${route.params.slug}`,
-          'priceCurrency': currency,
-          'price': product.value.salePrice ?? product.value.price,
-          'availability': product.value.status === 'out_of_stock' ? 'https://schema.org/OutOfStock' : 'https://schema.org/InStock',
-          'itemCondition': 'https://schema.org/NewCondition'
-        }
-      }))
-    }
-  ]
+// Dynamic OG Image for Product
+defineOgImageComponent('Product', {
+  title: title,
+  price: computed(() => `${productPrice.value} ${currency}`),
+  image: computed(() => images.value[0]),
+  brand: computed(() => product.value.brand?.name),
+  category: computed(() => product.value.category?.name)
 })
+
+// Schema.org using nuxt-schema-org
+useSchemaOrg([
+  defineProduct({
+    name: () => product.value.name,
+    description: () => description.value,
+    image: () => images.value,
+    sku: () => String(product.value.id),
+    brand: {
+      '@type': 'Brand',
+      'name': () => product.value.brand?.name || 'Loogy Store'
+    },
+    offers: [
+      defineOffer({
+        price: () => productPrice.value,
+        priceCurrency: currency,
+        availability: () => product.value.status === 'out_of_stock'
+          ? 'OutOfStock'
+          : 'InStock',
+        itemCondition: 'NewCondition'
+      })
+    ]
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'المنتجات', item: '/products' },
+      { name: () => product.value.category?.name || 'فئة', item: () => `/categories/${product.value.category?.slug || ''}` },
+      { name: () => product.value.name }
+    ]
+  })
+])
 
 const quantity = ref(1)
 

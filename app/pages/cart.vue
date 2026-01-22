@@ -3,6 +3,12 @@ definePageMeta({
   layout: 'storefront'
 })
 
+useSeoMeta({
+  title: 'عربة التسوق',
+  description: 'راجع منتجاتك في السلة واستكمل عملية الشراء.',
+  robots: 'noindex, nofollow'
+})
+
 const fallbackImage = 'https://placehold.co/600x750/f3f4f6/171717?text=Product'
 
 type CartItem = {

@@ -1,8 +1,28 @@
 <script setup lang="ts">
-// @ts-expect-error Nuxt provides definePageMeta globally
 definePageMeta({
   layout: 'storefront'
 })
+
+useSeoMeta({
+  title: 'سياسة الشحن',
+  description: 'معلومات الشحن ومواعيد التوصيل ورسوم الشحن لجميع المحافظات.',
+  robots: 'index, follow'
+})
+
+// Schema.org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'WebPage',
+    'name': 'سياسة الشحن',
+    'description': 'معلومات الشحن ومواعيد التوصيل ورسوم الشحن لجميع المحافظات.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'سياسة الشحن' }
+    ]
+  })
+])
 </script>
 
 <template>

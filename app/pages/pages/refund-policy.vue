@@ -1,8 +1,28 @@
 <script setup lang="ts">
-// @ts-expect-error Nuxt provides definePageMeta globally
 definePageMeta({
   layout: 'storefront'
 })
+
+useSeoMeta({
+  title: 'سياسة الاستبدال والاسترجاع',
+  description: 'تعرف على شروط الاستبدال والاسترجاع وكيفية إرجاع المنتجات.',
+  robots: 'index, follow'
+})
+
+// Schema.org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'WebPage',
+    'name': 'سياسة الاستبدال والاسترجاع',
+    'description': 'تعرف على شروط الاستبدال والاسترجاع وكيفية إرجاع المنتجات.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'سياسة الاستبدال والاسترجاع' }
+    ]
+  })
+])
 </script>
 
 <template>

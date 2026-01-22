@@ -6,6 +6,21 @@ definePageMeta({
 })
 
 const route = useRoute()
+
+// Dynamic SEO based on search query
+const searchMeta = computed(() => {
+  const q = (route.query.q as string) || ''
+  return {
+    title: q ? `نتائج البحث: ${q}` : 'البحث',
+    description: q ? `عرض نتائج البحث عن "${q}" في المتجر` : 'ابحث عن منتجاتك المفضلة'
+  }
+})
+
+useSeoMeta({
+  title: () => searchMeta.value.title,
+  description: () => searchMeta.value.description,
+  robots: 'noindex, follow'
+})
 const search = ref<string>((route.query.q as string) || '')
 const sort = ref<'featured' | 'newest' | 'price-asc' | 'price-desc'>('featured')
 const page = ref(1)

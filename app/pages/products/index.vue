@@ -5,6 +5,43 @@ definePageMeta({
   layout: 'storefront'
 })
 
+const route = useRoute()
+
+// Dynamic robots based on query params (noindex for filtered/search pages)
+const hasFilters = computed(() => {
+  return !!(route.query.search || route.query.brand || route.query.category || route.query.sale)
+})
+
+useSeoMeta({
+  title: 'جميع المنتجات',
+  description: 'تصفح جميع منتجاتنا بأسعار تنافسية وجودة عالية. اختر من مئات المنتجات المميزة. شحن سريع لجميع المحافظات ودفع عند الاستلام.',
+  ogTitle: 'جميع المنتجات',
+  ogDescription: 'تصفح جميع منتجاتنا بأسعار تنافسية وجودة عالية.',
+  twitterCard: 'summary_large_image',
+  // Index main page, noindex filtered/search results
+  robots: () => hasFilters.value ? 'noindex, follow' : 'index, follow'
+})
+
+// Dynamic OG Image
+defineOgImageComponent('Default', {
+  headline: 'تصفح جميع المنتجات'
+})
+
+// Schema.org for Products Listing Page
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'CollectionPage',
+    'name': 'جميع المنتجات',
+    'description': 'تصفح جميع منتجاتنا بأسعار تنافسية وجودة عالية. اختر من مئات المنتجات المميزة.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'جميع المنتجات' }
+    ]
+  })
+])
+
 type BrandItem = {
   id: number
   name: string
@@ -29,7 +66,6 @@ type ProductItem = {
   brand?: { name?: string | null } | null
 }
 
-const route = useRoute()
 const router = useRouter()
 const toast = useToast()
 const { add: addToCart } = useCart()

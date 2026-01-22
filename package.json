@@ -20,6 +20,7 @@
     "@iconify-json/simple-icons": "^1.2.54",
     "@nuxt/ui": "^4.0.1",
     "@nuxtjs/i18n": "10.2.1",
+    "@nuxtjs/seo": "^3.3.0",
     "@prisma/adapter-pg": "^7.0.0",
     "@prisma/client": "^7.0.0",
     "@unovis/ts": "^1.6.1",

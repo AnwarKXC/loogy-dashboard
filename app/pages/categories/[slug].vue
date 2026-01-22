@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-// @ts-expect-error Nuxt provides definePageMeta globally
 definePageMeta({
   layout: 'storefront'
 })
@@ -54,63 +53,51 @@ const categoryDesc = computed(() => categoryData.value?.description || `تسوق
 const productCount = computed(() => productsData.value?.pagination?.totalItems || 0)
 const filterLink = computed(() => `/products?category=${slug}`)
 
-// SEO & Meta
+// SEO using Nuxt SEO
 useSeoMeta({
   title: categoryName,
   ogTitle: categoryName,
   description: categoryDesc,
   ogDescription: categoryDesc,
-  ogImage: categoryImage,
-  twitterCard: 'summary_large_image'
+  twitterCard: 'summary_large_image',
+  robots: 'index, follow'
 })
 
-// Schema.org
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      children: computed(() => JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        'name': categoryName.value,
-        'description': categoryDesc.value,
-        'image': categoryImage.value,
-        'mainEntity': {
-          '@type': 'ItemList',
-          'itemListElement': products.value.map((prod, index) => ({
-            '@type': 'ListItem',
-            'position': index + 1,
-            'url': `https://example.com${prod.to}`, // Needs absolute URL in real app
-            'name': prod.title
-          }))
-        },
-        'breadcrumb': {
-          '@type': 'BreadcrumbList',
-          'itemListElement': [
-            {
-              '@type': 'ListItem',
-              'position': 1,
-              'name': 'Home',
-              'item': 'https://example.com'
-            },
-            {
-              '@type': 'ListItem',
-              'position': 2,
-              'name': 'Categories',
-              'item': 'https://example.com/categories'
-            },
-            {
-              '@type': 'ListItem',
-              'position': 3,
-              'name': categoryName.value,
-              'item': `https://example.com/categories/${slug}`
-            }
-          ]
-        }
-      }))
-    }
-  ]
+// Dynamic OG Image
+defineOgImageComponent('Category', {
+  title: categoryName,
+  subtitle: categoryDesc,
+  productCount: productCount,
+  image: categoryImage
 })
+
+// Schema.org using nuxt-schema-org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'CollectionPage',
+    'name': () => categoryName.value,
+    'description': () => categoryDesc.value,
+    'image': () => categoryImage.value
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'الفئات', item: '/categories' },
+      { name: () => categoryName.value }
+    ]
+  }),
+  defineItemList({
+    itemListElement: computed(() =>
+      products.value.map((prod, index) => ({
+        '@type': 'ListItem',
+        'position': index + 1,
+        'url': prod.to,
+        'name': prod.title,
+        'image': prod.image
+      }))
+    )
+  })
+])
 </script>
 
 <template>

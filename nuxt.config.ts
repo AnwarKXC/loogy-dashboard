@@ -7,14 +7,24 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@vueuse/nuxt',
     'motion-v/nuxt',
-    '@nuxtjs/i18n'
-
+    '@nuxtjs/i18n',
+    '@nuxtjs/seo'
   ],
 
   devtools: {
     enabled: true
   },
   css: ['~/assets/css/main.css'],
+
+  // ==========================================
+  // Site Configuration (Used by all SEO modules)
+  // ==========================================
+  site: {
+    url: process.env.NUXT_PUBLIC_SITE_URL || 'https://loogy.store',
+    name: 'Loogy Store',
+    description: 'تسوق أفضل المنتجات بأسعار تنافسية. شحن سريع لجميع المحافظات.',
+    defaultLocale: 'ar'
+  },
   runtimeConfig: {
     s3AccessKey: process.env.S3_ACCESS_KEY,
     s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
@@ -22,7 +32,10 @@ export default defineNuxtConfig({
     whatsappAccessToken: process.env.WHATSAPP_ACCESS_TOKEN,
     whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
     whatsappApiVersion: process.env.WHATSAPP_API_VERSION,
-    adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER
+    adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER,
+    public: {
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://loogy.store'
+    }
   },
 
   compatibilityDate: '2024-07-11',
@@ -34,6 +47,7 @@ export default defineNuxtConfig({
       }
     }
   },
+
   eslint: {
     config: {
       stylistic: {
@@ -58,7 +72,7 @@ export default defineNuxtConfig({
       }
     ],
     langDir: 'locales',
-    defaultLocale: 'en',
+    defaultLocale: 'ar',
     strategy: 'no_prefix',
     detectBrowserLanguage: {
       useCookie: true,
@@ -66,5 +80,65 @@ export default defineNuxtConfig({
       redirectOn: 'root'
     },
     vueI18n: './i18n.config.ts'
+  },
+
+  // ==========================================
+  // Link Checker (dev only)
+  // ==========================================
+  linkChecker: {
+    enabled: process.env.NODE_ENV === 'development'
+  },
+
+  // ==========================================
+  // OG Image Configuration
+  // ==========================================
+  ogImage: {
+    enabled: true,
+    defaults: {
+      cacheMaxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+    }
+  },
+
+  // ==========================================
+  // Robots Configuration
+  // ==========================================
+  robots: {
+    // Block admin and private routes from indexing
+    disallow: ['/admin/**', '/api/**'],
+    sitemap: '/sitemap.xml',
+    // Allow all storefront pages by default
+    allow: ['/'],
+    // Block specific private pages
+    groups: [
+      {
+        userAgent: '*',
+        disallow: ['/cart', '/checkout', '/wishlist', '/admin/']
+      }
+    ]
+  },
+
+  // ==========================================
+  // Schema.org Configuration
+  // ==========================================
+  schemaOrg: {
+    identity: {
+      type: 'Organization',
+      name: 'Loogy Store',
+      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://loogy.store',
+      logo: '/logo.png'
+    }
+  },
+
+  // ==========================================
+  // Sitemap Configuration
+  // ==========================================
+  sitemap: {
+    // Dynamic sources for products and categories
+    sources: [
+      '/api/__sitemap__/products',
+      '/api/__sitemap__/categories'
+    ],
+    // Exclude non-indexable routes
+    exclude: ['/admin/**', '/cart', '/checkout', '/wishlist']
   }
 })

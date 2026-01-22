@@ -1,11 +1,23 @@
 <script setup lang="ts">
+import * as uiLocales from '@nuxt/ui/locale'
+
 const colorMode = useColorMode()
 const route = useRoute()
-const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
-// Prefer dark mode for admin, allow storefront to follow user preference
-const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const { locale } = useI18n()
 
-// Dynamic setup for Layout direction and Language
+// Dynamic locale from Nuxt UI locale pack based on i18n
+const currentUiLocale = computed(() => {
+  // Map i18n locale codes to Nuxt UI locale objects
+  return uiLocales[locale.value as keyof typeof uiLocales] ?? uiLocales.en
+})
+
+// Direction and language derived from Nuxt UI locale
+const dir = computed(() => currentUiLocale.value?.dir ?? 'ltr')
+const lang = computed(() => currentUiLocale.value?.code ?? 'en')
+
+// Color mode preferences
+const color = computed(() => colorMode.value === 'dark' ? '#1b1718' : 'white')
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 
 watchEffect(() => {
   if (isAdminRoute.value) {
@@ -13,6 +25,7 @@ watchEffect(() => {
   }
 })
 
+// Register Service Worker on mount
 onMounted(() => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
@@ -24,8 +37,8 @@ onMounted(() => {
       })
   }
 })
-const { locale } = useI18n()
-const dir = computed(() => (locale.value === 'ar' ? 'rtl' : 'ltr'))
+
+// Global <head> configuration
 useHead({
   meta: [
     { charset: 'utf-8' },
@@ -35,35 +48,39 @@ useHead({
   link: [
     { rel: 'icon', href: '/favicon.ico' }
   ],
-  htmlAttrs: computed(() => ({
-    lang: locale.value,
-    dir: dir.value
-  }))
+  htmlAttrs: {
+    lang: lang,
+    dir: dir
+  }
 })
 
-// Default Meta - override in pages
-const title = computed(() => dir.value ? 'المتجر الإلكتروني' : 'Admin Dashboard')
-const description = computed(() => dir.value
-  ? 'تسوق أفضل المنتجات بأفضل الأسعار.'
-  : 'Professional Admin Dashboard'
+// Default SEO Meta (pages can override)
+const siteTitle = computed(() => locale.value === 'ar' ? 'المتجر الإلكتروني' : 'E-Commerce Store')
+const siteDescription = computed(() =>
+  locale.value === 'ar'
+    ? 'تسوق أفضل المنتجات بأفضل الأسعار.'
+    : 'Shop the best products at the best prices.'
 )
 
 useSeoMeta({
-  titleTemplate: (titleChunk) => {
-    return titleChunk ? `${titleChunk} | ${title.value}` : title.value
-  },
-  title: title,
-  description: description,
-  ogTitle: title,
-  ogDescription: description,
-  ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
-  twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/dashboard-light.png',
-  twitterCard: 'summary_large_image'
+  titleTemplate: titleChunk => titleChunk ? `${titleChunk} | ${siteTitle.value}` : siteTitle.value,
+  description: siteDescription,
+  ogTitle: siteTitle,
+  ogDescription: siteDescription,
+  ogType: 'website',
+  ogImage: '/og-image.png',
+  ogSiteName: 'Loogy Store',
+  twitterCard: 'summary_large_image',
+  twitterImage: '/og-image.png',
+  twitterSite: '@loogystore',
+  author: 'Loogy Store',
+  creator: 'Loogy Store',
+  publisher: 'Loogy Store'
 })
 </script>
 
 <template>
-  <UApp :dir="dir">
+  <UApp :locale="currentUiLocale">
     <NuxtLoadingIndicator />
     <NuxtLayout>
       <NuxtPage />

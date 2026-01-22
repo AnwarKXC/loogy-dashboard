@@ -1,8 +1,28 @@
 <script setup lang="ts">
-// @ts-expect-error Nuxt provides definePageMeta globally
 definePageMeta({
   layout: 'storefront'
 })
+
+useSeoMeta({
+  title: 'الشروط والأحكام',
+  description: 'اقرأ الشروط والأحكام الخاصة باستخدام المتجر وإتمام الطلبات.',
+  robots: 'index, follow'
+})
+
+// Schema.org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'WebPage',
+    'name': 'الشروط والأحكام',
+    'description': 'اقرأ الشروط والأحكام الخاصة باستخدام المتجر وإتمام الطلبات.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'الشروط والأحكام' }
+    ]
+  })
+])
 </script>
 
 <template>

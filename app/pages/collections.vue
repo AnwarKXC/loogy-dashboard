@@ -3,6 +3,36 @@ definePageMeta({
   layout: 'storefront'
 })
 
+useSeoMeta({
+  title: 'المجموعات',
+  description: 'اكتشف مجموعاتنا المنسقة بعناية لتناسب كل المناسبات والأذواق. تشكيلات موسمية متجددة بأسعار تنافسية.',
+  ogTitle: 'المجموعات',
+  ogDescription: 'اكتشف مجموعاتنا المنسقة بعناية لتناسب كل المناسبات والأذواق.',
+  twitterCard: 'summary_large_image',
+  robots: 'index, follow'
+})
+
+// Dynamic OG Image
+defineOgImageComponent('Default', {
+  title: 'المجموعات',
+  description: 'اكتشف مجموعاتنا المنسقة بعناية'
+})
+
+// Schema.org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'CollectionPage',
+    'name': 'المجموعات',
+    'description': 'اكتشف مجموعاتنا المنسقة بعناية لتناسب كل المناسبات والأذواق.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'المجموعات' }
+    ]
+  })
+])
+
 const collections = [
   {
     id: 1,

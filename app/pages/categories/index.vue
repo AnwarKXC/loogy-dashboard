@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-// @ts-expect-error Nuxt provides definePageMeta globally
 definePageMeta({
   layout: 'storefront'
 })
@@ -27,7 +26,6 @@ const { data, pending, error } = await useFetch<CategoriesResponse>('/api/public
 
 // Handle 404/Error if necessary (though index usually returns 200 with empty list)
 if (error.value) {
-  // If strict error handling is needed, but usually we just show the alert in template
   console.error('Failed to load categories', error.value)
 }
 
@@ -43,7 +41,7 @@ const flattenCategories = (nodes: CategoryNode[], depth = 0): CategoryNode[] =>
 const flatCategories = computed(() => flattenCategories(categories.value))
 const topCategories = computed(() => (featured.value.length ? featured.value : flatCategories.value.slice(0, 8)))
 
-// SEO Meta
+// SEO using Nuxt SEO
 const pageTitle = 'كل الفئات'
 const pageDescription = 'استعرض جميع فئات المنتجات المتاحة في متجرنا. اعثر على ما تبحث عنه بسهولة من خلال تصفح القوائم المصنفة.'
 
@@ -52,45 +50,42 @@ useSeoMeta({
   ogTitle: pageTitle,
   description: pageDescription,
   ogDescription: pageDescription,
-  ogType: 'website',
-  twitterCard: 'summary_large_image'
+  twitterCard: 'summary_large_image',
+  robots: 'index, follow'
 })
 
-// Structured Data (Schema.org)
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      children: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'CollectionPage',
-        'name': pageTitle,
-        'description': pageDescription,
-        'isPartOf': {
-          '@type': 'WebSite',
-          'name': 'The Store' // You might want to pull this from app config
-        },
-        'breadcrumb': {
-          '@type': 'BreadcrumbList',
-          'itemListElement': [
-            {
-              '@type': 'ListItem',
-              'position': 1,
-              'name': 'Home',
-              'item': 'https://example.com' // Should be dynamically set
-            },
-            {
-              '@type': 'ListItem',
-              'position': 2,
-              'name': 'Categories',
-              'item': 'https://example.com/categories'
-            }
-          ]
-        }
-      })
-    }
-  ]
+// OG Image
+defineOgImageComponent('Category', {
+  title: pageTitle,
+  subtitle: pageDescription,
+  productCount: computed(() => flatCategories.value.length)
 })
+
+// Schema.org using nuxt-schema-org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'CollectionPage',
+    'name': pageTitle,
+    'description': pageDescription
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'الفئات' }
+    ]
+  }),
+  defineItemList({
+    itemListElement: computed(() =>
+      topCategories.value.map((cat, index) => ({
+        '@type': 'ListItem',
+        'position': index + 1,
+        'url': `/categories/${cat.slug}`,
+        'name': cat.name,
+        'image': cat.image
+      }))
+    )
+  })
+])
 </script>
 
 <template>

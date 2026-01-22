@@ -3,6 +3,36 @@ definePageMeta({
   layout: 'storefront'
 })
 
+useSeoMeta({
+  title: 'آراء العملاء',
+  description: 'اقرأ تجارب عملائنا الحقيقية مع منتجاتنا وخدماتنا. تقييمات حقيقية من عملاء راضين عن جودة المنتجات وسرعة التوصيل.',
+  ogTitle: 'آراء العملاء',
+  ogDescription: 'اقرأ تجارب عملائنا الحقيقية مع منتجاتنا وخدماتنا.',
+  twitterCard: 'summary',
+  robots: 'index, follow'
+})
+
+// Dynamic OG Image
+defineOgImageComponent('Default', {
+  title: 'آراء العملاء',
+  description: 'تجارب حقيقية من عملائنا'
+})
+
+// Schema.org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'WebPage',
+    'name': 'آراء العملاء',
+    'description': 'اقرأ تجارب عملائنا الحقيقية مع منتجاتنا وخدماتنا.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'آراء العملاء' }
+    ]
+  })
+])
+
 type Testimonial = {
   id: number
   customerName: string | null
@@ -109,7 +139,7 @@ function openImage(img: string) {
                 <div class="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center">
                   <UIcon
                     v-if="testimonial.source && sourceIcons[testimonial.source]"
-                    :name="sourceIcons[testimonial.source]"
+                    :name="sourceIcons[testimonial.source] as string"
                     class="w-6 h-6"
                   />
                   <UIcon v-else name="i-lucide-user" class="w-6 h-6 text-neutral-400" />

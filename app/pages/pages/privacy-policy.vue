@@ -1,8 +1,28 @@
 <script setup lang="ts">
-// @ts-expect-error Nuxt provides definePageMeta globally
 definePageMeta({
   layout: 'storefront'
 })
+
+useSeoMeta({
+  title: 'سياسة الخصوصية',
+  description: 'اقرأ سياسة الخصوصية الخاصة بنا وكيف نحمي بياناتك الشخصية.',
+  robots: 'index, follow'
+})
+
+// Schema.org
+useSchemaOrg([
+  defineWebPage({
+    '@type': 'WebPage',
+    'name': 'سياسة الخصوصية',
+    'description': 'اقرأ سياسة الخصوصية الخاصة بنا وكيف نحمي بياناتك الشخصية.'
+  }),
+  defineBreadcrumb({
+    itemListElement: [
+      { name: 'الرئيسية', item: '/' },
+      { name: 'سياسة الخصوصية' }
+    ]
+  })
+])
 </script>
 
 <template>

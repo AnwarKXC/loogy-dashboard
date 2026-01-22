@@ -71,9 +71,16 @@ const { add: addToCart } = useCart()
 
 const home = computed<HomeResponse>(() => (homeData.value ?? {}) as HomeResponse)
 
-// SEO & Meta
-const pageTitle = computed(() => home.value?.hero?.title || 'المتجر الرئيسي')
-const pageDescription = computed(() => home.value?.hero?.subtitle || 'أفضل المنتجات بأفضل الأسعار. تسوق الآن واستمتع بتجربة فريدة.')
+// SEO & Meta using Nuxt SEO
+const pageTitle = computed(() => home.value?.hero?.title || 'المتجر الرئيسي - تسوق أفضل المنتجات')
+const pageDescription = computed(() => {
+  const heroSubtitle = home.value?.hero?.subtitle
+  // Ensure description is at least 120 characters for SEO
+  if (heroSubtitle && heroSubtitle.length >= 50) {
+    return heroSubtitle
+  }
+  return 'تسوق أفضل المنتجات بأسعار تنافسية وجودة عالية. اكتشف تشكيلتنا الواسعة من الملابس والأحذية والإكسسوارات. شحن سريع لجميع المحافظات ودفع عند الاستلام.'
+})
 
 useSeoMeta({
   title: pageTitle,
@@ -81,43 +88,41 @@ useSeoMeta({
   description: pageDescription,
   ogDescription: pageDescription,
   ogType: 'website',
-  twitterCard: 'summary_large_image'
+  twitterCard: 'summary_large_image',
+  robots: 'index, follow'
 })
 
-// Schema.org
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      children: computed(() => JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'WebSite',
-        'name': pageTitle.value,
-        'url': 'https://example.com', // Should be dynamic/env based
-        'potentialAction': {
-          '@type': 'SearchAction',
-          'target': 'https://example.com/products?search={search_term_string}',
-          'query-input': 'required name=search_term_string'
-        }
-      }))
-    },
-    {
-      type: 'application/ld+json',
-      children: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Organization',
-        'name': 'The Store',
-        'url': 'https://example.com',
-        'logo': 'https://example.com/logo.png', // Placeholder
-        'contactPoint': {
-          '@type': 'ContactPoint',
-          'telephone': '+1-401-555-1212',
-          'contactType': 'Customer service'
-        }
-      })
-    }
-  ]
+// Dynamic OG Image for Homepage
+defineOgImageComponent('Default', {
+  title: pageTitle,
+  description: pageDescription
 })
+
+// Schema.org using nuxt-schema-org
+useSchemaOrg([
+  defineWebSite({
+    name: 'Loogy Store',
+    description: () => pageDescription.value,
+    inLanguage: ['ar', 'en']
+  }),
+  defineWebPage({
+    '@type': 'CollectionPage',
+    'name': () => pageTitle.value,
+    'description': () => pageDescription.value
+  }),
+  // ItemList for featured products (Rich Results)
+  defineItemList({
+    itemListElement: computed(() =>
+      (home.value.sections?.newArrivals ?? []).slice(0, 10).map((product, index) => ({
+        '@type': 'ListItem',
+        'position': index + 1,
+        'url': `/products/${product.slug}`,
+        'name': product.name,
+        'image': product.image
+      }))
+    )
+  })
+])
 
 const heroSlides = computed(() => {
   const hero = home.value.hero ?? {}
