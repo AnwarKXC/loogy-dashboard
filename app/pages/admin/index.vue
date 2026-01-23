@@ -1,19 +1,8 @@
 <script setup lang="ts">
 import { sub } from 'date-fns'
-import type { DropdownMenuItem } from '@nuxt/ui'
 import type { Period, Range } from '~/types'
 
 const { isNotificationsSlideoverOpen } = useDashboard()
-
-const items = [[{
-  label: 'New mail',
-  icon: 'i-lucide-send',
-  to: '/admin/chat'
-}, {
-  label: 'New customer',
-  icon: 'i-lucide-user-plus',
-  to: '/admin/customers'
-}]] satisfies DropdownMenuItem[][]
 
 const range = shallowRef<Range>({
   start: sub(new Date(), { days: 14 }),
@@ -43,10 +32,6 @@ const period = ref<Period>('daily')
               </UChip>
             </UButton>
           </UTooltip>
-
-          <UDropdownMenu :items="items">
-            <UButton icon="i-lucide-plus" size="md" class="rounded-full" />
-          </UDropdownMenu>
         </template>
       </UDashboardNavbar>
 
@@ -63,14 +48,13 @@ const period = ref<Period>('daily')
     <template #body>
       <HomeStats :period="period" :range="range" />
 
-      <div class="grid lg:grid-cols-3 gap-8 mt-8">
-        <HomeChart :period="period" :range="range" class="lg:col-span-2" />
-        <HomeUnreadMessages />
+      <div class="grid lg:grid-cols-2 gap-8 mt-8">
+        <HomeChart :period="period" :range="range" />
+        <HomeTopProducts :period="period" :range="range" />
       </div>
 
-      <div class="grid lg:grid-cols-3 gap-8 mt-8">
-        <HomeSales :period="period" :range="range" class="lg:col-span-2" />
-        <HomeTopProducts :period="period" :range="range" />
+      <div class="mt-8">
+        <HomeSales :period="period" :range="range" />
       </div>
     </template>
   </UDashboardPanel>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
 
-const route = useRoute()
 const toast = useToast()
 
 const open = ref(false)
@@ -11,13 +10,6 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
   label: 'Home',
   icon: 'i-lucide-house',
   to: adminBase,
-  onSelect: () => {
-    open.value = false
-  }
-}, {
-  label: 'Customers',
-  icon: 'i-lucide-users',
-  to: `${adminBase}/customers`,
   onSelect: () => {
     open.value = false
   }
@@ -56,25 +48,16 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
   onSelect: () => {
     open.value = false
   }
-}, {
-  label: 'Reviews',
+},
+
+{
   icon: 'i-lucide-star',
-  type: 'trigger',
-  children: [
-    {
-      label: 'Product Reviews',
-      to: `${adminBase}/reviews`,
-      onSelect: () => {
-        open.value = false
-      }
-    }, {
-      label: 'Testimonials',
-      to: `${adminBase}/reviews/testimonials`,
-      onSelect: () => {
-        open.value = false
-      }
-    }
-  ]
+  label: 'Testimonials',
+  to: `${adminBase}/testimonials`,
+  onSelect: () => {
+    open.value = false
+  }
+
 },
 {
   label: 'Pages',
@@ -134,23 +117,58 @@ const links = computed<NavigationMenuItem[][]>(() => [[{
     onSelect: () => {
       open.value = false
     }
-  }]
+  },
+  {
+    label: 'Store',
+    to: `${adminBase}/settings/store`,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Contact',
+    to: `${adminBase}/settings/contact`,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Social',
+    to: `${adminBase}/settings/social`,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Shipping',
+    to: `${adminBase}/settings/shipping`,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Pricing',
+    to: `${adminBase}/settings/pricing`,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Promo Codes',
+    to: `${adminBase}/settings/promo-codes`,
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: 'Tax',
+    to: `${adminBase}/settings/tax`,
+    onSelect: () => {
+      open.value = false
+    }
+  }
+
+  ]
 }]])
 
 const groups = computed(() => [{
   id: 'links',
   label: 'Go to',
   items: links.value.flat()
-}, {
-  id: 'code',
-  label: 'Code',
-  items: [{
-    id: 'source',
-    label: 'View page source',
-    icon: 'i-simple-icons-github',
-    to: `https://github.com/nuxt-ui-templates/dashboard/blob/main/app/pages${route.path === '/' ? '/index' : route.path}.vue`,
-    target: '_blank'
-  }]
 }])
 
 onMounted(async () => {

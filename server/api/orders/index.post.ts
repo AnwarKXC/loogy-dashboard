@@ -4,13 +4,18 @@ import { Prisma } from '@prisma/client'
 import prisma from '../../db'
 
 const createOrderSchema = z.object({
-  userId: z.number().optional(),
+  customerPhone: z.string().min(1),
   customerName: z.string().min(1),
+  customerEmail: z.string().email().optional(),
   shippingPhone: z.string().min(1),
   shippingStreet: z.string().min(1),
   shippingCity: z.string().min(1),
-  shippingCountry: z.string().min(1),
+  shippingCountry: z.string().default('Egypt'),
+  governorateId: z.number().optional(),
+  areaId: z.number().optional(),
   paymentMethod: z.enum(['CASH', 'VODAFONE_CASH', 'INSTAPAY', 'VISA']),
+  promoCode: z.string().optional(),
+  notes: z.string().optional(),
   items: z.array(z.object({
     productId: z.number(),
     variantId: z.number().optional(),

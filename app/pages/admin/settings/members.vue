@@ -126,7 +126,6 @@ async function handleInvite(event: FormSubmitEvent<InviteSchema>) {
       title="Invite a new super admin"
       description="Owners can create manager or sales accounts with dashboard access."
       variant="subtle"
-      class="max-w-2xl"
     >
       <UForm
         :schema="inviteSchema"

@@ -14,39 +14,10 @@ export default eventHandler(async (event) => {
         gte: lastWeek
       }
     },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
-      }
-    },
     orderBy: {
       createdAt: 'desc'
     },
-    take: 20
-  })
-
-  // Get new customer registrations
-  const newCustomers = await prisma.user.findMany({
-    where: {
-      role: 'CUSTOMER',
-      createdAt: {
-        gte: lastWeek
-      }
-    },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      createdAt: true
-    },
-    orderBy: {
-      createdAt: 'desc'
-    },
-    take: 10
+    take: 50
   })
 
   const notifications = []
@@ -56,33 +27,12 @@ export default eventHandler(async (event) => {
     notifications.push({
       id: `order-${order.id}`,
       unread: order.status === 'PENDING',
-      sender: {
-        name: order.user?.name || order.customerName,
-        email: order.user?.email || order.customerEmail
-      },
+      senderName: order.customerName,
       body: `placed order #${order.id} - ${order.status.toLowerCase()}`,
       date: order.createdAt.toISOString(),
-      link: `/orders/${order.id}`
+      link: `/admin/orders/${order.id}`
     })
   }
 
-  // Add new customer notifications
-  for (const customer of newCustomers) {
-    notifications.push({
-      id: `customer-${customer.id}`,
-      unread: true,
-      sender: {
-        name: customer.name,
-        email: customer.email
-      },
-      body: 'registered as new customer',
-      date: customer.createdAt.toISOString(),
-      link: `/customers`
-    })
-  }
-
-  // Sort by date (newest first)
-  notifications.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  return notifications.slice(0, 50)
+  return notifications
 })

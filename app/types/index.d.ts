@@ -1,48 +1,6 @@
 import type { AvatarProps } from '@nuxt/ui'
 
-export type UserStatus = 'subscribed' | 'unsubscribed' | 'bounced'
 export type SaleStatus = 'paid' | 'failed' | 'refunded'
-
-export interface User {
-  id: number
-  name: string
-  email: string
-  avatar?: AvatarProps
-  status: UserStatus
-  location: string
-}
-
-export type CustomerStatus = 'ACTIVE' | 'INACTIVE'
-
-export interface CustomerListItem {
-  id: number
-  name: string
-  email: string
-  phoneNumber: string | null
-  status: CustomerStatus
-  ordersCount: number
-  lastSession: string
-  createdAt: string
-}
-
-export interface CustomerListResponse {
-  items: CustomerListItem[]
-  pagination: {
-    page: number
-    pageSize: number
-    totalItems: number
-    totalPages: number
-  }
-}
-
-export interface Mail {
-  id: number
-  unread?: boolean
-  from: User
-  subject: string
-  body: string
-  date: string
-}
 
 export interface Member {
   name: string
@@ -51,7 +9,7 @@ export interface Member {
   avatar: AvatarProps
 }
 
-export type OrderStatus = 'PENDING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED'
+export type OrderStatus = 'PENDING' | 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED' | 'RETURNED'
 
 export interface OrderListItem {
   id: number
@@ -94,7 +52,7 @@ export interface Sale {
 export interface Notification {
   id: number
   unread?: boolean
-  sender: User
+  senderName: string
   body: string
   date: string
 }

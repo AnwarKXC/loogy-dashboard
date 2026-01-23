@@ -1,0 +1,957 @@
+// ============================================================================
+// E-COMMERCE SCHEMA - Guest-First Approach
+// ============================================================================
+// 
+// ARCHITECTURE DECISIONS:
+// - Guest checkout only (no customer accounts)
+// - Phone number as customer identifier for auto-fill
+// - Cart/Wishlist stored in localStorage (not database)
+// - Cart sharing via URL parameters (no SharedCart model needed)
+// 
+// MODELS TO BE REMOVED (marked with @deprecated):
+// - User, Address (no customer accounts)
+// - Cart, CartItem (localStorage)
+// - Wishlist, WishlistItem (localStorage)
+// - Conversation, Chat (no chat support)
+// - ProductReview (keeping only Testimonials)
+// 
+// ENUMS TO BE REMOVED:
+// - Role (no customer role needed)
+// - MessageStatus (no chat)
+// - ReviewStatus (no reviews)
+// 
+// CURRENCY: Single source of truth in AppSettings.currency
+// - Removed from PricingSettings to avoid duplication
+// 
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+/// @deprecated Remove after migration - no customer accounts needed
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+/// Order lifecycle status
+/// PENDING -> PROCESSING -> SHIPPING -> DELIVERED
+/// Can be CANCELLED or RETURNED at various stages
+enum OrderStatus {
+  PENDING // Order placed, awaiting processing
+  PROCESSING // Order confirmed, preparing for shipment
+  SHIPPING // Order handed to courier
+  DELIVERED // Order delivered to customer
+  CANCELLED // Order cancelled (by admin or customer request)
+  RETURNED // Order returned after delivery
+}
+
+/// Supported payment methods in Egypt
+enum PaymentMethod {
+  CASH // Cash on delivery (COD)
+  VODAFONE_CASH // Vodafone Cash mobile wallet
+  INSTAPAY // InstaPay bank transfer
+  VISA // Credit/Debit card (future)
+}
+
+/// How promo code discount is applied
+enum PricingApplicationType {
+  PERCENTAGE // e.g., 10% off
+  FIXED // e.g., 50 EGP off
+}
+
+/// Supported languages for translations
+enum Language {
+  EN // English
+  AR // Arabic
+}
+
+/// Admin user roles with different permissions
+enum AdminRole {
+  OWNER // Full access, can manage other admins
+  MANAGER // Can manage products, orders, settings
+  SALES // Can view/manage orders only
+}
+
+/// @deprecated Remove after migration - no chat support
+enum MessageStatus {
+  SENT
+  DELIVERED
+  SEEN
+}
+
+/**
+ * ==============================================================================
+ * USERS & ADDRESSES
+ * ==============================================================================
+ * @deprecated REMOVE AFTER MIGRATION
+ * Reason: Guest-first approach - no customer accounts needed
+ * New approach:
+ * - Orders store customer info directly (customerPhone, customerName, etc.)
+ * - Phone number used to lookup previous orders for auto-fill
+ * - No login/registration required
+ * Admin paths to remove:
+ * - /admin/customers/* (customer management)
+ * - /admin/users/* (user management)
+ * - Any API routes related to user CRUD
+ * ==============================================================================
+ */
+model User {
+  id               Int      @id @default(autoincrement())
+  authProviderId   String   @unique // Links to auth.users.id
+  name             String?
+  email            String   @unique
+  avatar           String? // From OAuth provider
+  authProvider     String? // 'google', 'github', 'email', etc.
+  phoneNumber      String?
+  isActive         Boolean  @default(true)
+  role             Role     @default(CUSTOMER)
+  lastSession      DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  defaultAddressId Int?
+
+  addresses         Address[]
+  defaultAddress    Address?           @relation("DefaultAddress", fields: [defaultAddressId], references: [id], onDelete: SetNull)
+  cart              Cart?
+  wishlist          Wishlist?
+  orders            Order[]
+  conversation      Conversation?
+  pushSubscriptions PushSubscription[]
+
+  @@index([authProviderId]) // Fast lookup by Supabase auth ID
+  @@index([role, isActive])
+  @@index([email])
+  @@index([lastSession])
+}
+
+/// @deprecated REMOVE AFTER MIGRATION - Address info embedded in Order
+model Address {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  street     String
+  city       String
+  state      String
+  postalCode String
+  country    String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultForUsers User[] @relation("DefaultAddress")
+
+  @@index([userId])
+}
+
+/**
+ * ==============================================================================
+ * CATEGORIES & BRANDS
+ * ==============================================================================
+ * Product organization through categories (hierarchical) and brands.
+ * Features:
+ * - Multi-language translations (EN, AR)
+ * - SEO fields per translation
+ * - Soft delete support (deletedAt)
+ * - Hierarchical categories (parent/children)
+ * ------------------------------
+ */
+model Category {
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
+  parentId  Int?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  parent       Category?             @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children     Category[]            @relation("CategoryHierarchy")
+  products     Product[]
+  translations CategoryTranslation[]
+
+  @@index([parentId])
+  @@index([deletedAt]) // For filtering active categories
+}
+
+model CategoryTranslation {
+  id              Int      @id @default(autoincrement())
+  categoryId      Int
+  lang            Language
+  name            String
+  description     String?  @db.Text
+  // SEO Fields
+  metaTitle       String?  @db.VarChar(70)
+  metaDescription String?  @db.VarChar(160)
+  metaKeywords    String?  @db.VarChar(255)
+  ogTitle         String?  @db.VarChar(70)
+  ogDescription   String?  @db.VarChar(200)
+  ogImage         String?
+  createdAt       DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, lang])
+  @@index([categoryId, lang]) // Composite for queries
+}
+
+model Brand {
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
+  logo      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  products     Product[]
+  translations BrandTranslation[]
+
+  @@index([deletedAt])
+}
+
+model BrandTranslation {
+  id              Int      @id @default(autoincrement())
+  brandId         Int
+  lang            Language
+  name            String
+  description     String?  @db.Text
+  // SEO Fields
+  metaTitle       String?  @db.VarChar(70)
+  metaDescription String?  @db.VarChar(160)
+  metaKeywords    String?  @db.VarChar(255)
+  ogTitle         String?  @db.VarChar(70)
+  ogDescription   String?  @db.VarChar(200)
+  ogImage         String?
+  createdAt       DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, lang])
+  @@index([brandId, lang])
+}
+
+/**
+ * ==============================================================================
+ * PRODUCTS & VARIANTS
+ * ==============================================================================
+ * Core product catalog with variant support.
+ * Features:
+ * - Multi-language translations with SEO
+ * - Product variants (size, color, etc.)
+ * - Price + sale price with discount percentage
+ * - Stock tracking at product and variant level
+ * - Soft delete (deletedAt) and archive (isArchived)
+ * - Hero featured flag for homepage display
+ * ==============================================================================
+ */
+model Product {
+  id                 Int       @id @default(autoincrement())
+  slug               String    @unique
+  price              Decimal   @db.Decimal(10, 2)
+  salePrice          Decimal?  @db.Decimal(10, 2)
+  discountPercentage Decimal?  @db.Decimal(5, 2)
+  stock              Int       @default(0)
+  isPublished        Boolean   @default(false) // Draft vs Live
+  isHeroFeatured     Boolean   @default(false) // Featured in hero section
+  isArchived         Boolean   @default(false) // Soft delete
+  images             String[]  @default([])
+  rating             Decimal?  @db.Decimal(3, 2)
+  categoryId         Int?
+  brandId            Int?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  category      Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brand         Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  variants      ProductVariant[]
+  translations  ProductTranslation[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
+  reviews       ProductReview[]
+
+  @@index([categoryId, isPublished, isArchived, deletedAt]) // Common filter combo
+  @@index([brandId, isPublished, isArchived, deletedAt])
+  @@index([isPublished, createdAt]) // For "new arrivals"
+  @@index([isPublished, rating]) // For "top rated"
+}
+
+model ProductTranslation {
+  id               Int      @id @default(autoincrement())
+  productId        Int
+  lang             Language
+  name             String
+  shortDescription String?  @db.Text
+  description      String?  @db.Text
+  // SEO Fields
+  metaTitle        String?  @db.VarChar(70)
+  metaDescription  String?  @db.VarChar(160)
+  metaKeywords     String?  @db.VarChar(255)
+  ogTitle          String?  @db.VarChar(70)
+  ogDescription    String?  @db.VarChar(200)
+  ogImage          String?
+  createdAt        DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, lang])
+  @@index([productId, lang])
+}
+
+model ProductVariant {
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  sku        String?  @unique
+  attributes Json? // {"color": "red", "size": "M"}
+  price      Decimal  @db.Decimal(10, 2)
+  salePrice  Decimal? @db.Decimal(10, 2)
+  stock      Int      @default(0)
+  images     String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  orderItems    OrderItem[]
+
+  @@index([productId])
+  @@index([sku])
+}
+
+/**
+ * ==============================================================================
+ * CART & WISHLIST
+ * ==============================================================================
+ * @deprecated REMOVE AFTER MIGRATION
+ * Reason: Moving to localStorage for zero-friction guest experience
+ * New approach:
+ * - Cart stored in localStorage (browser)
+ * - Cart sharing via URL params: ?items=slug1:qty1,slug2:qty2
+ * - Wishlist stored in localStorage
+ * - No server-side cart/wishlist sync needed
+ * Benefits:
+ * - No user accounts required
+ * - Works offline
+ * - No database load for cart operations
+ * - Cart sharing via simple URL copy
+ * Admin paths to remove:
+ * - /admin/carts/* (if any)
+ * - Any cart-related API routes
+ * ==============================================================================
+ */
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CartItem[]
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  variantId Int?
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
+}
+
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  wishlistId Int
+  productId  Int
+  variantId  Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  wishlist Wishlist        @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId, variantId])
+  @@index([wishlistId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+/**
+ * ==============================================================================
+ * ORDERS
+ * ==============================================================================
+ * Self-contained orders with embedded customer info (guest-first).
+ * Guest Checkout Flow:
+ * 1. Customer enters phone number
+ * 2. System checks previous orders by phone for auto-fill
+ * 3. Customer confirms/modifies shipping info
+ * 4. Order placed with embedded customer data
+ * Key Fields:
+ * - customerPhone: Primary identifier for returning customers
+ * - customerName, shippingPhone, shippingStreet, etc: Embedded info
+ * - No userId required (guest checkout)
+ * Future: OTP verification for order confirmation
+ * Admin paths:
+ * - /admin/orders/* (order management - KEEP)
+ * ==============================================================================
+ */
+model Order {
+  id              Int           @id @default(autoincrement())
+  userId          Int?
+  subtotal        Decimal       @db.Decimal(12, 2)
+  discount        Decimal?      @db.Decimal(12, 2)
+  shippingCost    Decimal       @db.Decimal(12, 2)
+  totalAmount     Decimal       @db.Decimal(12, 2)
+  status          OrderStatus   @default(PENDING)
+  paymentMethod   PaymentMethod
+  customerName    String
+  shippingPhone   String
+  shippingStreet  String
+  shippingCity    String
+  shippingCountry String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user     User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  timeline OrderTimeline[]
+
+  @@index([userId])
+  @@index([status, createdAt]) // Admin dashboard queries
+  @@index([createdAt])
+  @@index([paymentMethod])
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  productId  Int
+  variantId  Int?
+  quantity   Int
+  price      Decimal  @db.Decimal(12, 2)
+  totalPrice Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+model OrderTimeline {
+  id          Int         @id @default(autoincrement())
+  orderId     Int
+  status      OrderStatus
+  changedById Int? // Admin who changed status
+  note        String?     @db.Text
+  createdAt   DateTime    @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@index([changedById])
+}
+
+/**
+ * ==============================================================================
+ * PRICING & PROMO CODES
+ * ==============================================================================
+ * Pricing configuration and promotional codes.
+ * Note: Currency is defined ONLY in AppSettings.currency
+ * Do NOT add currency field here to avoid duplication.
+ * Features:
+ * - Global shipping fee (can be overridden by ShippingZone)
+ * - Order value limits (min/max)
+ * - Bulk discount thresholds
+ * - Promo codes with percentage or fixed discounts
+ * ==============================================================================
+ */
+model PricingSettings {
+  id                     Int      @id @default(autoincrement())
+  shippingFee            Decimal? @db.Decimal(12, 2)
+  minOrderValue          Decimal? @db.Decimal(12, 2)
+  maxOrderValue          Decimal? @db.Decimal(12, 2)
+  bulkDiscountThreshold  Decimal? @db.Decimal(12, 2)
+  bulkDiscountPercentage Decimal? @db.Decimal(5, 2)
+  // NOTE: currency removed - use AppSettings.currency as single source of truth
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  promoCodes PricePromoCode[]
+}
+
+model PricePromoCode {
+  id                Int                    @id @default(autoincrement())
+  pricingSettingsId Int?
+  code              String                 @unique
+  applicationType   PricingApplicationType
+  value             Decimal                @db.Decimal(12, 2)
+  validFrom         DateTime?
+  validTo           DateTime?
+  usageLimit        Int?
+  usageCount        Int                    @default(0)
+  isActive          Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  pricingSettings PricingSettings? @relation(fields: [pricingSettingsId], references: [id], onDelete: SetNull)
+
+  @@index([code, isActive]) // Quick promo validation
+  @@index([validFrom, validTo])
+}
+
+/**
+ * ==============================================================================
+ * SETTINGS
+ * ==============================================================================
+ * Application configuration split into logical groups.
+ * IMPORTANT - Currency Single Source of Truth:
+ * AppSettings.currency is the ONLY place currency should be defined.
+ * All other models should reference this value.
+ * Admin paths:
+ * - /admin/settings/general (AppSettings)
+ * - /admin/settings/contact (ContactSettings)
+ * - /admin/settings/social (SocialSettings)
+ * API Design:
+ * - GET /api/settings → Returns all settings combined
+ * - PATCH /api/settings/app → Updates AppSettings only
+ * - PATCH /api/settings/contact → Updates ContactSettings only
+ * - PATCH /api/settings/social → Updates SocialSettings only
+ * ==============================================================================
+ */
+model AppSettings {
+  id               Int      @id @default(autoincrement())
+  storeName        String
+  storeDescription String?  @db.Text
+  currency         String   @default("EGP") // SINGLE SOURCE OF TRUTH for currency
+  languageOptions  String[] @default(["en", "ar"])
+  defaultLanguage  String   @default("en")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model ContactSettings {
+  id                 Int      @id @default(autoincrement())
+  phoneNumber        String?
+  vodafoneCashNumber String?
+  instaPayUrl        String?
+  instaPayQrCode     String?
+  instaPayNumber     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model SocialSettings {
+  id            Int      @id @default(autoincrement())
+  facebookGroup String?
+  facebookPage  String?
+  instagramPage String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+/**
+ * ==============================================================================
+ * TAX CONFIGURATION
+ * ==============================================================================
+ * Tax settings for order calculations.
+ * Features:
+ * - Enable/disable tax globally
+ * - Configurable tax rate and name (VAT, Sales Tax, etc.)
+ * - Tax can be included in product prices or added at checkout
+ * - Optional: Apply tax to shipping costs
+ * ==============================================================================
+ */
+model TaxSettings {
+  id              Int      @id @default(autoincrement())
+  isEnabled       Boolean  @default(false)
+  taxRate         Decimal  @default(0) @db.Decimal(5, 2) // e.g., 14.00 for 14%
+  taxName         String   @default("VAT") // "VAT", "Sales Tax", etc.
+  taxNumber       String? // Business tax registration number
+  includedInPrice Boolean  @default(true) // Tax included in displayed price or added at checkout
+  applyToShipping Boolean  @default(false) // Apply tax to shipping costs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+/**
+ * ==============================================================================
+ * INVENTORY TRACKING
+ * ==============================================================================
+ * Track all stock movements for audit and analytics.
+ * Movement Types:
+ * - SALE: Stock decreased from order
+ * - RESTOCK: Stock added from supplier
+ * - ADJUSTMENT: Manual stock correction
+ * - RETURN: Stock returned from customer
+ * - DAMAGE: Stock lost due to damage
+ * Each movement stores previous and new quantity for audit trail.
+ * ==============================================================================
+ */
+enum InventoryMovementType {
+  SALE
+  RESTOCK
+  ADJUSTMENT
+  RETURN
+  DAMAGE
+}
+
+model InventoryMovement {
+  id          Int                   @id @default(autoincrement())
+  productId   Int
+  variantId   Int?
+  type        InventoryMovementType
+  quantity    Int // Positive for in, negative for out
+  previousQty Int
+  newQty      Int
+  orderId     Int? // Reference to order if movement is from a sale
+  note        String?               @db.Text
+  createdById Int? // Admin who made the adjustment
+  createdAt   DateTime              @default(now())
+
+  @@index([productId, createdAt])
+  @@index([variantId, createdAt])
+  @@index([type, createdAt])
+  @@index([orderId])
+}
+
+/**
+ * ==============================================================================
+ * STOREFRONT CONTENT & SEO
+ * ==============================================================================
+ * Dynamic content storage and SEO configuration.
+ * StorefrontContent:
+ * - Key-value store for dynamic homepage sections
+ * - Hero banners, featured collections, etc.
+ * - JSON data for flexible content structure
+ * PageSEO:
+ * - SEO metadata for static pages
+ * - Multi-language support (EN, AR)
+ * - Supports: home, about, contact, products, categories, etc.
+ * ==============================================================================
+ */
+model StorefrontContent {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// SEO for static pages (home, about, contact, etc.)
+model PageSEO {
+  id             Int      @id @default(autoincrement())
+  pageKey        String // e.g., 'home', 'about', 'contact', 'products', 'categories'
+  lang           Language
+  title          String   @db.VarChar(70)
+  description    String?  @db.VarChar(160)
+  keywords       String?  @db.VarChar(255)
+  ogTitle        String?  @db.VarChar(70)
+  ogDescription  String?  @db.VarChar(200)
+  ogImage        String?
+  canonicalUrl   String?
+  robots         String?  @default("index, follow")
+  structuredData Json? // JSON-LD schema
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([pageKey, lang])
+  @@index([pageKey, lang])
+}
+
+/**
+ * ==============================================================================
+ * ADMIN MANAGEMENT
+ * ==============================================================================
+ * Admin users for dashboard access (separate from customer User model).
+ * Roles:
+ * - OWNER: Full access, can manage other admins
+ * - MANAGER: Can manage products, orders, settings
+ * - SALES: Can view/manage orders only
+ * Features:
+ * - Session-based authentication (AdminSession)
+ * - Push notification subscriptions
+ * - Notification preferences (orders only - messages removed)
+ * Admin paths:
+ * - /admin/team/* (admin user management)
+ * - /admin/profile/* (current admin profile)
+ * ==============================================================================
+ */
+model Admin {
+  id           Int       @id @default(autoincrement())
+  name         String?
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(SALES)
+  isActive     Boolean   @default(true)
+  createdById  Int?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createdBy         Admin?             @relation("AdminCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAdmins     Admin[]            @relation("AdminCreatedBy")
+  sessions          AdminSession[]
+  pushSubscriptions PushSubscription[]
+
+  notifyOrders   Boolean @default(true)
+  // NOTE: notifyMessages to be removed after migration (no chat support)
+  notifyMessages Boolean @default(true)
+
+  @@index([email])
+  @@index([role, isActive])
+}
+
+model AdminSession {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  adminId   Int
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([token, expiresAt]) // Session validation
+}
+
+/// Push notification subscriptions for admins only (after migration)
+/// NOTE: userId and user relation to be removed after User model removal
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userId    Int? // @deprecated - remove after User model removal
+  adminId   Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade) // @deprecated
+  admin Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([userId]) // @deprecated - remove after migration
+  @@index([adminId])
+}
+
+/**
+ * ==============================================================================
+ * CHAT/SUPPORT
+ * ==============================================================================
+ * @deprecated REMOVE AFTER MIGRATION
+ * Reason: No chat support needed in guest-first approach
+ * Alternative:
+ * - WhatsApp Business integration (external)
+ * - Facebook Messenger (external)
+ * - Simple contact form → email
+ * Admin paths to remove:
+ * - /admin/inbox/* (chat inbox)
+ * - /admin/messages/* (if any)
+ * - Any WebSocket/real-time chat endpoints
+ * ==============================================================================
+ */
+model Conversation {
+  id                 String    @id @default(uuid())
+  userId             Int       @unique
+  lastMessageAt      DateTime  @default(now())
+  lastMessageContent String?   @db.Text
+  unreadCount        Int       @default(0)
+  isActive           Boolean   @default(true)
+  adminLastRepliedAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Chat[]
+
+  @@index([userId])
+  @@index([lastMessageAt])
+  @@index([isActive, unreadCount]) // Active conversations with unread
+}
+
+model Chat {
+  id             String        @id @default(uuid())
+  conversationId String
+  userId         Int?
+  isFromAdmin    Boolean       @default(false)
+  content        String        @db.Text
+  status         MessageStatus @default(SENT)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([userId])
+}
+
+/**
+ * ==============================================================================
+ * REVIEWS & TESTIMONIALS
+ * ==============================================================================
+ * ProductReview: @deprecated REMOVE AFTER MIGRATION
+ * - Reason: Complex review system not needed for guest checkout
+ * - No user accounts = no verified purchase reviews
+ * Testimonials: KEEP
+ * - Simple testimonials from social media screenshots
+ * - Admin manually adds/approves testimonials
+ * - No customer account needed
+ * Admin paths:
+ * - /admin/reviews/* → REMOVE
+ * - /admin/testimonials/* → KEEP
+ * ==============================================================================
+ */
+
+/// @deprecated REMOVE AFTER MIGRATION - using Testimonials only
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// @deprecated REMOVE AFTER MIGRATION - using Testimonials only
+model ProductReview {
+  id           Int          @id @default(autoincrement())
+  productId    Int
+  orderId      Int? // Link to the order (optional for verified purchase badge)
+  userId       Int? // Customer who left the review
+  rating       Int // 1-5 stars
+  title        String?      @db.VarChar(255)
+  content      String?      @db.Text
+  customerName String?      @db.VarChar(100) // For guest reviews
+  isVerified   Boolean      @default(false) // Verified purchase
+  status       ReviewStatus @default(PENDING)
+  adminNote    String?      @db.Text // Internal note for moderation
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, status])
+  @@index([status, createdAt])
+  @@index([userId])
+  @@index([orderId])
+}
+
+// Testimonials (screenshots from Facebook/WhatsApp, general reviews)
+model Testimonial {
+  id           Int      @id @default(autoincrement())
+  customerName String?  @db.VarChar(100)
+  content      String?  @db.Text // Text content (optional)
+  images       String[] @default([]) // Screenshot images
+  source       String?  @db.VarChar(50) // 'facebook', 'whatsapp', 'instagram', 'google', etc.
+  rating       Int? // Optional rating 1-5
+  isPublished  Boolean  @default(false)
+  displayOrder Int      @default(0) // For manual ordering
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([isPublished, displayOrder])
+  @@index([source])
+}
+
+/**
+ * ==============================================================================
+ * SHIPPING & LOCATION
+ * ==============================================================================
+ * Egypt-specific shipping configuration.
+ * Structure:
+ * - ShippingZone: Pricing zones (Cairo, Giza, Remote, etc.)
+ * - Governorate: Egyptian governorates (محافظات)
+ * - Area: Districts within governorates
+ * Features:
+ * - Zone-based shipping pricing
+ * - Free shipping thresholds per zone
+ * - Estimated delivery days
+ * - Multi-language names (EN, AR)
+ * Admin paths:
+ * - /admin/settings/shipping (zones)
+ * - /admin/settings/locations (governorates, areas)
+ * ==============================================================================
+ */
+model Governorate {
+  id             Int      @id @default(autoincrement())
+  nameEn         String   @db.VarChar(100)
+  nameAr         String   @db.VarChar(100)
+  slug           String   @unique @db.VarChar(100)
+  shippingZoneId Int?
+  isActive       Boolean  @default(true)
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  areas        Area[]
+  shippingZone ShippingZone? @relation(fields: [shippingZoneId], references: [id], onDelete: SetNull)
+
+  @@index([shippingZoneId])
+  @@index([isActive, displayOrder])
+}
+
+model Area {
+  id            Int      @id @default(autoincrement())
+  governorateId Int
+  nameEn        String   @db.VarChar(100)
+  nameAr        String   @db.VarChar(100)
+  slug          String   @db.VarChar(100)
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  governorate Governorate @relation(fields: [governorateId], references: [id], onDelete: Cascade)
+
+  @@unique([governorateId, slug])
+  @@index([governorateId, isActive])
+}
+
+model ShippingZone {
+  id                    Int      @id @default(autoincrement())
+  name                  String   @db.VarChar(100) // e.g., "Cairo Zone", "Remote Areas"
+  price                 Decimal  @db.Decimal(10, 2)
+  freeShippingThreshold Decimal? @db.Decimal(10, 2) // Free shipping if order >= this amount
+  estimatedDays         String?  @db.VarChar(50) // e.g., "2-3 days", "5-7 days"
+  isActive              Boolean  @default(true)
+  displayOrder          Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  governorates Governorate[]
+
+  @@index([isActive, displayOrder])
+}

@@ -27,6 +27,10 @@ const links = [[{
   icon: 'i-lucide-share-2',
   to: '/admin/settings/social'
 }], [{
+  label: 'Shipping',
+  icon: 'i-lucide-truck',
+  to: '/admin/settings/shipping'
+}, {
   label: 'Pricing',
   icon: 'i-lucide-coins',
   to: '/admin/settings/pricing'
@@ -57,7 +61,7 @@ const links = [[{
     </template>
 
     <template #body>
-      <div class="flex flex-col gap-4 sm:gap-6 lg:gap-12 w-full lg:max-w-2xl mx-auto">
+      <div class="flex flex-col gap-4 sm:gap-6 lg:gap-12 w-full lg:max-w-5xl mx-auto">
         <NuxtPage />
       </div>
     </template>

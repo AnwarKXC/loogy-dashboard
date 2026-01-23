@@ -45,8 +45,12 @@ defineProps<{
           <span class="text-2xl">🛒</span>
         </div>
         <div>
-          <p class="text-xl font-bold">Loogy Store</p>
-          <p class="text-neutral-400 text-sm">Best products at best prices</p>
+          <p class="text-xl font-bold">
+            Loogy Store
+          </p>
+          <p class="text-neutral-400 text-sm">
+            Best products at best prices
+          </p>
         </div>
       </div>
     </div>

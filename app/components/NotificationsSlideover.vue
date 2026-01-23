@@ -16,7 +16,7 @@ const { data: notifications } = await useFetch<Notification[]>('/api/notificatio
       <NuxtLink
         v-for="notification in notifications"
         :key="notification.id"
-        to="/chat"
+        to="/admin/orders"
         class="px-3 py-2.5 rounded-md hover:bg-elevated/50 flex items-center gap-3 relative -mx-3 first:-mt-3 last:-mb-3"
       >
         <UChip
@@ -25,15 +25,14 @@ const { data: notifications } = await useFetch<Notification[]>('/api/notificatio
           inset
         >
           <UAvatar
-            v-bind="notification.sender.avatar"
-            :alt="notification.sender.name"
+            icon="i-lucide-shopping-bag"
             size="md"
           />
         </UChip>
 
         <div class="text-sm flex-1">
           <p class="flex items-center justify-between">
-            <span class="text-highlighted font-medium">{{ notification.sender.name }}</span>
+            <span class="text-highlighted font-medium">{{ notification.senderName }}</span>
 
             <time
               :datetime="notification.date"

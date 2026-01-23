@@ -33,13 +33,8 @@ export default defineEventHandler(async (event) => {
           }
         }
       },
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
-      },
+      governorate: true,
+      area: true,
       timeline: {
         orderBy: { createdAt: 'asc' }
       }
@@ -123,15 +118,27 @@ export default defineEventHandler(async (event) => {
 
       // Customer info
       customer: {
-        id: order.userId,
         name: order.customerName,
-        email: order.user?.email ?? null,
-        phone: order.shippingPhone,
+        email: order.customerEmail ?? null,
+        phone: order.customerPhone,
+        shippingPhone: order.shippingPhone,
         address: {
           street: order.shippingStreet,
           city: order.shippingCity,
           country: order.shippingCountry
-        }
+        },
+        governorate: order.governorate
+          ? {
+              nameEn: order.governorate.nameEn,
+              nameAr: order.governorate.nameAr
+            }
+          : null,
+        area: order.area
+          ? {
+              nameEn: order.area.nameEn,
+              nameAr: order.area.nameAr
+            }
+          : null
       },
 
       // Order details

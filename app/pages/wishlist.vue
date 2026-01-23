@@ -39,7 +39,7 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
     })
     toast.add({ title: 'Removed from wishlist', color: 'green' })
     await refresh()
-  } catch (err) {
+  } catch {
     toast.add({ title: 'Error removing item', color: 'red' })
   }
 }
@@ -55,7 +55,7 @@ const addToCart = async (item: WishlistItem) => {
       variantId: item.variantId ?? undefined
     })
     toast.add({ title: 'Added to cart', color: 'green' })
-  } catch (err) {
+  } catch {
     toast.add({ title: 'Error', description: 'Could not add product to cart', color: 'red' })
   }
 }

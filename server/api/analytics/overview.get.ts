@@ -23,7 +23,7 @@ export default eventHandler(async (event) => {
   const previousEndDate = startDate
 
   // Get stats for current period
-  const [orders, revenue, newCustomers] = await Promise.all([
+  const [orders, revenue] = await Promise.all([
     prisma.order.count({
       where: {
         createdAt: {
@@ -42,17 +42,19 @@ export default eventHandler(async (event) => {
       _sum: {
         totalAmount: true
       }
-    }),
-    prisma.user.count({
-      where: {
-        role: 'CUSTOMER',
-        createdAt: {
-          gte: startDate,
-          lte: endDate
-        }
-      }
     })
   ])
+
+  // Get unique customers count from orders (by phone number)
+  const uniqueCustomers = await prisma.order.groupBy({
+    by: ['customerPhone'],
+    where: {
+      createdAt: {
+        gte: startDate,
+        lte: endDate
+      }
+    }
+  })
 
   // Optimized product stats query
   const productStats = await prisma.$queryRaw<[{ total: bigint, available: bigint }]>`
@@ -66,7 +68,7 @@ export default eventHandler(async (event) => {
   const availableProducts = Number(productStats[0]?.available || 0)
 
   // Get stats for previous period
-  const [prevOrders, prevRevenue, prevNewCustomers] = await Promise.all([
+  const [prevOrders, prevRevenue] = await Promise.all([
     prisma.order.count({
       where: {
         createdAt: {
@@ -85,17 +87,19 @@ export default eventHandler(async (event) => {
       _sum: {
         totalAmount: true
       }
-    }),
-    prisma.user.count({
-      where: {
-        role: 'CUSTOMER',
-        createdAt: {
-          gte: previousStartDate,
-          lt: previousEndDate
-        }
-      }
     })
   ])
+
+  // Get unique customers count from orders for previous period
+  const prevUniqueCustomers = await prisma.order.groupBy({
+    by: ['customerPhone'],
+    where: {
+      createdAt: {
+        gte: previousStartDate,
+        lt: previousEndDate
+      }
+    }
+  })
 
   // Calculate variations
   const calculateVariation = (current: number, previous: number) => {
@@ -105,6 +109,8 @@ export default eventHandler(async (event) => {
 
   const currentRevenue = Number(revenue._sum.totalAmount || 0)
   const previousRevenueVal = Number(prevRevenue._sum.totalAmount || 0)
+  const currentCustomers = uniqueCustomers.length
+  const previousCustomers = prevUniqueCustomers.length
 
   return {
     revenue: {
@@ -116,8 +122,8 @@ export default eventHandler(async (event) => {
       variation: calculateVariation(orders, prevOrders)
     },
     customers: {
-      value: newCustomers,
-      variation: calculateVariation(newCustomers, prevNewCustomers)
+      value: currentCustomers,
+      variation: calculateVariation(currentCustomers, previousCustomers)
     },
     products: {
       total: totalProducts,

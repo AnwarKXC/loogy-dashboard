@@ -38,13 +38,7 @@ const { data: stats } = await useAsyncData<Stat[]>('home-stats', async () => {
       variation: data.orders.variation,
       link: '/orders'
     },
-    {
-      title: 'New Customers',
-      icon: 'i-lucide-users',
-      value: data.customers.value,
-      variation: data.customers.variation,
-      link: '/customers'
-    },
+
     {
       title: 'Products',
       icon: 'i-lucide-box',

@@ -3,38 +3,27 @@ import { Prisma } from '@prisma/client'
 export type OrderWithRelations = Prisma.OrderGetPayload<{
   include: {
     items: true
-    user: {
-      select: {
-        id: true
-        name: true
-        email: true
-      }
-    }
+    governorate: true
+    area: true
   }
 }>
 
 export function getOrderInclude(): Prisma.OrderInclude {
   return {
     items: true,
-    user: {
-      select: {
-        id: true,
-        name: true,
-        email: true
-      }
-    }
+    governorate: true,
+    area: true
   }
 }
 
 export function mapOrderToList(order: OrderWithRelations) {
-  const customerEmail = order.user?.email ?? null
-
   return {
     id: order.id,
     status: order.status,
     paymentMethod: order.paymentMethod,
     customerName: order.customerName,
-    customerEmail,
+    customerPhone: order.customerPhone,
+    customerEmail: order.customerEmail,
     totalAmount: order.totalAmount.toNumber(),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
@@ -52,34 +41,37 @@ export function mapOrderToDetail(order: OrderWithRelations) {
     subtotal: order.subtotal.toNumber(),
     shippingCost: order.shippingCost.toNumber(),
     discount: order.discount?.toNumber() ?? null,
+    promoCode: order.promoCode,
+    notes: order.notes,
     shippingPhone: order.shippingPhone,
-    shippingWhatsapp: order.shippingWhatsapp,
     shippingStreet: order.shippingStreet,
     shippingCity: order.shippingCity,
     shippingCountry: order.shippingCountry,
-    customerId: order.userId,
+    governorateId: order.governorateId,
+    areaId: order.areaId,
+    governorate: order.governorate
+      ? {
+          id: order.governorate.id,
+          nameEn: order.governorate.nameEn,
+          nameAr: order.governorate.nameAr
+        }
+      : null,
+    area: order.area
+      ? {
+          id: order.area.id,
+          nameEn: order.area.nameEn,
+          nameAr: order.area.nameAr
+        }
+      : null,
     items: order.items.map(item => ({
       id: item.id,
       productId: item.productId,
+      variantId: item.variantId,
       quantity: item.quantity,
       unitPrice: item.price.toNumber(),
-      totalPrice: item.totalPrice.toNumber(),
-      status: item.status,
-      productName: item.productName && typeof item.productName === 'object'
-        ? extractLocalizedName(item.productName as Record<string, unknown>)
-        : null
+      totalPrice: item.totalPrice.toNumber()
     }))
   }
-}
-
-function extractLocalizedName(json: Record<string, unknown>) {
-  if (typeof json.en === 'string' && json.en.trim().length > 0) {
-    return json.en
-  }
-
-  const firstString = Object.values(json).find(value => typeof value === 'string' && value.trim().length > 0)
-
-  return typeof firstString === 'string' ? firstString : null
 }
 
 export function isKnownPrismaError(error: unknown): error is Prisma.PrismaClientKnownRequestError {

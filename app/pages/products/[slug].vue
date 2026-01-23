@@ -164,10 +164,11 @@ const handleAddToCart = async (redirect = false) => {
     if (redirect) {
       router.push('/checkout')
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { data?: { message?: string }, message?: string }
     toast.add({
       title: 'Failed to Add to Cart',
-      description: error?.data?.message || error?.message || 'Please try again',
+      description: err?.data?.message || err?.message || 'Please try again',
       color: 'error'
     })
   }
@@ -231,10 +232,11 @@ const placeOrder = async () => {
       description: response.message,
       color: 'success'
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { data?: { message?: string }, message?: string }
     toast.add({
       title: 'Failed to Create Order',
-      description: error?.data?.message || error?.message || 'Please try again',
+      description: err?.data?.message || err?.message || 'Please try again',
       color: 'error'
     })
   } finally {
@@ -518,11 +520,6 @@ const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
               </p>
             </div>
           </div>
-        </div>
-
-        <!-- Product Reviews Section -->
-        <div v-if="product" class="mt-16 max-w-4xl mx-auto border-t border-neutral-200 pt-8">
-          <ProductsProductReviews :product-id="product.id" />
         </div>
       </div>
     </main>

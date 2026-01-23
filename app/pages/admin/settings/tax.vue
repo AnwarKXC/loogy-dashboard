@@ -94,15 +94,11 @@ function selectPreset(preset: string) {
 <template>
   <UDashboardPanel id="tax-settings">
     <template #header>
-      <UDashboardNavbar title="Tax Configuration">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-      </UDashboardNavbar>
+      <UDashboardNavbar title="Tax Configuration" />
     </template>
 
     <template #body>
-      <div class="p-6 max-w-2xl">
+      <div class="">
         <USkeleton v-if="status === 'pending'" class="h-96 w-full" />
 
         <UForm
@@ -143,7 +139,7 @@ function selectPreset(preset: string) {
                   <USelect
                     :model-value="taxPresetOptions.find(o => o.value === state.taxName) ? state.taxName : 'Custom'"
                     :items="taxPresetOptions"
-                    class="w-48"
+                    class="w-56"
                     @update:model-value="selectPreset"
                   />
                   <UInput

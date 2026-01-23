@@ -49,11 +49,8 @@ export default defineEventHandler(async (event) => {
           }
         }
       },
-      user: {
-        select: {
-          email: true
-        }
-      }
+      governorate: true,
+      area: true
     },
     orderBy: { createdAt: 'desc' },
     take: limit
@@ -71,8 +68,8 @@ export default defineEventHandler(async (event) => {
       status: order.status,
       paymentMethod: order.paymentMethod,
       customerName: order.customerName,
-      customerEmail: order.user?.email ?? '',
-      customerPhone: order.shippingPhone,
+      customerEmail: order.customerEmail ?? '',
+      customerPhone: order.customerPhone ?? order.shippingPhone,
       shippingStreet: order.shippingStreet,
       shippingCity: order.shippingCity,
       shippingCountry: order.shippingCountry,

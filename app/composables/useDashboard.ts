@@ -7,9 +7,9 @@ const _useDashboard = () => {
 
   defineShortcuts({
     'g-h': () => router.push('/'),
-    'g-i': () => router.push('/chat'),
-    'g-c': () => router.push('/customers'),
-    'g-s': () => router.push('/settings'),
+    'g-o': () => router.push('/admin/orders'),
+    'g-p': () => router.push('/admin/products'),
+    'g-s': () => router.push('/admin/settings'),
     'n': () => isNotificationsSlideoverOpen.value = !isNotificationsSlideoverOpen.value
   })
 
