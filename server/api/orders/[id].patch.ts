@@ -7,7 +7,7 @@ import { getOrderInclude, mapOrderToDetail } from './utils'
 import type { OrderWithRelations } from './utils'
 
 const updateOrderSchema = z.object({
-  status: z.enum(['PENDING', 'SHIPPING', 'DELIVERED']).optional(),
+  status: z.enum(['PENDING', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED']).optional(),
   paymentMethod: z.enum(['CASH', 'VODAFONE_CASH', 'INSTAPAY', 'VISA']).optional(),
   shippingPhone: z.string().trim().optional(),
   shippingWhatsapp: z.string().trim().optional().nullable(),
@@ -33,11 +33,38 @@ export default eventHandler(async (event) => {
 
   const order = await prisma.order.findUnique({
     where: { id: orderId },
-    include: getOrderInclude()
+    include: {
+      ...getOrderInclude(),
+      items: true // Include items for stock restoration
+    }
   })
 
   if (!order) {
     throw createError({ statusCode: 404, statusMessage: 'Order not found' })
+  }
+
+  // Handle stock restoration when cancelling an order
+  const isBeingCancelled = payload.status === 'CANCELLED' && order.status !== 'CANCELLED'
+
+  if (isBeingCancelled) {
+    // Restore stock for each item in the order
+    for (const item of order.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: {
+          stock: { increment: item.quantity }
+        }
+      })
+    }
+
+    // Add timeline entry for cancellation
+    await prisma.orderTimeline.create({
+      data: {
+        orderId: order.id,
+        status: 'CANCELLED',
+        note: 'Order cancelled by admin. Stock restored.'
+      }
+    })
   }
 
   const updated = await prisma.order.update({

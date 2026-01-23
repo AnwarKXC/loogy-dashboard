@@ -13,8 +13,10 @@ const guestOrderSchema = z.object({
     name: z.string().min(1, 'Name is required'),
     phone: z.string().min(10, 'Invalid phone number'),
     governorate: z.string().optional(),
+    governorateId: z.number().nullable().optional(),
+    areaId: z.number().nullable().optional(),
     address: z.string().min(1, 'Address is required'),
-    notes: z.string().optional()
+    whatsapp: z.string().optional()
   }),
   paymentMethod: z.enum(['cod']).default('cod'),
   items: z.array(z.object({
@@ -165,10 +167,14 @@ export default defineEventHandler(async (event) => {
   const order = await prisma.order.create({
     data: {
       customerName: customer.name,
+      customerPhone: customer.phone,
       shippingPhone: customer.phone,
-      shippingStreet: `${customer.address}${customer.notes ? ` (${customer.notes})` : ''}`,
+      shippingStreet: customer.address,
       shippingCity: customer.governorate || 'Egypt',
       shippingCountry: 'EG',
+      governorateId: customer.governorateId ?? null,
+      areaId: customer.areaId ?? null,
+      notes: customer.whatsapp ? `WhatsApp: ${customer.whatsapp}` : null,
       paymentMethod: 'CASH',
       subtotal,
       discount: totalDiscount > 0 ? totalDiscount : null,

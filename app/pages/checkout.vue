@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 
 definePageMeta({
   layout: 'storefront',
@@ -261,6 +261,146 @@ const clearError = (field: keyof typeof errors) => {
   errors[field] = ''
 }
 
+// Egyptian phone number validation
+// Accepts: 01XXXXXXXXX (11 digits starting with 010, 011, 012, 015)
+// Or: +201XXXXXXXXX (with country code)
+const validateEgyptianPhone = (phone: string): boolean => {
+  const cleaned = phone.replace(/[\s\-()]/g, '') // Remove spaces, dashes, parentheses
+  // Pattern: 01[0125]XXXXXXXX (11 digits) or +201[0125]XXXXXXXX (13 chars with +)
+  const egyptPhoneRegex = /^(\+20|0)(10|11|12|15)\d{8}$/
+  return egyptPhoneRegex.test(cleaned)
+}
+
+// Normalize phone to standard format (+201XXXXXXXXX)
+const normalizePhone = (phone: string): string => {
+  const cleaned = phone.replace(/[\s\-()]/g, '')
+  if (cleaned.startsWith('+20')) {
+    return cleaned
+  }
+  if (cleaned.startsWith('0')) {
+    return '+2' + cleaned
+  }
+  return cleaned
+}
+
+// Phone input handler - limit to valid characters and length
+const handlePhoneInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  // Allow only digits and + at the start
+  let value = input.value.replace(/[^\d+]/g, '')
+
+  // Only allow + at the very beginning
+  if (value.includes('+') && !value.startsWith('+')) {
+    value = value.replace(/\+/g, '')
+  }
+
+  // Limit length: 11 for local (0...), 13 for international (+20...)
+  if (value.startsWith('+')) {
+    value = value.slice(0, 13)
+  } else {
+    value = value.slice(0, 11)
+  }
+
+  form.phone = value
+  clearError('phone')
+
+  // Trigger lookup if valid
+  if (validateEgyptianPhone(value)) {
+    lookupCustomerByPhone(value)
+  } else {
+    customerFound.value = false
+  }
+}
+
+// Customer lookup state
+const lookupLoading = ref(false)
+const customerFound = ref(false)
+let lookupTimeout: ReturnType<typeof setTimeout> | null = null
+
+// Debounced customer lookup
+const lookupCustomerByPhone = (phone: string) => {
+  // Clear previous timeout
+  if (lookupTimeout) {
+    clearTimeout(lookupTimeout)
+  }
+
+  // Debounce 300ms
+  lookupTimeout = setTimeout(async () => {
+    if (!validateEgyptianPhone(phone)) {
+      customerFound.value = false
+      return
+    }
+
+    lookupLoading.value = true
+    try {
+      const response = await $fetch<{
+        found: boolean
+        customer?: {
+          name: string
+          email: string | null
+          phone: string
+          governorateId: number | null
+          areaId: number | null
+          address: string | null
+          whatsapp: string
+        }
+      }>('/api/public/customer/lookup', {
+        query: { phone }
+      })
+
+      if (response.found && response.customer) {
+        customerFound.value = true
+        // Auto-fill form with customer details
+        form.fullName = response.customer.name || form.fullName
+        form.email = response.customer.email || form.email
+
+        // Set governorate first
+        if (response.customer.governorateId) {
+          form.governorateId = response.customer.governorateId
+          // Wait for areas to load then set area
+          await nextTick()
+          // Areas will be loaded by the governorate watcher
+          setTimeout(() => {
+            if (response.customer?.areaId) {
+              form.areaId = response.customer.areaId
+            }
+          }, 500)
+        }
+
+        // Set address - now stored cleanly without WhatsApp embedded
+        if (response.customer.address) {
+          // Handle legacy format that might have WhatsApp embedded
+          const whatsappMatch = response.customer.address.match(/\s*\(WhatsApp:\s*([^)]+)\)$/)
+          if (whatsappMatch) {
+            form.fullLocation = response.customer.address.replace(/\s*\(WhatsApp:\s*[^)]+\)$/, '').trim()
+            form.whatsappNumber = whatsappMatch[1].trim()
+          } else {
+            form.fullLocation = response.customer.address
+          }
+        }
+
+        // Set WhatsApp if provided separately (new format)
+        if (response.customer.whatsapp) {
+          form.whatsappNumber = response.customer.whatsapp
+        }
+
+        toast.add({
+          title: locale.value === 'ar' ? 'مرحباً بعودتك!' : 'Welcome back!',
+          description: locale.value === 'ar' ? 'تم ملء بياناتك من طلبك السابق' : 'Your details have been filled from your previous order',
+          color: 'success',
+          icon: 'i-lucide-user-check'
+        })
+      } else {
+        customerFound.value = false
+      }
+    } catch {
+      customerFound.value = false
+    } finally {
+      lookupLoading.value = false
+    }
+  }, 300)
+}
+
 // Validate form
 const validateForm = (): boolean => {
   let isValid = true
@@ -273,7 +413,14 @@ const validateForm = (): boolean => {
   errors.fullLocation = ''
 
   if (!form.phone.trim()) {
-    errors.phone = t('checkout.validation.phoneRequired')
+    errors.phone = locale.value === 'ar'
+      ? 'رقم الهاتف مطلوب'
+      : 'Phone number is required'
+    isValid = false
+  } else if (!validateEgyptianPhone(form.phone)) {
+    errors.phone = locale.value === 'ar'
+      ? 'أدخل رقم مصري صحيح: 01012345678 أو +201012345678'
+      : 'Enter a valid Egyptian number: 01012345678 or +201012345678'
     isValid = false
   }
 
@@ -396,10 +543,12 @@ const placeOrder = async () => {
       body: {
         customer: {
           name: form.fullName,
-          phone: form.phone,
+          phone: normalizePhone(form.phone),
           governorate: govLabel || '',
+          governorateId: form.governorateId || null,
+          areaId: form.areaId || null,
           address: `${areaLabel || ''}, ${form.fullLocation}`,
-          notes: form.whatsapp ? `WhatsApp: ${form.whatsapp}` : ''
+          whatsapp: form.whatsappNumber || ''
         },
         paymentMethod: form.payment,
         items: lines.value,
@@ -407,6 +556,13 @@ const placeOrder = async () => {
         shippingCost: shipping.value
       }
     })
+
+    // Save phone to cookie for profile access
+    const phoneCookie = useCookie('customer_phone', {
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      sameSite: 'lax'
+    })
+    phoneCookie.value = normalizePhone(form.phone)
 
     orderNumber.value = response.orderNumber
     orderComplete.value = true
@@ -519,17 +675,28 @@ const getStepLabel = (step: string) => {
               <div>
                 <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
                   {{ $t('checkout.fields.phone') }} <span class="text-red-500">*</span>
+                  <span v-if="lookupLoading" class="ml-2 inline-flex items-center">
+                    <UIcon name="i-lucide-loader-2" class="w-3 h-3 animate-spin" />
+                  </span>
+                  <span v-else-if="customerFound" class="ml-2 text-green-600">
+                    <UIcon name="i-lucide-check-circle" class="w-3 h-3 inline" />
+                    {{ locale === 'ar' ? 'تم التعرف عليك' : 'Recognized' }}
+                  </span>
                 </label>
                 <input
-                  v-model="form.phone"
+                  :value="form.phone"
                   type="tel"
-                  :placeholder="$t('checkout.fields.phone')"
+                  inputmode="tel"
+                  :placeholder="locale === 'ar' ? '01012345678' : '01012345678'"
                   class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-4 text-sm focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-                  :class="{ 'border-red-500 dark:border-red-500': errors.phone }"
-                  @input="clearError('phone')"
+                  :class="{ 'border-red-500 dark:border-red-500': errors.phone, 'border-green-500 dark:border-green-500': customerFound && !errors.phone }"
+                  @input="handlePhoneInput"
                 >
                 <p v-if="errors.phone" class="mt-1 text-xs text-red-500">
                   {{ errors.phone }}
+                </p>
+                <p v-else class="mt-1 text-xs text-gray-400">
+                  {{ locale === 'ar' ? 'مثال: 01012345678 أو +201012345678' : 'Example: 01012345678 or +201012345678' }}
                 </p>
               </div>
 
@@ -739,117 +906,171 @@ const getStepLabel = (step: string) => {
 
         <!-- Right Column: Order Summary -->
         <div class="lg:col-span-5">
-          <div class="bg-[#F2F2F2] dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-6 lg:p-8">
-            <div class="flex items-center justify-between mb-8">
-              <h2 class="text-sm font-bold tracking-widest uppercase text-black dark:text-white">
-                {{ $t('checkout.order.yourOrder') }}
-              </h2>
-              <span class="text-xs font-bold text-blue-600 dark:text-blue-400">({{ lines.reduce((acc, i) => acc + i.quantity, 0) }})</span>
-            </div>
-
-            <!-- Cart Items - Redesigned -->
-            <div class="divide-y divide-gray-200 dark:divide-gray-700 mb-8 max-h-[400px] overflow-y-auto">
-              <div
-                v-for="item in lines"
-                :key="item.productId"
-                class="flex items-center gap-4 py-4 first:pt-0"
-              >
-                <!-- Product Image -->
-                <div class="relative flex-shrink-0">
-                  <div class="w-16 h-20 bg-white dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-100 dark:border-gray-600">
-                    <img
-                      :src="item.image || '/placeholder.png'"
-                      :alt="item.title"
-                      class="w-full h-full object-cover"
-                    >
-                  </div>
-                  <!-- Quantity Badge -->
-                  <span class="absolute -top-2 -right-2 min-w-[22px] h-[22px] bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center px-1.5">
-                    {{ item.quantity }}
-                  </span>
-                </div>
-
-                <!-- Product Info -->
-                <div class="flex-1 min-w-0">
-                  <h3 class="font-semibold text-sm text-black dark:text-white truncate mb-1">
-                    {{ item.title }}
-                  </h3>
-                  <p class="text-sm font-bold text-black dark:text-white">
-                    {{ formatPrice(item.price * item.quantity) }}
-                  </p>
-                </div>
-
-                <!-- Edit Link -->
-                <button
-                  class="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex-shrink-0"
-                  @click="router.push('/cart')"
-                >
-                  {{ $t('checkout.buttons.change') }}
-                </button>
+          <div class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
+            <!-- Header -->
+            <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+              <div class="flex items-center justify-between">
+                <h2 class="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <UIcon name="i-lucide-shopping-bag" class="w-5 h-5 text-gray-500" />
+                  {{ $t('checkout.order.yourOrder') }}
+                </h2>
+                <span class="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold px-2.5 py-1 rounded-full">
+                  {{ lines.reduce((acc, i) => acc + i.quantity, 0) }} {{ locale === 'ar' ? 'منتجات' : 'items' }}
+                </span>
               </div>
             </div>
 
-            <div class="border-t border-gray-300 dark:border-gray-600 my-6" />
+            <!-- Cart Items - Premium Design -->
+            <div class="p-4 max-h-[450px] overflow-y-auto">
+              <div class="space-y-4">
+                <div
+                  v-for="item in lines"
+                  :key="item.productId"
+                  class="group bg-gray-50 dark:bg-gray-800 rounded-xl p-3 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+                >
+                  <div class="flex gap-4">
+                    <!-- Product Image - Larger -->
+                    <div class="relative flex-shrink-0">
+                      <NuxtLink
+                        :to="`/products/${item.slug}`"
+                        target="_blank"
+                        class="block"
+                      >
+                        <div class="w-24 h-28 bg-white dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 shadow-sm group-hover:shadow-md transition-shadow">
+                          <img
+                            :src="item.image || '/placeholder.png'"
+                            :alt="item.title"
+                            class="w-full h-full object-cover"
+                          >
+                        </div>
+                      </NuxtLink>
+                      <!-- Quantity Badge -->
+                      <span class="absolute -top-2 -right-2 min-w-[26px] h-[26px] bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center px-1.5 shadow-lg">
+                        {{ item.quantity }}
+                      </span>
+                    </div>
 
-            <!-- Promo Code -->
-            <div class="mb-6">
-              <div v-if="appliedPromo" class="flex items-center justify-between text-green-600 text-sm font-bold mb-2">
-                <span>{{ $t('checkout.order.promoApplied') }} ({{ appliedPromo.code }})</span>
-                <button class="text-red-500 underline text-xs" @click="removePromoCode">
-                  {{ $t('checkout.order.remove') }}
+                    <!-- Product Info -->
+                    <div class="flex-1 min-w-0 flex flex-col justify-between py-1">
+                      <div>
+                        <h3 class="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">
+                          {{ item.title }}
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                          {{ formatPrice(item.price) }} × {{ item.quantity }}
+                        </p>
+                      </div>
+
+                      <div class="flex items-center justify-between mt-2">
+                        <p class="text-base font-bold text-gray-900 dark:text-white">
+                          {{ formatPrice(item.price * item.quantity) }}
+                        </p>
+
+                        <!-- Action Links -->
+                        <div class="flex items-center gap-3">
+                          <NuxtLink
+                            :to="`/products/${item.slug}`"
+                            target="_blank"
+                            class="text-xs font-medium text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-1 transition-colors"
+                          >
+                            <UIcon name="i-lucide-external-link" class="w-3.5 h-3.5" />
+                            {{ locale === 'ar' ? 'عرض' : 'View' }}
+                          </NuxtLink>
+                          <button
+                            class="text-xs font-medium text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-amber-400 flex items-center gap-1 transition-colors"
+                            @click="router.push('/cart')"
+                          >
+                            <UIcon name="i-lucide-pencil" class="w-3.5 h-3.5" />
+                            {{ locale === 'ar' ? 'تعديل' : 'Edit' }}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Promo Code Section -->
+            <div class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+              <div v-if="appliedPromo" class="flex items-center justify-between bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 text-sm font-medium p-3 rounded-lg">
+                <div class="flex items-center gap-2">
+                  <UIcon name="i-lucide-ticket" class="w-4 h-4" />
+                  <span>{{ appliedPromo.code }}</span>
+                  <span class="text-green-600 dark:text-green-500 font-bold">-{{ formatPrice(promoDiscount) }}</span>
+                </div>
+                <button class="text-red-500 hover:text-red-600 text-xs font-bold" @click="removePromoCode">
+                  <UIcon name="i-lucide-x" class="w-4 h-4" />
                 </button>
               </div>
               <div v-else class="flex gap-2">
-                <input
-                  v-model="promoCode"
-                  type="text"
-                  :placeholder="$t('checkout.order.promoCode')"
-                  class="flex-1 bg-transparent border-b border-gray-300 dark:border-gray-600 py-2 text-sm focus:outline-none focus:border-black dark:focus:border-white uppercase"
-                >
+                <div class="flex-1 relative">
+                  <UIcon name="i-lucide-ticket" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    v-model="promoCode"
+                    type="text"
+                    :placeholder="locale === 'ar' ? 'أدخل كود الخصم' : 'Enter promo code'"
+                    class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+                  >
+                </div>
                 <button
                   :disabled="promoLoading || !promoCode"
-                  class="text-xs font-bold uppercase disabled:opacity-50 text-black dark:text-white"
+                  class="px-4 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-bold uppercase rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   @click="applyPromoCode"
                 >
-                  {{ $t('checkout.order.apply') }}
+                  <span v-if="promoLoading">
+                    <UIcon name="i-lucide-loader-2" class="w-4 h-4 animate-spin" />
+                  </span>
+                  <span v-else>{{ locale === 'ar' ? 'تطبيق' : 'Apply' }}</span>
                 </button>
               </div>
-              <p v-if="promoError" class="mt-1 text-xs text-red-500">
+              <p v-if="promoError" class="mt-2 text-xs text-red-500 flex items-center gap-1">
+                <UIcon name="i-lucide-alert-circle" class="w-3 h-3" />
                 {{ promoError }}
               </p>
             </div>
 
             <!-- Summary Lines -->
-            <div class="space-y-4 text-sm">
-              <div class="flex justify-between text-black dark:text-white">
-                <span class="font-bold">{{ $t('checkout.order.subtotal') }}</span>
-                <span class="font-bold">{{ formatPrice(subtotal) }}</span>
+            <div class="px-6 py-4 space-y-3 border-t border-gray-100 dark:border-gray-800">
+              <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <span>{{ $t('checkout.order.subtotal') }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(subtotal) }}</span>
               </div>
 
-              <div class="flex justify-between text-black dark:text-white">
-                <span class="font-bold">{{ $t('checkout.order.shipping') }}</span>
-                <span v-if="currentStep === 'INFORMATION'" class="text-sm text-gray-500 dark:text-gray-400 font-normal">
+              <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                <span class="flex items-center gap-1">
+                  <UIcon name="i-lucide-truck" class="w-4 h-4" />
+                  {{ $t('checkout.order.shipping') }}
+                </span>
+                <span v-if="currentStep === 'INFORMATION'" class="text-xs text-gray-400 italic">
                   {{ $t('checkout.order.shippingCalc') }}
                 </span>
-                <span v-else class="font-bold">{{ formatPrice(shipping) }}</span>
+                <span v-else class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(shipping) }}</span>
               </div>
 
-              <div v-if="bulkDiscount > 0" class="flex justify-between text-green-600">
-                <span class="font-bold">{{ $t('checkout.order.bulkDiscount') }}</span>
-                <span class="font-bold">-{{ formatPrice(bulkDiscount) }}</span>
+              <div v-if="bulkDiscount > 0" class="flex justify-between text-sm text-green-600">
+                <span class="flex items-center gap-1">
+                  <UIcon name="i-lucide-percent" class="w-4 h-4" />
+                  {{ $t('checkout.order.bulkDiscount') }}
+                </span>
+                <span class="font-semibold">-{{ formatPrice(bulkDiscount) }}</span>
               </div>
 
-              <div v-if="promoDiscount > 0" class="flex justify-between text-green-600">
-                <span class="font-bold">{{ $t('checkout.order.discount') }}</span>
-                <span class="font-bold">-{{ formatPrice(promoDiscount) }}</span>
+              <div v-if="promoDiscount > 0" class="flex justify-between text-sm text-green-600">
+                <span class="flex items-center gap-1">
+                  <UIcon name="i-lucide-tag" class="w-4 h-4" />
+                  {{ $t('checkout.order.discount') }}
+                </span>
+                <span class="font-semibold">-{{ formatPrice(promoDiscount) }}</span>
               </div>
             </div>
 
-            <div class="border-t border-gray-300 dark:border-gray-600 my-6" />
-
-            <div class="flex justify-between text-black dark:text-white text-lg">
-              <span class="font-bold">{{ $t('checkout.order.total') }}</span>
-              <span class="font-bold">{{ formatPrice(total) }}</span>
+            <!-- Total -->
+            <div class="px-6 py-5 bg-gray-900 dark:bg-gray-950">
+              <div class="flex justify-between items-center">
+                <span class="text-sm font-medium text-gray-300">{{ $t('checkout.order.total') }}</span>
+                <span class="text-2xl font-bold text-white">{{ formatPrice(total) }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -862,5 +1083,13 @@ const getStepLabel = (step: string) => {
 /* Custom select arrow removal for cross-browser */
 select {
   background-image: none;
+}
+
+/* Line clamp for product titles */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

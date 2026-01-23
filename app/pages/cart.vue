@@ -31,20 +31,33 @@ const { data: pricingData } = await useFetch<PricingSettings>('/api/public/prici
 
 // Handle shared cart import from URL
 const shareImported = ref(false)
+const importing = ref(false)
+
 onMounted(async () => {
+  // Support both new format (?items=slug:qty) and legacy format (?share=base64)
+  const itemsParam = route.query.items as string
   const shareCode = route.query.share as string
-  if (shareCode && !shareImported.value) {
+  const shareParam = itemsParam || shareCode
+
+  if (shareParam && !shareImported.value) {
     shareImported.value = true
-    const success = await importSharedCart(shareCode)
-    if (success) {
-      toast.add({
-        title: t('cart.shareImported') || 'Cart imported',
-        description: t('cart.shareImportedDesc') || 'Items from shared cart have been added',
-        color: 'success'
-      })
-      // Remove share param from URL
-      navigateTo('/cart', { replace: true })
+    importing.value = true
+
+    try {
+      const success = await importSharedCart(shareParam)
+      if (success) {
+        toast.add({
+          title: t('cart.shareImported') || 'Cart imported',
+          description: t('cart.shareImportedDesc') || 'Items from shared cart have been added',
+          color: 'success'
+        })
+      }
+    } finally {
+      importing.value = false
     }
+
+    // Remove share params from URL
+    navigateTo('/cart', { replace: true })
   }
 })
 
@@ -109,6 +122,7 @@ const removeItem = async (item: { productId?: number | string, variantId?: numbe
 
 // Share cart functionality
 const shareUrl = computed(() => getShareableCartUrl())
+
 const copyShareLink = async () => {
   if (shareUrl.value) {
     await navigator.clipboard.writeText(shareUrl.value)
@@ -117,6 +131,33 @@ const copyShareLink = async () => {
       description: t('cart.linkCopiedDesc') || 'Share this link with others',
       color: 'success'
     })
+  }
+}
+
+// Native share API
+const canNativeShare = computed(() => {
+  if (import.meta.client && navigator.share) {
+    return true
+  }
+  return false
+})
+
+const nativeShare = async () => {
+  if (shareUrl.value && navigator.share) {
+    try {
+      await navigator.share({
+        title: t('cart.shareTitle') || 'My Shopping Cart',
+        text: t('cart.shareText') || 'Check out the items in my cart!',
+        url: shareUrl.value
+      })
+    } catch (err) {
+      // User cancelled or share failed - fall back to copy
+      if ((err as Error).name !== 'AbortError') {
+        await copyShareLink()
+      }
+    }
+  } else {
+    await copyShareLink()
   }
 }
 
@@ -190,6 +231,15 @@ const formatPrice = (value: number) => {
                 </div>
               </div>
             </div>
+
+            <!-- Importing shared cart loading -->
+            <div v-else-if="importing" class="text-center py-24">
+              <UIcon name="i-lucide-loader-2" class="w-8 h-8 animate-spin text-neutral-400 mx-auto mb-4" />
+              <p class="text-neutral-500">
+                Importing shared cart...
+              </p>
+            </div>
+
             <div v-else class="text-center py-24">
               <p class="text-neutral-500 mb-8">
                 {{ loading ? 'Loading cart…' : 'Your cart is empty.' }}
@@ -257,15 +307,24 @@ const formatPrice = (value: number) => {
                 Checkout
               </NuxtLink>
 
-              <!-- Share Cart Button -->
-              <button
-                v-if="!isEmpty"
-                class="w-full py-3 border border-neutral-200 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-neutral-100 transition-colors flex items-center justify-center gap-2 mb-4"
-                @click="copyShareLink"
-              >
-                <UIcon name="i-lucide-share-2" class="w-4 h-4" />
-                Share Cart
-              </button>
+              <!-- Share Cart Buttons -->
+              <div v-if="!isEmpty" class="flex gap-2 mb-4">
+                <button
+                  class="flex-1 py-3 border border-neutral-200 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-neutral-100 transition-colors flex items-center justify-center gap-2"
+                  @click="copyShareLink"
+                >
+                  <UIcon name="i-lucide-copy" class="w-4 h-4" />
+                  Copy Link
+                </button>
+                <button
+                  v-if="canNativeShare"
+                  class="flex-1 py-3 bg-neutral-800 text-white rounded-full text-xs font-bold uppercase tracking-widest hover:bg-neutral-700 transition-colors flex items-center justify-center gap-2"
+                  @click="nativeShare"
+                >
+                  <UIcon name="i-lucide-share-2" class="w-4 h-4" />
+                  Share
+                </button>
+              </div>
 
               <div class="flex justify-center gap-4 text-neutral-300">
                 <UIcon name="i-simple-icons-visa" class="w-8 h-8" />

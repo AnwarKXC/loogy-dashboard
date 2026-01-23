@@ -106,11 +106,12 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
               </div>
             </NuxtLink>
             <NuxtLink
-              :to="layout.actions.accountUrl"
+              to="/profile"
               class="hover:text-amber-700 transition"
-              aria-label="Account"
+              aria-label="My Orders"
+              title="My Orders"
             >
-              <UIcon name="i-heroicons-user" class="w-5 h-5" />
+              <UIcon name="i-lucide-package" class="w-5 h-5" />
             </NuxtLink>
           </div>
         </div>

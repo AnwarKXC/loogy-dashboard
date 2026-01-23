@@ -2,7 +2,23 @@ import { Prisma } from '@prisma/client'
 
 export type OrderWithRelations = Prisma.OrderGetPayload<{
   include: {
-    items: true
+    items: {
+      include: {
+        product: {
+          select: {
+            id: true
+            slug: true
+            images: true
+            translations: {
+              select: {
+                lang: true
+                name: true
+              }
+            }
+          }
+        }
+      }
+    }
     governorate: true
     area: true
   }
@@ -10,7 +26,23 @@ export type OrderWithRelations = Prisma.OrderGetPayload<{
 
 export function getOrderInclude(): Prisma.OrderInclude {
   return {
-    items: true,
+    items: {
+      include: {
+        product: {
+          select: {
+            id: true,
+            slug: true,
+            images: true,
+            translations: {
+              select: {
+                lang: true,
+                name: true
+              }
+            }
+          }
+        }
+      }
+    },
     governorate: true,
     area: true
   }
@@ -63,14 +95,25 @@ export function mapOrderToDetail(order: OrderWithRelations) {
           nameAr: order.area.nameAr
         }
       : null,
-    items: order.items.map(item => ({
-      id: item.id,
-      productId: item.productId,
-      variantId: item.variantId,
-      quantity: item.quantity,
-      unitPrice: item.price.toNumber(),
-      totalPrice: item.totalPrice.toNumber()
-    }))
+    items: order.items.map((item) => {
+      // Get product name from translations (prefer English)
+      const productName = item.product?.translations?.find(t => t.lang === 'EN')?.name
+        || item.product?.translations?.[0]?.name
+        || 'Unknown Product'
+
+      return {
+        id: item.id,
+        productId: item.productId,
+        variantId: item.variantId,
+        quantity: item.quantity,
+        unitPrice: item.price.toNumber(),
+        totalPrice: item.totalPrice.toNumber(),
+        productName,
+        productSlug: item.product?.slug || null,
+        productImage: item.product?.images?.[0] || null,
+        status: 'PENDING' // Default status for order items
+      }
+    })
   }
 }
 

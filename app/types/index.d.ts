@@ -31,6 +31,58 @@ export interface OrderListResponse {
   }
 }
 
+export interface OrderDetailItem {
+  id: number
+  productId: number
+  variantId: number | null
+  quantity: number
+  unitPrice: number
+  totalPrice: number
+  productName: string
+  productSlug: string | null
+  productImage: string | null
+  status: string
+}
+
+export interface OrderDetail {
+  id: number
+  orderNumber: string
+  status: OrderStatus
+  paymentMethod: string
+  customerName: string
+  customerPhone: string
+  customerEmail: string | null
+  totalAmount: number
+  subtotal: number
+  shippingCost: number
+  discount: number | null
+  promoCode: string | null
+  notes: string | null
+  shippingPhone: string | null
+  shippingStreet: string | null
+  shippingCity: string | null
+  shippingCountry: string | null
+  governorateId: number | null
+  areaId: number | null
+  governorate: {
+    id: number
+    nameEn: string
+    nameAr: string
+  } | null
+  area: {
+    id: number
+    nameEn: string
+    nameAr: string
+  } | null
+  items: OrderDetailItem[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface OrderDetailResponse {
+  order: OrderDetail
+}
+
 export interface Stat {
   title: string
   icon: string

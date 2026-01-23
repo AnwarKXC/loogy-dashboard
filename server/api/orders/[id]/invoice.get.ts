@@ -86,14 +86,16 @@ export default defineEventHandler(async (event) => {
 
   // Format items
   const items = order.items.map((item) => {
-    const productName = item.product.translations.find(t => t.lang === 'AR')?.name
-      ?? item.product.translations.find(t => t.lang === 'EN')?.name
-      ?? item.product.slug
+    const productNameAr = item.product.translations.find(t => t.lang === 'AR')?.name ?? null
+    const productNameEn = item.product.translations.find(t => t.lang === 'EN')?.name ?? null
+    const productName = productNameAr ?? productNameEn ?? item.product.slug
 
     return {
       id: item.id,
       productId: item.productId,
       productName,
+      productNameAr,
+      productNameEn,
       productSlug: item.product.slug,
       productImage: item.product.images[0] ?? null,
       variantSku: item.variant?.sku ?? null,

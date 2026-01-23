@@ -128,41 +128,65 @@ export const useCart = () => {
     await refresh()
   }
 
-  // Generate shareable cart URL
+  // Generate shareable cart URL using slug:qty format
   const getShareableCartUrl = () => {
     if (lines.value.length === 0) return null
-    const cartData = lines.value.map(item => ({
-      p: Number(item.productId),
-      v: item.variantId ? Number(item.variantId) : undefined,
-      q: item.quantity
-    }))
-    const encoded = btoa(JSON.stringify(cartData))
+    // Format: ?items=slug1:qty1,slug2:qty2
+    const itemsParam = lines.value
+      .filter(item => item.slug)
+      .map(item => `${item.slug}:${item.quantity}`)
+      .join(',')
+
+    if (!itemsParam) return null
+
     if (import.meta.client) {
-      return `${window.location.origin}/cart?share=${encoded}`
+      return `${window.location.origin}/cart?items=${encodeURIComponent(itemsParam)}`
     }
     return null
   }
 
-  // Import cart from shareable URL
-  const importSharedCart = async (shareCode: string) => {
+  // Import cart from shareable URL (supports both new slug:qty format and legacy base64)
+  const importSharedCart = async (shareParam: string) => {
     try {
-      const decoded = atob(shareCode)
-      const items = JSON.parse(decoded) as Array<{ p: number, v?: number, q: number }>
+      let items: Array<{ slug: string, quantity: number }> = []
 
-      // Clear current cart first
-      await clear()
-
-      // Add each item
-      for (const item of items) {
-        await $fetch('/api/public/cart', {
-          method: 'POST',
-          body: {
-            productId: item.p,
-            variantId: item.v,
-            quantity: item.q
+      // Check if it's the new slug:qty format (contains colons and commas)
+      if (shareParam.includes(':')) {
+        // New format: slug1:qty1,slug2:qty2
+        items = shareParam.split(',').map((pair) => {
+          const [slug, qty] = pair.split(':')
+          return { slug, quantity: parseInt(qty, 10) || 1 }
+        }).filter(item => item.slug)
+      } else {
+        // Legacy base64 format - try to decode
+        try {
+          const decoded = atob(shareParam)
+          const legacyItems = JSON.parse(decoded) as Array<{ p: number, v?: number, q: number }>
+          // For legacy format, we need to fetch by product ID
+          for (const item of legacyItems) {
+            await $fetch('/api/public/cart', {
+              method: 'POST',
+              body: {
+                productId: item.p,
+                variantId: item.v,
+                quantity: item.q
+              }
+            })
           }
-        })
+          await refresh()
+          return true
+        } catch {
+          return false
+        }
       }
+
+      if (items.length === 0) return false
+
+      // Import all items in one server request
+      await $fetch('/api/public/cart/import', {
+        method: 'POST',
+        body: { items }
+      })
 
       await refresh()
       return true

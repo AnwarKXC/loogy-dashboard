@@ -50,8 +50,11 @@ watch(order, (value) => {
 
 const statusOptions = [
   { label: 'Pending', value: 'PENDING' },
+  { label: 'Processing', value: 'PROCESSING' },
   { label: 'Shipping', value: 'SHIPPING' },
-  { label: 'Delivered', value: 'DELIVERED' }
+  { label: 'Delivered', value: 'DELIVERED' },
+  { label: 'Cancelled', value: 'CANCELLED' },
+  { label: 'Returned', value: 'RETURNED' }
 ]
 
 const paymentOptions = [
@@ -109,6 +112,46 @@ function formatOrderDate(iso: string) {
 
 function formatPaymentMethod(value: string) {
   return value.replace(/_/g, ' ')
+}
+
+// Generate WhatsApp URL with order details message
+function getWhatsAppUrl(phone: string) {
+  if (!order.value || !phone) return null
+
+  // Clean phone number
+  let cleanPhone = phone.replace(/[\s\-()]/g, '')
+  // Ensure it starts with country code
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = '20' + cleanPhone.slice(1)
+  } else if (cleanPhone.startsWith('+')) {
+    cleanPhone = cleanPhone.slice(1)
+  }
+
+  // Build order details message (using text instead of emojis to avoid encoding issues)
+  const items = order.value.items.map(item =>
+    `- ${item.productName || 'Product'} (x${item.quantity}) - ${formatCurrency(item.totalPrice)}`
+  ).join('\n')
+
+  const message = `*Order #${order.value.orderNumber}*
+
+*Items:*
+${items}
+
+*Summary:*
+Subtotal: ${formatCurrency(order.value.subtotal)}
+Shipping: ${formatCurrency(order.value.shippingCost)}
+${order.value.discount ? `Discount: -${formatCurrency(order.value.discount)}\n` : ''}Total: *${formatCurrency(order.value.totalAmount)}*
+
+*Delivery Address:*
+${order.value.customerName}
+${order.value.shippingStreet}
+${order.value.shippingCity}, ${order.value.shippingCountry}
+
+Phone: ${order.value.shippingPhone}
+Payment: ${formatPaymentMethod(order.value.paymentMethod)}
+Status: ${order.value.status}`
+
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`
 }
 
 function onStatusChange(value: string | null) {
@@ -205,178 +248,235 @@ async function handleShippingCountryBlur() {
           >
             Invoice
           </UButton>
-          <UButton
-            icon="i-lucide-arrow-left"
-            color="neutral"
-            variant="outline"
-            @click="navigateTo('/admin/orders')"
-          >
-            Back to orders
-          </UButton>
         </template>
       </UDashboardNavbar>
     </template>
 
     <template #body>
-      <UAlert
-        v-if="error"
-        color="error"
-        variant="soft"
-        title="Unable to load order"
-        :description="error?.message ?? 'Something went wrong'"
-      />
+      <div class="">
+        <UTooltip text="Go back to product details">
+          <UButton
+            icon="fa7-solid:long-arrow-alt-left"
+            color="neutral"
+            variant="ghost"
+            size="xl"
+            :to="`/admin/orders/`"
+            class="h-7 px-4 -mt-4 text-4xl"
+          />
+        </UTooltip>
 
-      <template v-else-if="order">
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <section class="space-y-4 rounded-lg border border-default p-6 lg:col-span-8">
-            <header class="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <p class="text-sm text-muted">
-                  Order number
-                </p>
-                <h2 class="text-2xl font-semibold text-highlighted">
-                  {{ order.orderNumber }}
-                </h2>
+        <UAlert
+          v-if="error"
+          color="error"
+          variant="soft"
+          title="Unable to load order"
+          :description="error?.message ?? 'Something went wrong'"
+        />
+
+        <template v-else-if="order">
+          <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            <section class="space-y-4 rounded-lg border border-default p-6 lg:col-span-8">
+              <header class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <p class="text-sm text-muted">
+                    Order number
+                  </p>
+                  <h2 class="text-2xl font-semibold text-highlighted">
+                    {{ order.orderNumber }}
+                  </h2>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <UBadge
+                    :color="order.status === 'DELIVERED' ? 'success' : order.status === 'SHIPPING' ? 'primary' : order.status === 'PROCESSING' ? 'info' : order.status === 'CANCELLED' ? 'error' : order.status === 'RETURNED' ? 'neutral' : 'warning'"
+                  >
+                    {{ order.status }}
+                  </UBadge>
+                  <UBadge color="neutral" variant="outline">
+                    {{ formatPaymentMethod(order.paymentMethod) }}
+                  </UBadge>
+                </div>
+              </header>
+
+              <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <p class="text-sm text-muted">
+                    Customer
+                  </p>
+                  <p class="font-medium text-highlighted">
+                    {{ order.customerName }}
+                  </p>
+                  <p class="text-sm text-muted">
+                    {{ getOrderSpacingText(order.customerEmail) }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-muted">
+                    Placed on
+                  </p>
+                  <p class="font-medium text-highlighted">
+                    {{ formatOrderDate(order.createdAt) }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-muted">
+                    Payment method
+                  </p>
+                  <p class="font-medium text-highlighted">
+                    {{ formatPaymentMethod(order.paymentMethod) }}
+                  </p>
+                </div>
+                <div>
+                  <p class="text-sm text-muted">
+                    Totals
+                  </p>
+                  <p class="font-medium text-highlighted">
+                    {{ formatCurrency(order.totalAmount) }}
+                  </p>
+                  <p class="text-sm text-muted">
+                    Shipping: {{ formatCurrency(order.shippingCost) }}
+                  </p>
+                </div>
               </div>
 
-              <div class="flex flex-wrap gap-2">
-                <UBadge
-                  :color="order.status === 'DELIVERED' ? 'success' : order.status === 'SHIPPING' ? 'primary' : 'warning'"
-                >
-                  {{ order.status }}
-                </UBadge>
-                <UBadge color="neutral" variant="outline">
-                  {{ formatPaymentMethod(order.paymentMethod) }}
-                </UBadge>
-              </div>
-            </header>
+              <div class="border-t border-default pt-4">
+                <h3 class="text-lg font-semibold text-highlighted mb-4">
+                  Items
+                </h3>
+                <ul class="divide-y divide-default">
+                  <li v-for="item in order.items" :key="item.id" class="flex items-center gap-4 py-4">
+                    <!-- Product Image -->
+                    <div class="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
+                      <img
+                        v-if="item.productImage"
+                        :src="item.productImage"
+                        :alt="item.productName || 'Product'"
+                        class="w-full h-full object-cover"
+                      >
+                      <div v-else class="w-full h-full flex items-center justify-center">
+                        <UIcon name="i-lucide-image" class="w-6 h-6 text-gray-400" />
+                      </div>
+                    </div>
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <p class="text-sm text-muted">
-                  Customer
-                </p>
-                <p class="font-medium text-highlighted">
-                  {{ order.customerName }}
-                </p>
-                <p class="text-sm text-muted">
-                  {{ getOrderSpacingText(order.customerEmail) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-sm text-muted">
-                  Placed on
-                </p>
-                <p class="font-medium text-highlighted">
-                  {{ formatOrderDate(order.createdAt) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-sm text-muted">
-                  Payment method
-                </p>
-                <p class="font-medium text-highlighted">
-                  {{ formatPaymentMethod(order.paymentMethod) }}
-                </p>
-              </div>
-              <div>
-                <p class="text-sm text-muted">
-                  Totals
-                </p>
-                <p class="font-medium text-highlighted">
-                  {{ formatCurrency(order.totalAmount) }}
-                </p>
-                <p class="text-sm text-muted">
-                  Shipping: {{ formatCurrency(order.shippingCost) }}
-                </p>
-              </div>
-            </div>
+                    <!-- Product Info -->
+                    <div class="flex-1 min-w-0">
+                      <NuxtLink
+                        v-if="item.productSlug"
+                        :to="`/admin/products/${item.productSlug}`"
+                        class="font-medium text-primary-600 dark:text-primary-400 hover:underline block truncate"
+                      >
+                        {{ item.productName || 'Unnamed product' }}
+                      </NuxtLink>
+                      <p v-else class="font-medium text-highlighted truncate">
+                        {{ item.productName || 'Unnamed product' }}
+                      </p>
+                      <p class="text-sm text-muted">
+                        Qty: {{ item.quantity }} × {{ formatCurrency(item.unitPrice) }}
+                      </p>
+                      <!-- View links -->
+                      <div v-if="item.productSlug" class="flex items-center gap-3 mt-1">
+                        <NuxtLink
+                          :to="`/admin/products/${item.productSlug}`"
+                          class="text-xs text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 flex items-center gap-1"
+                        >
+                          <UIcon name="i-lucide-settings" class="w-3 h-3" />
+                          Admin
+                        </NuxtLink>
+                        <a
+                          :href="`/products/${item.productSlug}`"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="text-xs text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 flex items-center gap-1"
+                        >
+                          <UIcon name="i-lucide-external-link" class="w-3 h-3" />
+                          Store
+                        </a>
+                      </div>
+                    </div>
 
-            <div class="border-t border-default pt-4">
-              <h3 class="text-lg font-semibold text-highlighted">
-                Items
-              </h3>
-              <ul class="divide-y divide-default">
-                <li v-for="item in order.items" :key="item.id" class="flex items-center justify-between py-3">
-                  <div>
-                    <p class="font-medium text-highlighted">
-                      {{ item.productName ?? 'Unnamed product' }}
-                    </p>
-                    <p class="text-sm text-muted">
-                      Qty: {{ item.quantity }} • {{ formatCurrency(item.unitPrice) }} / unit
-                    </p>
-                  </div>
-                  <div class="text-right">
-                    <p class="font-medium text-highlighted">
-                      {{ formatCurrency(item.totalPrice) }}
-                    </p>
-                    <p class="text-sm text-muted">
-                      {{ item.status }}
-                    </p>
-                  </div>
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          <aside class="space-y-6 lg:col-span-4">
-            <section class="space-y-4 rounded-lg border border-default p-6">
-              <h3 class="text-lg font-semibold text-highlighted">
-                Update status
-              </h3>
-              <USelect
-                :model-value="order.status"
-                :items="statusOptions"
-                @update:model-value="onStatusChange"
-              />
-              <USelect
-                :model-value="order.paymentMethod"
-                :items="paymentOptions"
-                @update:model-value="onPaymentChange"
-              />
+                    <!-- Price -->
+                    <div class="text-right flex-shrink-0">
+                      <p class="font-semibold text-highlighted">
+                        {{ formatCurrency(item.totalPrice) }}
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
             </section>
 
-            <section class="space-y-4 rounded-lg border border-default p-6">
-              <h3 class="text-lg font-semibold text-highlighted">
-                Shipping details
-              </h3>
-              <UInput
-                v-model="shippingFields.phone"
-                placeholder="Shipping phone"
-                @blur="handleShippingPhoneBlur"
-              />
-              <UInput
-                v-model="shippingFields.street"
-                placeholder="Street address"
-                @blur="handleShippingStreetBlur"
-              />
-              <UInput
-                v-model="shippingFields.city"
-                placeholder="City"
-                @blur="handleShippingCityBlur"
-              />
-              <UInput
-                v-model="shippingFields.country"
-                placeholder="Country"
-                @blur="handleShippingCountryBlur"
-              />
-            </section>
+            <aside class="space-y-6 lg:col-span-4">
+              <section class="space-y-4 rounded-lg border border-default p-6">
+                <h3 class="text-lg font-semibold text-highlighted">
+                  Update status
+                </h3>
+                <USelect
+                  :model-value="order.status"
+                  :items="statusOptions"
+                  @update:model-value="onStatusChange"
+                />
+                <USelect
+                  :model-value="order.paymentMethod"
+                  :items="paymentOptions"
+                  @update:model-value="onPaymentChange"
+                />
+              </section>
 
-            <UButton
-              icon="i-lucide-refresh-ccw"
-              color="neutral"
-              variant="outline"
-              :loading="status === 'pending'"
-              class="w-full"
-              @click="() => refresh()"
-            >
-              Refresh data
-            </UButton>
-          </aside>
-        </div>
-      </template>
+              <section class="space-y-4 rounded-lg border border-default p-6">
+                <h3 class="text-lg font-semibold text-highlighted">
+                  Shipping details
+                </h3>
+                <div class="flex gap-2">
+                  <UInput
+                    v-model="shippingFields.phone"
+                    placeholder="Shipping phone"
+                    class="flex-1"
+                    @blur="handleShippingPhoneBlur"
+                  />
+                  <a
+                    v-if="shippingFields.phone && getWhatsAppUrl(shippingFields.phone)"
+                    :href="getWhatsAppUrl(shippingFields.phone)!"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center justify-center px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+                    title="Send order details via WhatsApp"
+                  >
+                    <UIcon name="i-simple-icons-whatsapp" class="w-5 h-5" />
+                  </a>
+                </div>
+                <UInput
+                  v-model="shippingFields.street"
+                  placeholder="Street address"
+                  @blur="handleShippingStreetBlur"
+                />
+                <UInput
+                  v-model="shippingFields.city"
+                  placeholder="City"
+                  @blur="handleShippingCityBlur"
+                />
+                <UInput
+                  v-model="shippingFields.country"
+                  placeholder="Country"
+                  @blur="handleShippingCountryBlur"
+                />
+              </section>
 
-      <USkeleton v-else height="200" class="mt-6" />
+              <UButton
+                icon="i-lucide-refresh-ccw"
+                color="neutral"
+                variant="outline"
+                :loading="status === 'pending'"
+                class="w-full"
+                @click="() => refresh()"
+              >
+                Refresh data
+              </UButton>
+            </aside>
+          </div>
+        </template>
+
+        <USkeleton v-else height="200" class="mt-6" />
+      </div>
     </template>
   </UDashboardPanel>
 </template>

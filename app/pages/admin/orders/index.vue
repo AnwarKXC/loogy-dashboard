@@ -8,6 +8,7 @@ import type { OrderListItem, OrderListResponse } from '~/types'
 const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UBadge = resolveComponent('UBadge')
+const NuxtLink = resolveComponent('NuxtLink')
 
 const toast = useToast()
 
@@ -48,7 +49,10 @@ const columns: TableColumn<OrderListItem>[] = [
   {
     accessorKey: 'orderNumber',
     header: 'Order',
-    cell: ({ row }) => h('span', { class: 'font-semibold text-highlighted' }, row.original.orderNumber)
+    cell: ({ row }) => h(NuxtLink, {
+      to: `/admin/orders/${row.original.id}`,
+      class: 'font-semibold text-primary hover:underline'
+    }, () => row.original.orderNumber)
   },
   {
     accessorKey: 'customerName',
