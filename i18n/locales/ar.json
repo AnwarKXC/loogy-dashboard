@@ -1,3 +1,81 @@
 {
-  
+	"checkout": {
+		"title": "إتمام الطلب",
+		"loading": "جاري التحميل...",
+		"currency": "جنيه",
+		"steps": {
+			"information": "المعلومات",
+			"shipping": "الشحن",
+			"payment": "الدفع"
+		},
+		"contactInfo": "معلومات التواصل",
+		"shippingAddress": "عنوان الشحن",
+		"shippingMethod": "طريقة الشحن",
+		"paymentMethod": "طريقة الدفع",
+		"fields": {
+			"phone": "رقم الهاتف",
+			"fullName": "الاسم بالكامل",
+			"governorate": "المحافظة",
+			"selectGovernorate": "اختر المحافظة",
+			"area": "المنطقة",
+			"selectArea": "اختر المنطقة",
+			"fullLocation": "العنوان بالتفصيل",
+			"whatsapp": "رقم الواتساب (اختياري)",
+			"email": "البريد الإلكتروني (اختياري)"
+		},
+		"validation": {
+			"phoneRequired": "رقم الهاتف مطلوب",
+			"fullNameRequired": "الاسم بالكامل مطلوب",
+			"governorateRequired": "يرجى اختيار المحافظة",
+			"areaRequired": "يرجى اختيار المنطقة",
+			"locationRequired": "العنوان بالتفصيل مطلوب",
+			"cartEmpty": "سلة التسوق فارغة"
+		},
+		"buttons": {
+			"shipping": "الشحن",
+			"payment": "الدفع",
+			"placeOrder": "تأكيد الطلب",
+			"processing": "جاري المعالجة...",
+			"backToHome": "العودة للرئيسية",
+			"continueShopping": "متابعة التسوق",
+			"change": "تغيير"
+		},
+		"order": {
+			"yourOrder": "طلبك",
+			"subtotal": "المجموع الفرعي",
+			"shipping": "الشحن",
+			"shippingCalc": "يحسب في الخطوة التالية",
+			"freeShipping": "شحن مجاني",
+			"discount": "الخصم",
+			"bulkDiscount": "خصم الكمية",
+			"total": "الإجمالي",
+			"promoCode": "كود الخصم",
+			"apply": "تطبيق",
+			"remove": "إزالة",
+			"promoApplied": "تم تطبيق الكود",
+			"standardShipping": "شحن عادي",
+			"cashOnDelivery": "الدفع عند الاستلام",
+			"creditCard": "بطاقة ائتمان / خصم",
+			"comingSoon": "قريباً"
+		},
+		"success": {
+			"title": "شكراً لك!",
+			"message": "تم تأكيد طلبك بنجاح.",
+			"orderNumber": "رقم الطلب"
+		},
+		"errors": {
+			"orderFailed": "فشل في إنشاء الطلب",
+			"tryAgain": "يرجى المحاولة مرة أخرى أو التواصل معنا"
+		},
+		"optional": "اختياري"
+	},
+	"cart": {
+		"shareImported": "تم استيراد السلة",
+		"shareImportedDesc": "تمت إضافة المنتجات من السلة المشتركة",
+		"linkCopied": "تم نسخ الرابط",
+		"linkCopiedDesc": "شارك هذا الرابط مع الآخرين لمشاركة سلتك"
+	},
+	"common": {
+		"required": "مطلوب"
+	}
 }

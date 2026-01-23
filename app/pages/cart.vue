@@ -3,6 +3,10 @@ definePageMeta({
   layout: 'storefront'
 })
 
+const { t } = useI18n()
+const route = useRoute()
+const toast = useToast()
+
 useSeoMeta({
   title: 'Shopping Cart',
   description: 'Review your cart items and complete your purchase.',
@@ -10,17 +14,6 @@ useSeoMeta({
 })
 
 const fallbackImage = 'https://placehold.co/600x750/f3f4f6/171717?text=Product'
-
-type CartItem = {
-  productId: number
-  variantId?: number | null
-  quantity: number
-  name: string
-  slug: string
-  price: number
-  salePrice?: number | null
-  image?: string | null
-}
 
 type PricingSettings = {
   shippingFee: number
@@ -32,11 +25,28 @@ type PricingSettings = {
   bulkDiscountPercent: number | null
 }
 
-const { data, pending, refresh } = await useFetch<{ items: CartItem[], subtotal: number }>('/api/public/cart')
+// Use the cart composable for shared state
+const { lines, subtotal, updateQty, remove, loading, getShareableCartUrl, importSharedCart, isEmpty } = useCart()
 const { data: pricingData } = await useFetch<PricingSettings>('/api/public/pricing')
 
-const cartItems = computed<CartItem[]>(() => data.value?.items ?? [])
-const subtotal = computed(() => data.value?.subtotal ?? 0)
+// Handle shared cart import from URL
+const shareImported = ref(false)
+onMounted(async () => {
+  const shareCode = route.query.share as string
+  if (shareCode && !shareImported.value) {
+    shareImported.value = true
+    const success = await importSharedCart(shareCode)
+    if (success) {
+      toast.add({
+        title: t('cart.shareImported') || 'Cart imported',
+        description: t('cart.shareImportedDesc') || 'Items from shared cart have been added',
+        color: 'success'
+      })
+      // Remove share param from URL
+      navigateTo('/cart', { replace: true })
+    }
+  }
+})
 
 // Dynamic pricing from settings
 const pricing = computed(() => pricingData.value ?? {
@@ -88,31 +98,31 @@ const amountToBulkDiscount = computed(() => {
 
 const total = computed(() => subtotal.value - bulkDiscount.value + shipping.value)
 
-const updateQuantity = async (item: { productId: number, variantId?: number | null, quantity: number }, nextQty: number) => {
+const updateQuantity = async (item: { productId?: number | string, variantId?: number | string, quantity: number }, nextQty: number) => {
   if (nextQty < 1) return
-
-  await $fetch('/api/public/cart', {
-    method: 'PATCH',
-    body: {
-      productId: item.productId,
-      variantId: item.variantId ?? undefined,
-      quantity: nextQty
-    }
-  })
-
-  await refresh()
+  await updateQty(item.productId, item.variantId, nextQty)
 }
 
-const removeItem = async (item: { productId: number, variantId?: number | null }) => {
-  await $fetch('/api/public/cart', {
-    method: 'DELETE',
-    body: {
-      productId: item.productId,
-      variantId: item.variantId ?? undefined
-    }
-  })
+const removeItem = async (item: { productId?: number | string, variantId?: number | string }) => {
+  await remove(item.productId, item.variantId)
+}
 
-  await refresh()
+// Share cart functionality
+const shareUrl = computed(() => getShareableCartUrl())
+const copyShareLink = async () => {
+  if (shareUrl.value) {
+    await navigator.clipboard.writeText(shareUrl.value)
+    toast.add({
+      title: t('cart.linkCopied') || 'Link copied',
+      description: t('cart.linkCopiedDesc') || 'Share this link with others',
+      color: 'success'
+    })
+  }
+}
+
+// Format price helper
+const formatPrice = (value: number) => {
+  return `${value.toLocaleString('en-US', { minimumFractionDigits: 2 })} ج.م`
 }
 </script>
 
@@ -128,15 +138,15 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-24">
           <!-- Cart Items List -->
           <div class="lg:col-span-8">
-            <div v-if="cartItems.length > 0" class="space-y-8">
+            <div v-if="lines.length > 0" class="space-y-8">
               <div
-                v-for="item in cartItems"
+                v-for="item in lines"
                 :key="`${item.productId}-${item.variantId ?? 'default'}`"
                 class="flex flex-col sm:flex-row gap-6 pb-8 border-b border-neutral-200"
               >
                 <!-- Image -->
                 <div class="w-full sm:w-32 aspect-[4/5] bg-gray-100 rounded-lg overflow-hidden shrink-0">
-                  <img :src="item.image || fallbackImage" class="w-full h-full object-cover" :alt="item.name">
+                  <img :src="item.image || fallbackImage" class="w-full h-full object-cover" :alt="item.title">
                 </div>
 
                 <!-- Details -->
@@ -144,10 +154,10 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
                   <div>
                     <div class="flex justify-between items-start mb-2">
                       <h3 class="text-lg font-bold uppercase tracking-wide">
-                        {{ item.name }}
+                        {{ item.title }}
                       </h3>
                       <p class="font-serif font-medium text-lg">
-                        ${{ item.price.toFixed(2) }}
+                        {{ formatPrice(item.price) }}
                       </p>
                     </div>
                     <p class="text-sm text-green-600 font-medium">
@@ -182,7 +192,7 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
             </div>
             <div v-else class="text-center py-24">
               <p class="text-neutral-500 mb-8">
-                {{ pending ? 'Loading cart…' : 'Your cart is empty.' }}
+                {{ loading ? 'Loading cart…' : 'Your cart is empty.' }}
               </p>
               <NuxtLink to="/" class="bg-black text-white px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest">
                 Start Shopping
@@ -200,20 +210,20 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
               <div class="space-y-4 mb-8">
                 <div class="flex justify-between text-sm">
                   <span class="text-neutral-500">Subtotal</span>
-                  <span class="font-bold">${{ subtotal.toFixed(2) }}</span>
+                  <span class="font-bold">{{ formatPrice(subtotal) }}</span>
                 </div>
 
                 <!-- Bulk Discount -->
                 <div v-if="bulkDiscount > 0" class="flex justify-between text-sm text-green-600">
                   <span>Bulk Discount ({{ pricing.bulkDiscountPercent }}%)</span>
-                  <span class="font-bold">-${{ bulkDiscount.toFixed(2) }}</span>
+                  <span class="font-bold">-{{ formatPrice(bulkDiscount) }}</span>
                 </div>
 
                 <!-- Shipping -->
                 <div class="flex justify-between text-sm">
                   <span class="text-neutral-500">Shipping</span>
                   <span v-if="qualifiesForFreeShipping" class="font-bold text-green-600">FREE</span>
-                  <span v-else class="font-bold">${{ shipping.toFixed(2) }}</span>
+                  <span v-else class="font-bold">{{ formatPrice(shipping) }}</span>
                 </div>
 
                 <div class="flex justify-between text-sm">
@@ -223,24 +233,39 @@ const removeItem = async (item: { productId: number, variantId?: number | null }
 
                 <!-- Threshold hints -->
                 <div v-if="amountToFreeShipping && amountToFreeShipping > 0" class="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                  Add ${{ amountToFreeShipping.toFixed(2) }} more for free shipping!
+                  Add {{ formatPrice(amountToFreeShipping) }} more for free shipping!
                 </div>
                 <div v-if="amountToBulkDiscount && amountToBulkDiscount > 0" class="text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
-                  Add ${{ amountToBulkDiscount.toFixed(2) }} more for {{ pricing.bulkDiscountPercent }}% bulk discount!
+                  Add {{ formatPrice(amountToBulkDiscount) }} more for {{ pricing.bulkDiscountPercent }}% bulk discount!
                 </div>
               </div>
 
               <div class="flex justify-between items-center pt-6 border-t border-neutral-100 mb-8">
                 <span class="text-lg font-bold uppercase">Total</span>
-                <span class="text-2xl font-serif font-bold">${{ total.toFixed(2) }}</span>
+                <span class="text-2xl font-serif font-bold">{{ formatPrice(total) }}</span>
               </div>
 
               <NuxtLink
                 to="/checkout"
-                class="w-full bg-neutral-900 text-white py-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-amber-700 transition-colors mb-4 inline-flex items-center justify-center"
+                :class="[
+                  'w-full py-4 rounded-full text-xs font-bold uppercase tracking-widest mb-4 inline-flex items-center justify-center transition-colors',
+                  isEmpty ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed' : 'bg-neutral-900 text-white hover:bg-amber-700'
+                ]"
+                :tabindex="isEmpty ? -1 : 0"
+                @click.prevent="isEmpty ? null : $router.push('/checkout')"
               >
                 Checkout
               </NuxtLink>
+
+              <!-- Share Cart Button -->
+              <button
+                v-if="!isEmpty"
+                class="w-full py-3 border border-neutral-200 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-neutral-100 transition-colors flex items-center justify-center gap-2 mb-4"
+                @click="copyShareLink"
+              >
+                <UIcon name="i-lucide-share-2" class="w-4 h-4" />
+                Share Cart
+              </button>
 
               <div class="flex justify-center gap-4 text-neutral-300">
                 <UIcon name="i-simple-icons-visa" class="w-8 h-8" />

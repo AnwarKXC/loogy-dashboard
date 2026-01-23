@@ -1,5 +1,29 @@
-// Optimized schema for 50k daily traffic e-commerce
-// Based on Schema 2 with improvements
+// ============================================================================
+// E-COMMERCE SCHEMA - Guest-First Approach
+// ============================================================================
+// 
+// ARCHITECTURE DECISIONS:
+// - Guest checkout only (no customer accounts)
+// - Phone number as customer identifier for auto-fill
+// - Cart/Wishlist stored in localStorage (not database)
+// - Cart sharing via URL parameters (no SharedCart model needed)
+// 
+// MODELS TO BE REMOVED (marked with @deprecated):
+// - User, Address (no customer accounts)
+// - Cart, CartItem (localStorage)
+// - Wishlist, WishlistItem (localStorage)
+// - Conversation, Chat (no chat support)
+// - ProductReview (keeping only Testimonials)
+// 
+// ENUMS TO BE REMOVED:
+// - Role (no customer role needed)
+// - MessageStatus (no chat)
+// - ReviewStatus (no reviews)
+// 
+// CURRENCY: Single source of truth in AppSettings.currency
+// - Removed from PricingSettings to avoid duplication
+// 
+// ============================================================================
 
 generator client {
   provider = "prisma-client-js"
@@ -9,48 +33,56 @@ datasource db {
   provider = "postgresql"
 }
 
-/**
- * ------------------------------
- * Enums
- * ------------------------------
- */
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+/// @deprecated Remove after migration - no customer accounts needed
 enum Role {
   CUSTOMER
   ADMIN
 }
 
+/// Order lifecycle status
+/// PENDING -> PROCESSING -> SHIPPING -> DELIVERED
+/// Can be CANCELLED or RETURNED at various stages
 enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPING
-  DELIVERED
-  CANCELLED
-  RETURNED
+  PENDING // Order placed, awaiting processing
+  PROCESSING // Order confirmed, preparing for shipment
+  SHIPPING // Order handed to courier
+  DELIVERED // Order delivered to customer
+  CANCELLED // Order cancelled (by admin or customer request)
+  RETURNED // Order returned after delivery
 }
 
+/// Supported payment methods in Egypt
 enum PaymentMethod {
-  CASH
-  VODAFONE_CASH
-  INSTAPAY
-  VISA
+  CASH // Cash on delivery (COD)
+  VODAFONE_CASH // Vodafone Cash mobile wallet
+  INSTAPAY // InstaPay bank transfer
+  VISA // Credit/Debit card (future)
 }
 
+/// How promo code discount is applied
 enum PricingApplicationType {
-  PERCENTAGE
-  FIXED
+  PERCENTAGE // e.g., 10% off
+  FIXED // e.g., 50 EGP off
 }
 
+/// Supported languages for translations
 enum Language {
-  EN
-  AR
+  EN // English
+  AR // Arabic
 }
 
+/// Admin user roles with different permissions
 enum AdminRole {
-  OWNER
-  MANAGER
-  SALES
+  OWNER // Full access, can manage other admins
+  MANAGER // Can manage products, orders, settings
+  SALES // Can view/manage orders only
 }
 
+/// @deprecated Remove after migration - no chat support
 enum MessageStatus {
   SENT
   DELIVERED
@@ -58,9 +90,20 @@ enum MessageStatus {
 }
 
 /**
- * ------------------------------
- * Users & Addresses
- * ------------------------------
+ * ==============================================================================
+ * USERS & ADDRESSES
+ * ==============================================================================
+ * @deprecated REMOVE AFTER MIGRATION
+ * Reason: Guest-first approach - no customer accounts needed
+ * New approach:
+ * - Orders store customer info directly (customerPhone, customerName, etc.)
+ * - Phone number used to lookup previous orders for auto-fill
+ * - No login/registration required
+ * Admin paths to remove:
+ * - /admin/customers/* (customer management)
+ * - /admin/users/* (user management)
+ * - Any API routes related to user CRUD
+ * ==============================================================================
  */
 model User {
   id               Int      @id @default(autoincrement())
@@ -91,6 +134,7 @@ model User {
   @@index([lastSession])
 }
 
+/// @deprecated REMOVE AFTER MIGRATION - Address info embedded in Order
 model Address {
   id         Int      @id @default(autoincrement())
   userId     Int
@@ -110,8 +154,15 @@ model Address {
 }
 
 /**
- * ------------------------------
- * Categories & Brands
+ * ==============================================================================
+ * CATEGORIES & BRANDS
+ * ==============================================================================
+ * Product organization through categories (hierarchical) and brands.
+ * Features:
+ * - Multi-language translations (EN, AR)
+ * - SEO fields per translation
+ * - Soft delete support (deletedAt)
+ * - Hierarchical categories (parent/children)
  * ------------------------------
  */
 model Category {
@@ -188,9 +239,18 @@ model BrandTranslation {
 }
 
 /**
- * ------------------------------
- * Products & Variants
- * ------------------------------
+ * ==============================================================================
+ * PRODUCTS & VARIANTS
+ * ==============================================================================
+ * Core product catalog with variant support.
+ * Features:
+ * - Multi-language translations with SEO
+ * - Product variants (size, color, etc.)
+ * - Price + sale price with discount percentage
+ * - Stock tracking at product and variant level
+ * - Soft delete (deletedAt) and archive (isArchived)
+ * - Hero featured flag for homepage display
+ * ==============================================================================
  */
 model Product {
   id                 Int       @id @default(autoincrement())
@@ -269,9 +329,25 @@ model ProductVariant {
 }
 
 /**
- * ------------------------------
- * Cart & Wishlist
- * ------------------------------
+ * ==============================================================================
+ * CART & WISHLIST
+ * ==============================================================================
+ * @deprecated REMOVE AFTER MIGRATION
+ * Reason: Moving to localStorage for zero-friction guest experience
+ * New approach:
+ * - Cart stored in localStorage (browser)
+ * - Cart sharing via URL params: ?items=slug1:qty1,slug2:qty2
+ * - Wishlist stored in localStorage
+ * - No server-side cart/wishlist sync needed
+ * Benefits:
+ * - No user accounts required
+ * - Works offline
+ * - No database load for cart operations
+ * - Cart sharing via simple URL copy
+ * Admin paths to remove:
+ * - /admin/carts/* (if any)
+ * - Any cart-related API routes
+ * ==============================================================================
  */
 model Cart {
   id        Int      @id @default(autoincrement())
@@ -331,9 +407,23 @@ model WishlistItem {
 }
 
 /**
- * ------------------------------
- * Orders
- * ------------------------------
+ * ==============================================================================
+ * ORDERS
+ * ==============================================================================
+ * Self-contained orders with embedded customer info (guest-first).
+ * Guest Checkout Flow:
+ * 1. Customer enters phone number
+ * 2. System checks previous orders by phone for auto-fill
+ * 3. Customer confirms/modifies shipping info
+ * 4. Order placed with embedded customer data
+ * Key Fields:
+ * - customerPhone: Primary identifier for returning customers
+ * - customerName, shippingPhone, shippingStreet, etc: Embedded info
+ * - No userId required (guest checkout)
+ * Future: OTP verification for order confirmation
+ * Admin paths:
+ * - /admin/orders/* (order management - KEEP)
+ * ==============================================================================
  */
 model Order {
   id              Int           @id @default(autoincrement())
@@ -397,9 +487,18 @@ model OrderTimeline {
 }
 
 /**
- * ------------------------------
- * Pricing & Promo Codes
- * ------------------------------
+ * ==============================================================================
+ * PRICING & PROMO CODES
+ * ==============================================================================
+ * Pricing configuration and promotional codes.
+ * Note: Currency is defined ONLY in AppSettings.currency
+ * Do NOT add currency field here to avoid duplication.
+ * Features:
+ * - Global shipping fee (can be overridden by ShippingZone)
+ * - Order value limits (min/max)
+ * - Bulk discount thresholds
+ * - Promo codes with percentage or fixed discounts
+ * ==============================================================================
  */
 model PricingSettings {
   id                     Int      @id @default(autoincrement())
@@ -408,7 +507,7 @@ model PricingSettings {
   maxOrderValue          Decimal? @db.Decimal(12, 2)
   bulkDiscountThreshold  Decimal? @db.Decimal(12, 2)
   bulkDiscountPercentage Decimal? @db.Decimal(5, 2)
-  currency               String   @default("EGP")
+  // NOTE: currency removed - use AppSettings.currency as single source of truth
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -436,15 +535,29 @@ model PricePromoCode {
 }
 
 /**
- * ------------------------------
- * Settings
- * ------------------------------
+ * ==============================================================================
+ * SETTINGS
+ * ==============================================================================
+ * Application configuration split into logical groups.
+ * IMPORTANT - Currency Single Source of Truth:
+ * AppSettings.currency is the ONLY place currency should be defined.
+ * All other models should reference this value.
+ * Admin paths:
+ * - /admin/settings/general (AppSettings)
+ * - /admin/settings/contact (ContactSettings)
+ * - /admin/settings/social (SocialSettings)
+ * API Design:
+ * - GET /api/settings → Returns all settings combined
+ * - PATCH /api/settings/app → Updates AppSettings only
+ * - PATCH /api/settings/contact → Updates ContactSettings only
+ * - PATCH /api/settings/social → Updates SocialSettings only
+ * ==============================================================================
  */
 model AppSettings {
   id               Int      @id @default(autoincrement())
   storeName        String
   storeDescription String?  @db.Text
-  currency         String   @default("EGP")
+  currency         String   @default("EGP") // SINGLE SOURCE OF TRUTH for currency
   languageOptions  String[] @default(["en", "ar"])
   defaultLanguage  String   @default("en")
   createdAt        DateTime @default(now())
@@ -472,9 +585,16 @@ model SocialSettings {
 }
 
 /**
- * ------------------------------
- * Tax Configuration
- * ------------------------------
+ * ==============================================================================
+ * TAX CONFIGURATION
+ * ==============================================================================
+ * Tax settings for order calculations.
+ * Features:
+ * - Enable/disable tax globally
+ * - Configurable tax rate and name (VAT, Sales Tax, etc.)
+ * - Tax can be included in product prices or added at checkout
+ * - Optional: Apply tax to shipping costs
+ * ==============================================================================
  */
 model TaxSettings {
   id              Int      @id @default(autoincrement())
@@ -489,9 +609,18 @@ model TaxSettings {
 }
 
 /**
- * ------------------------------
- * Inventory Tracking
- * ------------------------------
+ * ==============================================================================
+ * INVENTORY TRACKING
+ * ==============================================================================
+ * Track all stock movements for audit and analytics.
+ * Movement Types:
+ * - SALE: Stock decreased from order
+ * - RESTOCK: Stock added from supplier
+ * - ADJUSTMENT: Manual stock correction
+ * - RETURN: Stock returned from customer
+ * - DAMAGE: Stock lost due to damage
+ * Each movement stores previous and new quantity for audit trail.
+ * ==============================================================================
  */
 enum InventoryMovementType {
   SALE
@@ -520,6 +649,21 @@ model InventoryMovement {
   @@index([orderId])
 }
 
+/**
+ * ==============================================================================
+ * STOREFRONT CONTENT & SEO
+ * ==============================================================================
+ * Dynamic content storage and SEO configuration.
+ * StorefrontContent:
+ * - Key-value store for dynamic homepage sections
+ * - Hero banners, featured collections, etc.
+ * - JSON data for flexible content structure
+ * PageSEO:
+ * - SEO metadata for static pages
+ * - Multi-language support (EN, AR)
+ * - Supports: home, about, contact, products, categories, etc.
+ * ==============================================================================
+ */
 model StorefrontContent {
   id        Int      @id @default(autoincrement())
   key       String   @unique
@@ -550,9 +694,22 @@ model PageSEO {
 }
 
 /**
- * ------------------------------
- * Admin Management
- * ------------------------------
+ * ==============================================================================
+ * ADMIN MANAGEMENT
+ * ==============================================================================
+ * Admin users for dashboard access (separate from customer User model).
+ * Roles:
+ * - OWNER: Full access, can manage other admins
+ * - MANAGER: Can manage products, orders, settings
+ * - SALES: Can view/manage orders only
+ * Features:
+ * - Session-based authentication (AdminSession)
+ * - Push notification subscriptions
+ * - Notification preferences (orders only - messages removed)
+ * Admin paths:
+ * - /admin/team/* (admin user management)
+ * - /admin/profile/* (current admin profile)
+ * ==============================================================================
  */
 model Admin {
   id           Int       @id @default(autoincrement())
@@ -571,6 +728,7 @@ model Admin {
   pushSubscriptions PushSubscription[]
 
   notifyOrders   Boolean @default(true)
+  // NOTE: notifyMessages to be removed after migration (no chat support)
   notifyMessages Boolean @default(true)
 
   @@index([email])
@@ -593,27 +751,40 @@ model AdminSession {
   @@index([token, expiresAt]) // Session validation
 }
 
+/// Push notification subscriptions for admins only (after migration)
+/// NOTE: userId and user relation to be removed after User model removal
 model PushSubscription {
   id        Int      @id @default(autoincrement())
   endpoint  String   @unique
   p256dh    String
   auth      String
-  userId    Int?
+  userId    Int? // @deprecated - remove after User model removal
   adminId   Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade) // @deprecated
   admin Admin? @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
+  @@index([userId]) // @deprecated - remove after migration
   @@index([adminId])
 }
 
 /**
- * ------------------------------
- * Chat/Support
- * ------------------------------
+ * ==============================================================================
+ * CHAT/SUPPORT
+ * ==============================================================================
+ * @deprecated REMOVE AFTER MIGRATION
+ * Reason: No chat support needed in guest-first approach
+ * Alternative:
+ * - WhatsApp Business integration (external)
+ * - Facebook Messenger (external)
+ * - Simple contact form → email
+ * Admin paths to remove:
+ * - /admin/inbox/* (chat inbox)
+ * - /admin/messages/* (if any)
+ * - Any WebSocket/real-time chat endpoints
+ * ==============================================================================
  */
 model Conversation {
   id                 String    @id @default(uuid())
@@ -651,17 +822,30 @@ model Chat {
 }
 
 /**
- * ------------------------------
- * Reviews & Testimonials
- * ------------------------------
+ * ==============================================================================
+ * REVIEWS & TESTIMONIALS
+ * ==============================================================================
+ * ProductReview: @deprecated REMOVE AFTER MIGRATION
+ * - Reason: Complex review system not needed for guest checkout
+ * - No user accounts = no verified purchase reviews
+ * Testimonials: KEEP
+ * - Simple testimonials from social media screenshots
+ * - Admin manually adds/approves testimonials
+ * - No customer account needed
+ * Admin paths:
+ * - /admin/reviews/* → REMOVE
+ * - /admin/testimonials/* → KEEP
+ * ==============================================================================
  */
+
+/// @deprecated REMOVE AFTER MIGRATION - using Testimonials only
 enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
 }
 
-// Product reviews from customers who ordered
+/// @deprecated REMOVE AFTER MIGRATION - using Testimonials only
 model ProductReview {
   id           Int          @id @default(autoincrement())
   productId    Int
@@ -700,4 +884,74 @@ model Testimonial {
 
   @@index([isPublished, displayOrder])
   @@index([source])
+}
+
+/**
+ * ==============================================================================
+ * SHIPPING & LOCATION
+ * ==============================================================================
+ * Egypt-specific shipping configuration.
+ * Structure:
+ * - ShippingZone: Pricing zones (Cairo, Giza, Remote, etc.)
+ * - Governorate: Egyptian governorates (محافظات)
+ * - Area: Districts within governorates
+ * Features:
+ * - Zone-based shipping pricing
+ * - Free shipping thresholds per zone
+ * - Estimated delivery days
+ * - Multi-language names (EN, AR)
+ * Admin paths:
+ * - /admin/settings/shipping (zones)
+ * - /admin/settings/locations (governorates, areas)
+ * ==============================================================================
+ */
+model Governorate {
+  id             Int      @id @default(autoincrement())
+  nameEn         String   @db.VarChar(100)
+  nameAr         String   @db.VarChar(100)
+  slug           String   @unique @db.VarChar(100)
+  shippingZoneId Int?
+  isActive       Boolean  @default(true)
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  areas        Area[]
+  shippingZone ShippingZone? @relation(fields: [shippingZoneId], references: [id], onDelete: SetNull)
+
+  @@index([shippingZoneId])
+  @@index([isActive, displayOrder])
+}
+
+model Area {
+  id            Int      @id @default(autoincrement())
+  governorateId Int
+  nameEn        String   @db.VarChar(100)
+  nameAr        String   @db.VarChar(100)
+  slug          String   @db.VarChar(100)
+  isActive      Boolean  @default(true)
+  displayOrder  Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  governorate Governorate @relation(fields: [governorateId], references: [id], onDelete: Cascade)
+
+  @@unique([governorateId, slug])
+  @@index([governorateId, isActive])
+}
+
+model ShippingZone {
+  id                    Int      @id @default(autoincrement())
+  name                  String   @db.VarChar(100) // e.g., "Cairo Zone", "Remote Areas"
+  price                 Decimal  @db.Decimal(10, 2)
+  freeShippingThreshold Decimal? @db.Decimal(10, 2) // Free shipping if order >= this amount
+  estimatedDays         String?  @db.VarChar(50) // e.g., "2-3 days", "5-7 days"
+  isActive              Boolean  @default(true)
+  displayOrder          Int      @default(0)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  governorates Governorate[]
+
+  @@index([isActive, displayOrder])
 }

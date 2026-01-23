@@ -70,7 +70,10 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
           </NuxtLink>
 
           <!-- Right: Actions -->
-          <div class="flex items-center gap-6">
+          <div class="flex items-center gap-4">
+            <!-- Language Switcher -->
+            <StoreLanguageSwitcher />
+
             <NuxtLink
               v-if="layout.actions.showSearch"
               :to="layout.actions.searchUrl"

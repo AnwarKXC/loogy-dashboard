@@ -1,3 +1,81 @@
 {
-
+	"checkout": {
+		"title": "CHECKOUT",
+		"loading": "Loading...",
+		"currency": "EGP",
+		"steps": {
+			"information": "INFORMATION",
+			"shipping": "SHIPPING",
+			"payment": "PAYMENT"
+		},
+		"contactInfo": "CONTACT INFO",
+		"shippingAddress": "SHIPPING ADDRESS",
+		"shippingMethod": "SHIPPING METHOD",
+		"paymentMethod": "PAYMENT METHOD",
+		"fields": {
+			"phone": "Phone Number",
+			"fullName": "Full Name",
+			"governorate": "Governorate",
+			"selectGovernorate": "Select Governorate",
+			"area": "Area",
+			"selectArea": "Select Area",
+			"fullLocation": "Full Address / Location Details",
+			"whatsapp": "WhatsApp Number (Optional)",
+			"email": "Email (Optional)"
+		},
+		"validation": {
+			"phoneRequired": "Phone number is required",
+			"fullNameRequired": "Full name is required",
+			"governorateRequired": "Please select a governorate",
+			"areaRequired": "Please select an area",
+			"locationRequired": "Full address is required",
+			"cartEmpty": "Your cart is empty"
+		},
+		"buttons": {
+			"shipping": "Shipping",
+			"payment": "Payment",
+			"placeOrder": "Place Order",
+			"processing": "Processing...",
+			"backToHome": "Back to Home",
+			"continueShopping": "Continue Shopping",
+			"change": "Change"
+		},
+		"order": {
+			"yourOrder": "YOUR ORDER",
+			"subtotal": "Subtotal",
+			"shipping": "Shipping",
+			"shippingCalc": "Calculated at next step",
+			"freeShipping": "Free Shipping",
+			"discount": "Discount",
+			"bulkDiscount": "Bulk Discount",
+			"total": "Total",
+			"promoCode": "Promo Code",
+			"apply": "Apply",
+			"remove": "Remove",
+			"promoApplied": "PROMO APPLIED",
+			"standardShipping": "Standard Shipping",
+			"cashOnDelivery": "Cash on Delivery",
+			"creditCard": "Credit / Debit Card",
+			"comingSoon": "Coming Soon"
+		},
+		"success": {
+			"title": "THANK YOU!",
+			"message": "Your order has been placed successfully.",
+			"orderNumber": "Order Number"
+		},
+		"errors": {
+			"orderFailed": "Failed to create order",
+			"tryAgain": "Please try again or contact us"
+		},
+		"optional": "Optional"
+	},
+	"cart": {
+		"shareImported": "Cart Imported",
+		"shareImportedDesc": "Items from shared cart have been added",
+		"linkCopied": "Link Copied",
+		"linkCopiedDesc": "Share this link with others to share your cart"
+	},
+	"common": {
+		"required": "Required"
+	}
 }
