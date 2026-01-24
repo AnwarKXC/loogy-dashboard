@@ -23,7 +23,9 @@ export default eventHandler(async (event) => {
       _count: {
         select: {
           children: true,
-          products: true
+          products: {
+            where: { isArchived: false }
+          }
         }
       }
     }
@@ -37,9 +39,16 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Remove subcategories before deleting this category' })
   }
 
+  // Check for non-archived products only
   if (category._count.products > 0) {
     throw createError({ statusCode: 400, statusMessage: 'Reassign or archive products before deleting this category' })
   }
+
+  // Unlink archived products from this category before deleting
+  await prisma.product.updateMany({
+    where: { categoryId: categoryId, isArchived: true },
+    data: { categoryId: null }
+  })
 
   await prisma.category.delete({ where: { id: categoryId } })
 

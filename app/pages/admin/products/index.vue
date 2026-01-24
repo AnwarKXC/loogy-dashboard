@@ -101,6 +101,10 @@ const archiveDialogOpen = ref(false)
 const archiveCandidate = ref<ProductListItem | null>(null)
 const archiveLoading = ref(false)
 
+const deleteDialogOpen = ref(false)
+const deleteCandidate = ref<ProductListItem | null>(null)
+const deleteLoading = ref(false)
+
 function getRowItems(product: ProductListItem) {
   const displayName = product.name || `Product #${product.id}`
 
@@ -134,7 +138,12 @@ function getRowItems(product: ProductListItem) {
           disabled: archivingProductId.value === product.id,
           onSelect: () => archiveProduct(product)
         }]
-      : [])
+      : [{
+          label: 'Delete permanently',
+          icon: 'i-lucide-trash-2',
+          color: 'error',
+          onSelect: () => openDeleteDialog(product)
+        }])
   ]
 }
 
@@ -198,6 +207,50 @@ async function confirmArchive() {
 
 function cancelArchive() {
   archiveDialogOpen.value = false
+}
+
+function openDeleteDialog(product: ProductListItem) {
+  deleteCandidate.value = product
+  deleteDialogOpen.value = true
+}
+
+async function confirmDelete() {
+  const product = deleteCandidate.value
+
+  if (!product) {
+    deleteDialogOpen.value = false
+    return
+  }
+
+  deleteLoading.value = true
+
+  try {
+    await $fetch(`/api/products/${product.id}?permanent=true`, {
+      method: 'DELETE'
+    })
+
+    toast.add({
+      title: 'Product deleted',
+      description: `${product.name || `Product #${product.id}`} has been permanently deleted.`
+    })
+
+    await refresh()
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unable to delete product'
+    toast.add({
+      title: 'Deletion failed',
+      description: message,
+      color: 'error'
+    })
+  } finally {
+    deleteLoading.value = false
+    deleteDialogOpen.value = false
+    deleteCandidate.value = null
+  }
+}
+
+function cancelDelete() {
+  deleteDialogOpen.value = false
 }
 
 function withFallback(option: ProductFilterOption | null, fallback: string) {
@@ -490,6 +543,35 @@ watch(archiveDialogOpen, (open) => {
           variant="solid"
           :loading="archiveLoading"
           @click="confirmArchive"
+        />
+      </div>
+    </template>
+  </UModal>
+
+  <UModal
+    v-model:open="deleteDialogOpen"
+    :title="deleteCandidate ? `Delete ${deleteCandidate.name || `Product #${deleteCandidate.id}`}` : 'Delete product'"
+    :description="deleteCandidate ? `Permanently delete ${deleteCandidate.name || `Product #${deleteCandidate.id}`}? This action cannot be undone.` : 'Permanently delete this product? This action cannot be undone.'"
+  >
+    <template #body>
+      <p class="text-sm text-muted">
+        This will permanently remove the product from the database, including all associated data. This action cannot be reversed.
+      </p>
+
+      <div class="mt-6 flex justify-end gap-2">
+        <UButton
+          label="Cancel"
+          color="neutral"
+          variant="subtle"
+          :disabled="deleteLoading"
+          @click="cancelDelete"
+        />
+        <UButton
+          label="Delete permanently"
+          color="error"
+          variant="solid"
+          :loading="deleteLoading"
+          @click="confirmDelete"
         />
       </div>
     </template>

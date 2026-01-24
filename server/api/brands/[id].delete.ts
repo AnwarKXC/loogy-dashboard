@@ -21,7 +21,9 @@ export default eventHandler(async (event) => {
     include: {
       _count: {
         select: {
-          products: true
+          products: {
+            where: { isArchived: false }
+          }
         }
       }
     }
@@ -31,9 +33,16 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Brand not found' })
   }
 
+  // Check for non-archived products only
   if (brand._count.products > 0) {
     throw createError({ statusCode: 400, statusMessage: 'Reassign or archive products before deleting this brand' })
   }
+
+  // Unlink archived products from this brand before deleting
+  await prisma.product.updateMany({
+    where: { brandId: brandId, isArchived: true },
+    data: { brandId: null }
+  })
 
   await prisma.brand.delete({ where: { id: brandId } })
 
