@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 
 definePageMeta({
   layout: 'storefront'
@@ -19,9 +19,32 @@ type ProductDetail = {
   description?: string | null
   shortDescription?: string | null
   images?: string[]
-  brand?: { name?: string | null } | null
-  category?: { name?: string | null, slug?: string | null } | null
+  brand?: { id?: number, name?: string | null, slug?: string | null } | null
+  category?: { id?: number, name?: string | null, slug?: string | null } | null
   status?: string
+  seo?: {
+    title: string | null
+    description: string | null
+    keywords: string | null
+    ogTitle: string | null
+    ogDescription: string | null
+    ogImage: string | null
+  } | null
+}
+
+type ProductListItem = {
+  id: number
+  name: string
+  slug: string
+  image?: string | null
+  price: number
+  salePrice?: number | null
+  discountPercentage?: number | null
+  rating?: number | null
+  stock?: number | null
+  status?: string
+  category?: { id: number, name: string, slug: string } | null
+  brand?: { id: number, name: string, slug: string } | null
 }
 
 const { data: productData, pending, error } = await useFetch<ProductDetail>(`/api/public/products/${route.params.slug}`)
@@ -30,53 +53,177 @@ if (error.value || !productData.value) {
   throw createError({ statusCode: 404, statusMessage: 'Product Not Found', fatal: true })
 }
 
+// Fetch related products by category
+const { data: categoryProducts } = await useFetch<{ items: ProductListItem[] }>('/api/public/products', {
+  query: {
+    categoryId: productData.value?.category?.id,
+    pageSize: 15
+  },
+  key: `related-category-${productData.value?.id}`,
+  lazy: true,
+  server: false
+})
+
+// Fetch related products by brand
+const { data: brandProducts } = await useFetch<{ items: ProductListItem[] }>('/api/public/products', {
+  query: {
+    brandId: productData.value?.brand?.id,
+    pageSize: 15
+  },
+  key: `related-brand-${productData.value?.id}`,
+  lazy: true,
+  server: false
+})
+
+// Filter out current product - no mapping needed, pass directly to carousel
+const relatedByCategory = computed(() => {
+  if (!categoryProducts.value?.items) return []
+  return categoryProducts.value.items
+    .filter(p => p.id !== productData.value?.id)
+    .slice(0, 12)
+})
+
+const relatedByBrand = computed(() => {
+  if (!brandProducts.value?.items) return []
+  return brandProducts.value.items
+    .filter(p => p.id !== productData.value?.id)
+    .slice(0, 12)
+})
+
 const product = computed(() => productData.value!)
 const images = computed(() => (product.value?.images?.length
   ? product.value.images
   : [
       'https://placehold.co/1200x1500/f3f4f6/171717?text=Product'
     ]))
-const activeImage = ref('')
 
-watch(images, (list) => {
-  activeImage.value = list[0] ?? ''
-}, { immediate: true })
+// Use computed for initial value to avoid hydration mismatch
+const activeImageIndex = ref(0)
+const activeImage = computed(() => images.value[activeImageIndex.value] ?? images.value[0] ?? '')
+
+// Zoom state
+const isZoomed = ref(false)
+const zoomPosition = ref({ x: 50, y: 50 })
+
+const setActiveImage = (index: number) => {
+  activeImageIndex.value = index
+}
+
+const nextImage = () => {
+  activeImageIndex.value = (activeImageIndex.value + 1) % images.value.length
+}
+
+const prevImage = () => {
+  activeImageIndex.value = (activeImageIndex.value - 1 + images.value.length) % images.value.length
+}
+
+// Keyboard navigation
+const handleKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    e.preventDefault()
+    nextImage()
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    prevImage()
+  } else if (e.key === 'Escape') {
+    isZoomed.value = false
+  }
+}
+
+// Zoom handlers
+const handleMouseMove = (e: MouseEvent) => {
+  if (!isZoomed.value) return
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  zoomPosition.value = {
+    x: ((e.clientX - rect.left) / rect.width) * 100,
+    y: ((e.clientY - rect.top) / rect.height) * 100
+  }
+}
+
+const toggleZoom = () => {
+  isZoomed.value = !isZoomed.value
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+})
 
 // --- SEO & Meta using Nuxt SEO ---
-const title = computed(() => product.value.name)
-const description = computed(() => product.value.shortDescription || product.value.description || `Buy ${product.value.name} at the best price.`)
+const brandName = computed(() => product.value.brand?.name)
+const categoryName = computed(() => product.value.category?.name)
+
+// Use SEO data from API with smart fallbacks that include brand/category
+const seoTitle = computed(() => {
+  if (product.value.seo?.title) return product.value.seo.title
+  const parts = [product.value.name]
+  if (brandName.value) parts.push(brandName.value)
+  return parts.join(' | ')
+})
+
+const seoDescription = computed(() => {
+  if (product.value.seo?.description) return product.value.seo.description
+  const desc = product.value.shortDescription || product.value.description
+  if (desc) return desc
+  const parts = [`Buy ${product.value.name}`]
+  if (brandName.value) parts.push(`by ${brandName.value}`)
+  if (categoryName.value) parts.push(`in ${categoryName.value}`)
+  parts.push('at the best price.')
+  return parts.join(' ')
+})
+
+const seoKeywords = computed(() => {
+  if (product.value.seo?.keywords) return product.value.seo.keywords
+  // Generate smart keywords from brand, category, and product name
+  const keywords: string[] = []
+  if (product.value.name) keywords.push(product.value.name)
+  if (brandName.value) keywords.push(brandName.value)
+  if (categoryName.value) keywords.push(categoryName.value)
+  keywords.push('buy online', 'best price', 'Egypt', 'fast delivery')
+  return keywords.join(', ')
+})
+
+const seoOgImage = computed(() => {
+  return product.value.seo?.ogImage || images.value[0] || null
+})
+
 const currency = 'EGP'
 const productPrice = computed(() => product.value.salePrice ?? product.value.price)
 
-// SEO Meta Tags
+// SEO Meta Tags - Full implementation with keywords
 useSeoMeta({
-  title: title,
-  ogTitle: title,
-  description: description,
-  ogDescription: description,
+  title: seoTitle,
+  ogTitle: computed(() => product.value.seo?.ogTitle || seoTitle.value),
+  description: seoDescription,
+  ogDescription: computed(() => product.value.seo?.ogDescription || seoDescription.value),
+  keywords: seoKeywords,
+  ogImage: seoOgImage,
   twitterCard: 'summary_large_image',
   robots: 'index, follow'
 })
 
 // Dynamic OG Image for Product
 defineOgImageComponent('Product', {
-  title: title,
+  title: seoTitle,
   price: computed(() => `${productPrice.value} ${currency}`),
   image: computed(() => images.value[0]),
-  brand: computed(() => product.value.brand?.name),
-  category: computed(() => product.value.category?.name)
+  brand: brandName,
+  category: categoryName
 })
 
 // Schema.org using nuxt-schema-org
 useSchemaOrg([
   defineProduct({
     name: () => product.value.name,
-    description: () => description.value,
+    description: () => seoDescription.value,
     image: () => images.value,
     sku: () => String(product.value.id),
     brand: {
       '@type': 'Brand',
-      'name': () => product.value.brand?.name || 'Loogy Store'
+      'name': () => brandName.value || 'Loogy Store'
     },
     offers: [
       defineOffer({
@@ -93,7 +240,7 @@ useSchemaOrg([
     itemListElement: [
       { name: 'Home', item: '/' },
       { name: 'Products', item: '/products' },
-      { name: () => product.value.category?.name || 'Category', item: () => `/categories/${product.value.category?.slug || ''}` },
+      { name: () => categoryName.value || 'Category', item: () => `/categories/${product.value.category?.slug || ''}` },
       { name: () => product.value.name }
     ]
   })
@@ -174,76 +321,6 @@ const handleAddToCart = async (redirect = false) => {
   }
 }
 
-const orderForm = ref({
-  name: '',
-  phone: '',
-  governorate: '',
-  address: '',
-  notes: ''
-})
-
-const isSubmitting = ref(false)
-const orderComplete = ref(false)
-const orderNumber = ref('')
-
-const placeOrder = async () => {
-  if (!product.value) return
-
-  if (!orderForm.value.name || !orderForm.value.phone || !orderForm.value.address) {
-    toast.add({
-      title: 'Complete Your Information',
-      description: 'Name, phone, and address are required to complete the order',
-      color: 'warning'
-    })
-    return
-  }
-
-  isSubmitting.value = true
-  try {
-    const response = await $fetch<{ orderNumber: string, message: string }>('/api/public/orders', {
-      method: 'POST',
-      body: {
-        customer: {
-          name: orderForm.value.name,
-          phone: orderForm.value.phone,
-          governorate: orderForm.value.governorate,
-          address: orderForm.value.address,
-          notes: orderForm.value.notes
-        },
-        paymentMethod: 'cod',
-        items: [
-          {
-            productId: product.value.id,
-            variantId: undefined,
-            title: product.value.name,
-            price: displayPrice.value,
-            quantity: quantity.value,
-            image: product.value.images?.[0]
-          }
-        ]
-      }
-    })
-
-    orderComplete.value = true
-    orderNumber.value = response.orderNumber
-
-    toast.add({
-      title: 'Order Created Successfully',
-      description: response.message,
-      color: 'success'
-    })
-  } catch (error: unknown) {
-    const err = error as { data?: { message?: string }, message?: string }
-    toast.add({
-      title: 'Failed to Create Order',
-      description: err?.data?.message || err?.message || 'Please try again',
-      color: 'error'
-    })
-  } finally {
-    isSubmitting.value = false
-  }
-}
-
 const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 </script>
 
@@ -257,29 +334,86 @@ const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
         <div v-else-if="error" class="py-24 text-center text-red-600">
           {{ error?.message || 'Failed to load product' }}
         </div>
-        <div v-else class="flex flex-col lg:flex-row gap-12 lg:gap-24">
-          <!-- LEFT: Product Visuals -->
+        <div v-else class="flex flex-col lg:flex-row gap-12 lg:gap-16">
+          <!-- LEFT: Product Visuals (Amazon-style layout) -->
           <div class="lg:w-1/2">
-            <div class="sticky top-24 space-y-4">
-              <!-- Main Image -->
-              <div class="aspect-[4/5] bg-gray-100 rounded-sm overflow-hidden relative group">
-                <img :src="activeImage" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" :alt="product?.name || ''">
-                <div v-if="hasSale" class="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 text-xs font-bold uppercase tracking-widest">
-                  Sale
-                </div>
-              </div>
-
-              <!-- Thumbnails -->
-              <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div class="sticky top-24 flex flex-row gap-4">
+              <!-- Vertical Thumbnails (Left side) - Desktop only -->
+              <div class="hidden sm:flex flex-col gap-2 w-20 shrink-0 max-h-[600px] overflow-y-auto scrollbar-hide">
                 <button
                   v-for="(img, idx) in images"
                   :key="idx"
-                  class="w-24 aspect-[4/5] shrink-0 border-2 transition-all p-0.5"
-                  :class="activeImage === img ? 'border-black opacity-100' : 'border-transparent opacity-60 hover:opacity-100'"
-                  @click="activeImage = img"
+                  class="w-20 h-20 shrink-0 border-2 transition-all overflow-hidden bg-gray-50"
+                  :class="activeImageIndex === idx ? 'border-black' : 'border-gray-200 hover:border-gray-400'"
+                  @click="setActiveImage(idx)"
+                  @mouseenter="setActiveImage(idx)"
                 >
-                  <img :src="img" class="w-full h-full object-cover">
+                  <img :src="img" :alt="`${product?.name} - Image ${idx + 1}`" class="w-full h-full object-cover">
                 </button>
+              </div>
+
+              <!-- Main Image with Zoom -->
+              <div class="flex-1 min-w-0">
+                <div
+                  class="aspect-[4/5] bg-gray-100 rounded-sm overflow-hidden relative cursor-zoom-in"
+                  :class="{ 'cursor-zoom-out': isZoomed }"
+                  @click="toggleZoom"
+                  @mousemove="handleMouseMove"
+                  @mouseleave="isZoomed = false"
+                >
+                  <img
+                    v-if="activeImage"
+                    :src="activeImage"
+                    :alt="product?.name || ''"
+                    class="w-full h-full object-cover transition-transform duration-300"
+                    :style="isZoomed ? {
+                      transform: 'scale(2)',
+                      transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`
+                    } : {}"
+                  >
+                  <div v-if="hasSale" class="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 text-xs font-bold uppercase tracking-widest">
+                    Sale
+                  </div>
+                  <!-- Navigation arrows -->
+                  <button
+                    v-if="images.length > 1"
+                    type="button"
+                    class="product-nav-btn absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg"
+                    @click.stop="prevImage"
+                  >
+                    <UIcon name="i-heroicons-chevron-left" class="size-5" />
+                  </button>
+                  <button
+                    v-if="images.length > 1"
+                    type="button"
+                    class="product-nav-btn absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg"
+                    @click.stop="nextImage"
+                  >
+                    <UIcon name="i-heroicons-chevron-right" class="size-5" />
+                  </button>
+                  <!-- Image counter -->
+                  <div class="absolute bottom-4 right-4 bg-black/70 text-white px-2 py-1 text-xs font-mono rounded">
+                    {{ activeImageIndex + 1 }} / {{ images.length }}
+                  </div>
+                </div>
+
+                <!-- Mobile Thumbnails (Below image) -->
+                <div class="flex sm:hidden gap-2 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                  <button
+                    v-for="(img, idx) in images"
+                    :key="idx"
+                    class="w-16 aspect-square shrink-0 border-2 transition-all overflow-hidden"
+                    :class="activeImageIndex === idx ? 'border-black' : 'border-gray-200'"
+                    @click="setActiveImage(idx)"
+                  >
+                    <img :src="img" class="w-full h-full object-cover">
+                  </button>
+                </div>
+
+                <!-- Keyboard hint -->
+                <p class="hidden lg:block text-xs text-neutral-400 mt-2 text-center">
+                  Use arrow keys to navigate images
+                </p>
               </div>
             </div>
           </div>
@@ -379,105 +513,6 @@ const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
                   </button>
                 </div>
               </div>
-
-              <!-- DIRECT CHECKOUT FORM -->
-              <div class="bg-white border-2 border-black p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500" />
-
-                <h2 class="text-2xl font-black uppercase mb-6 flex items-center gap-3">
-                  <UIcon name="i-heroicons-bolt" class="w-6 h-6 text-yellow-500" />
-                  Quick Checkout
-                </h2>
-                <div v-if="orderComplete" class="space-y-4 text-center">
-                  <div class="size-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-                    <UIcon name="i-heroicons-check" class="w-8 h-8 text-green-600" />
-                  </div>
-                  <p class="text-lg font-bold">
-                    Order Created Successfully
-                  </p>
-                  <p class="text-sm text-neutral-500">
-                    Order Number: {{ orderNumber }}
-                  </p>
-                  <div class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <NuxtLink to="/" class="bg-neutral-900 text-white px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-amber-700 transition">
-                      Back to Home
-                    </NuxtLink>
-                    <NuxtLink to="/products" class="border border-neutral-300 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-amber-700 hover:text-amber-700 transition">
-                      Continue Shopping
-                    </NuxtLink>
-                  </div>
-                </div>
-
-                <form v-else class="space-y-4" @submit.prevent="placeOrder">
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-1">
-                      <label class="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Full Name</label>
-                      <input
-                        v-model="orderForm.name"
-                        type="text"
-                        placeholder="John Doe"
-                        class="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm focus:outline-none focus:border-black font-medium transition-colors"
-                        required
-                      >
-                    </div>
-                    <div class="space-y-1">
-                      <label class="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Phone Number</label>
-                      <input
-                        v-model="orderForm.phone"
-                        type="tel"
-                        placeholder="+20 100 000 0000"
-                        class="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm focus:outline-none focus:border-black font-medium transition-colors"
-                        required
-                      >
-                    </div>
-                  </div>
-
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="space-y-1">
-                      <label class="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Governorate</label>
-                      <input
-                        v-model="orderForm.governorate"
-                        type="text"
-                        placeholder="Cairo"
-                        class="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm focus:outline-none focus:border-black font-medium transition-colors"
-                      >
-                    </div>
-                    <div class="space-y-1">
-                      <label class="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Delivery Address</label>
-                      <input
-                        v-model="orderForm.address"
-                        type="text"
-                        placeholder="Street Address, Apt, Suite"
-                        class="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm focus:outline-none focus:border-black font-medium transition-colors"
-                        required
-                      >
-                    </div>
-                  </div>
-
-                  <div class="space-y-1">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Notes</label>
-                    <textarea
-                      v-model="orderForm.notes"
-                      rows="3"
-                      placeholder="Additional notes (optional)"
-                      class="w-full bg-neutral-50 border border-neutral-200 p-3 text-sm focus:outline-none focus:border-black font-medium transition-colors"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    class="w-full bg-black text-white py-5 text-sm font-bold uppercase tracking-widest hover:bg-neutral-800 transition-colors shadow-lg mt-6 flex items-center justify-center gap-2 group"
-                    :disabled="isSubmitting"
-                  >
-                    <span>Complete Order - {{ formatPrice(displayPrice * quantity) }}</span>
-                    <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </button>
-
-                  <p class="text-[10px] text-center text-neutral-400 font-medium pt-2">
-                    By placing this order you agree to our Terms of Service.
-                  </p>
-                </form>
-              </div>
             </div>
           </div>
         </div>
@@ -522,6 +557,26 @@ const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
           </div>
         </div>
       </div>
+
+      <!-- Related Products by Category -->
+      <div v-if="relatedByCategory.length > 0 && product.category">
+        <StoreProductCarousel
+          :title="`More in ${product.category.name}`"
+          :items="relatedByCategory"
+          :view-all-link="`/products?categorySlug=${product.category.slug}`"
+          autoplay
+        />
+      </div>
+
+      <!-- Related Products by Brand -->
+      <div v-if="relatedByBrand.length > 0 && product.brand">
+        <StoreProductCarousel
+          :title="`More from ${product.brand.name}`"
+          :items="relatedByBrand"
+          :view-all-link="`/products?brandSlug=${product.brand.slug}`"
+          autoplay
+        />
+      </div>
     </main>
   </div>
 </template>
@@ -534,5 +589,24 @@ const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+/* Product navigation buttons - no animation */
+.product-nav-btn {
+  transition: background-color 0.15s ease !important;
+}
+</style>
+
+<style>
+/* Global override for UCarousel arrows - remove translate animation */
+[data-scope="carousel"] button[data-part="prev-trigger"],
+[data-scope="carousel"] button[data-part="next-trigger"] {
+  transform: translateY(-50%) !important;
+  transition: background-color 0.15s ease !important;
+}
+
+[data-scope="carousel"] button[data-part="prev-trigger"]:hover,
+[data-scope="carousel"] button[data-part="next-trigger"]:hover {
+  transform: translateY(-50%) !important;
 }
 </style>

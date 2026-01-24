@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { ProductAvailabilityType } from '~/types'
+import { getDeliveryEstimate, getAvailabilityBadgeColor, getAvailabilityIcon } from '~/utils/whatsapp'
 
 const props = defineProps<{
   title: string
@@ -10,6 +12,9 @@ const props = defineProps<{
   to?: string
   productId?: number | string
   variantId?: number | string
+  availabilityType?: ProductAvailabilityType
+  expectedArrivalDate?: string | null
+  slug?: string
 }>()
 
 const { add: addToCart } = useCart()
@@ -52,6 +57,23 @@ const discountPercent = computed(() => {
   return Math.round(((props.price - props.salePrice) / props.price) * 100)
 })
 
+const availabilityInfo = computed(() => {
+  if (!props.availabilityType) return null
+  return getDeliveryEstimate(props.availabilityType, props.expectedArrivalDate, 'ar')
+})
+
+const availabilityColor = computed(() => {
+  if (!props.availabilityType) return 'neutral'
+  return getAvailabilityBadgeColor(props.availabilityType)
+})
+
+const availabilityIcon = computed(() => {
+  if (!props.availabilityType) return ''
+  return getAvailabilityIcon(props.availabilityType)
+})
+
+const isPreOrder = computed(() => props.availabilityType === 'PRE_ORDER')
+
 const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 </script>
 
@@ -79,6 +101,23 @@ const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
           class="absolute top-2 left-2 bg-gray-900 text-white text-xs font-bold px-2 py-1 rounded"
         >
           {{ discountPercent.toFixed(2) }}%
+        </div>
+
+        <!-- Availability Badge -->
+        <div
+          v-if="availabilityInfo && availabilityType"
+          class="absolute bottom-2 left-2 right-2"
+        >
+          <UBadge
+            :color="availabilityColor"
+            variant="solid"
+            size="xs"
+            class="w-full justify-center gap-1"
+          >
+            <UIcon :name="availabilityIcon" class="size-3" />
+            <span>{{ availabilityInfo.text }}</span>
+            <span v-if="availabilityInfo.days" class="opacity-75">• {{ availabilityInfo.days }}</span>
+          </UBadge>
         </div>
 
         <button

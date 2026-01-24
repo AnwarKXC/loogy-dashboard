@@ -224,3 +224,23 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
     </footer>
   </div>
 </template>
+
+<style>
+/* Global override for UCarousel arrows - remove translate-y animation on hover */
+[data-scope="carousel"] button[data-part="prev-trigger"],
+[data-scope="carousel"] button[data-part="next-trigger"] {
+  transition: background-color 0.15s ease, opacity 0.15s ease !important;
+}
+
+[data-scope="carousel"] button[data-part="prev-trigger"]:hover,
+[data-scope="carousel"] button[data-part="next-trigger"]:hover {
+  transform: translateY(-50%) !important;
+}
+
+/* Ensure carousel buttons don't animate on hover - more specific selectors */
+.product-carousel-wrapper button,
+[data-scope="carousel"] [data-part="prev-trigger"],
+[data-scope="carousel"] [data-part="next-trigger"] {
+  --tw-translate-y: -50% !important;
+}
+</style>

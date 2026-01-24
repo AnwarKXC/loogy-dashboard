@@ -30,15 +30,27 @@ const optionalIdSchema = z.preprocess((value) => {
 const updateProductSchema = z.object({
   nameEn: z.string().trim().min(1, 'Product name (English) cannot be empty').optional(),
   nameAr: z.string().trim().optional(),
+  slug: z.string().trim().optional(),
   price: z.coerce.number().min(0).optional(),
   salePrice: optionalNullableNumberSchema,
   quantity: z.coerce.number().int().min(0).optional(),
+  stock: z.coerce.number().int().min(0).optional(),
   categoryId: optionalIdSchema,
   brandId: optionalIdSchema,
   descriptionEn: z.string().trim().optional(),
   descriptionAr: z.string().trim().optional(),
   shortDescriptionEn: z.string().trim().optional(),
   shortDescriptionAr: z.string().trim().optional(),
+  images: z.array(z.string()).optional(),
+  isPublished: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
+  isHeroFeatured: z.boolean().optional(),
+  // Availability fields
+  availabilityType: z.enum(['IN_STOCK_EGYPT', 'ARRIVING_SOON', 'PRE_ORDER']).optional(),
+  expectedArrivalDate: z.preprocess((val) => {
+    if (val === null || val === '' || val === undefined) return null
+    return val
+  }, z.string().nullable()).optional(),
   // Bilingual SEO fields
   seoTitleEn: z.string().trim().max(70).optional(),
   seoTitleAr: z.string().trim().max(70).optional(),
@@ -64,24 +76,6 @@ function computeDiscountPercentage(price: number, salePrice: number | null) {
   return Math.round(discount * 100) / 100
 }
 
-function updateLocalizedName(current: Record<string, unknown>, updates: { nameEn?: string, nameAr?: string }) {
-  const next: Record<string, string> = {}
-  const currentRecord = current as Record<string, string>
-
-  if (updates.nameEn !== undefined) {
-    next.en = updates.nameEn
-  } else if (typeof currentRecord.en === 'string') {
-    next.en = currentRecord.en
-  }
-
-  const nextArabic = updates.nameAr ?? currentRecord.ar
-  if (nextArabic && nextArabic.trim().length > 0) {
-    next.ar = nextArabic.trim()
-  }
-
-  return next
-}
-
 export default eventHandler(async (event) => {
   await requireSuperAdmin(event)
 
@@ -90,12 +84,19 @@ export default eventHandler(async (event) => {
   const payload = updateProductSchema.parse(body)
 
   const existing = await prisma.product.findUnique({
-    where: { id: params.id }
+    where: { id: params.id },
+    include: {
+      translations: true
+    }
   })
 
   if (!existing) {
     throw createError({ statusCode: 404, statusMessage: 'Product not found' })
   }
+
+  // Get existing translations for fallback values
+  const existingEnTrans = existing.translations.find(t => t.lang === 'EN')
+  const existingArTrans = existing.translations.find(t => t.lang === 'AR')
 
   const currentPrice = existing.price.toNumber()
   const nextPrice = payload.price ?? currentPrice
@@ -109,12 +110,8 @@ export default eventHandler(async (event) => {
 
   const data: Prisma.ProductUpdateInput = {}
 
-  if (payload.nameEn !== undefined || payload.nameAr !== undefined) {
-    data.name = updateLocalizedName(existing.name as Record<string, unknown>, {
-      nameEn: payload.nameEn,
-      nameAr: payload.nameAr
-    })
-  }
+  // Note: Product name is stored in ProductTranslation, not on the Product model directly
+  // Name updates are handled in the translation upsert below
 
   if (payload.price !== undefined) {
     data.price = new Prisma.Decimal(nextPrice)
@@ -125,7 +122,12 @@ export default eventHandler(async (event) => {
   }
 
   if (payload.quantity !== undefined) {
-    data.quantity = payload.quantity
+    data.stock = payload.quantity
+  }
+
+  // Also support 'stock' field directly
+  if (payload.stock !== undefined) {
+    data.stock = payload.stock
   }
 
   if (payload.categoryId !== undefined) {
@@ -144,6 +146,40 @@ export default eventHandler(async (event) => {
     data.discountPercentage = new Prisma.Decimal(discountPercentage)
   } else if (payload.salePrice !== undefined || payload.price !== undefined) {
     data.discountPercentage = null
+  }
+
+  // Availability fields
+  if (payload.availabilityType !== undefined) {
+    data.availabilityType = payload.availabilityType
+  }
+
+  if (payload.expectedArrivalDate !== undefined) {
+    data.expectedArrivalDate = payload.expectedArrivalDate ? new Date(payload.expectedArrivalDate) : null
+  }
+
+  // Slug update
+  if (payload.slug !== undefined) {
+    data.slug = payload.slug
+  }
+
+  // Images update
+  if (payload.images !== undefined) {
+    data.images = payload.images
+  }
+
+  // Published status
+  if (payload.isPublished !== undefined) {
+    data.isPublished = payload.isPublished
+  }
+
+  // Archived status
+  if (payload.isArchived !== undefined) {
+    data.isArchived = payload.isArchived
+  }
+
+  // Hero featured status
+  if (payload.isHeroFeatured !== undefined) {
+    data.isHeroFeatured = payload.isHeroFeatured
   }
 
   // Update product first
@@ -165,16 +201,12 @@ export default eventHandler(async (event) => {
     || payload.ogTitleAr !== undefined || payload.ogDescriptionAr !== undefined
 
   if (hasEnTranslation) {
-    const existingEnTrans = await prisma.productTranslation.findUnique({
-      where: { productId_lang: { productId: params.id, lang: 'EN' } }
-    })
-
     await prisma.productTranslation.upsert({
       where: { productId_lang: { productId: params.id, lang: 'EN' } },
       create: {
         productId: params.id,
         lang: 'EN',
-        name: payload.nameEn || (existing.name as Record<string, string>).en || '',
+        name: payload.nameEn || existingEnTrans?.name || '',
         shortDescription: payload.shortDescriptionEn || null,
         description: payload.descriptionEn || null,
         metaTitle: payload.seoTitleEn || null,
@@ -197,16 +229,12 @@ export default eventHandler(async (event) => {
   }
 
   if (hasArTranslation) {
-    const existingArTrans = await prisma.productTranslation.findUnique({
-      where: { productId_lang: { productId: params.id, lang: 'AR' } }
-    })
-
     await prisma.productTranslation.upsert({
       where: { productId_lang: { productId: params.id, lang: 'AR' } },
       create: {
         productId: params.id,
         lang: 'AR',
-        name: payload.nameAr || (existing.name as Record<string, string>).ar || payload.nameEn || (existing.name as Record<string, string>).en || '',
+        name: payload.nameAr || existingArTrans?.name || payload.nameEn || existingEnTrans?.name || '',
         shortDescription: payload.shortDescriptionAr || null,
         description: payload.descriptionAr || null,
         metaTitle: payload.seoTitleAr || null,

@@ -64,6 +64,11 @@ export default eventHandler(async (event) => {
     prisma.pricePromoCode.count({ where }),
     prisma.pricePromoCode.findMany({
       where,
+      include: {
+        applicableProducts: {
+          select: { id: true }
+        }
+      },
       orderBy: orderByMap[query.sort],
       skip,
       take
@@ -91,6 +96,9 @@ export default eventHandler(async (event) => {
       usageLimit: record.usageLimit,
       usageCount: record.usageCount,
       isActive: record.isActive,
+      scope: record.scope,
+      applicableAvailabilityTypes: record.applicableAvailabilityTypes,
+      applicableProductIds: record.applicableProducts.map(p => p.id),
       status,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString()

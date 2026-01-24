@@ -38,28 +38,8 @@ function toStringArray(value: unknown): string[] {
 }
 
 export function mapProductDetailToEditorValues(product: ProductDetail): ProductEditorValues {
-  const nameRecord = isRecord(product.raw?.name) ? product.raw.name : undefined
-  const descriptionRecord = isRecord(product.raw?.description) ? product.raw.description : undefined
-  const shortDescriptionRecord = isRecord(product.raw?.shortDescription) ? product.raw.shortDescription : undefined
-  const seoRecord = isRecord(product.raw?.seo) ? product.raw.seo : undefined
-  const normalizedSeo = isRecord(product.seo) ? product.seo : undefined
-
-  const nameEn = withFallback(extractLocalized(nameRecord, 'en'), product.name)
-  const nameAr = extractLocalized(nameRecord, 'ar')
-
-  const descriptionEn = withFallback(extractLocalized(descriptionRecord, 'en'), product.description)
-  const descriptionAr = extractLocalized(descriptionRecord, 'ar')
-  const shortDescriptionEn = withFallback(extractLocalized(shortDescriptionRecord, 'en'), product.shortDescription)
-  const shortDescriptionAr = extractLocalized(shortDescriptionRecord, 'ar')
-
-  const seoTitle = toTrimmedString(seoRecord?.title ?? normalizedSeo?.title ?? product.seoTitle)
-  const seoDescription = toTrimmedString(seoRecord?.description ?? normalizedSeo?.description ?? product.seoDescription)
-  const seoCanonical = toTrimmedString(seoRecord?.canonical ?? normalizedSeo?.canonical ?? product.seoCanonical)
-  const seoKeywordsSource = seoRecord?.keywords ?? normalizedSeo?.keywords ?? product.seoKeywords
-  const seoKeywords = toStringArray(seoKeywordsSource)
-
-  // Extract bilingual SEO from translations
-  const translations = (product as unknown as { translationsRaw?: Array<{
+  // Extract translations from raw.translations array
+  const rawTranslations = (product.raw as { translations?: Array<{
     lang: string
     name: string
     shortDescription?: string | null
@@ -70,10 +50,32 @@ export function mapProductDetailToEditorValues(product: ProductDetail): ProductE
     ogTitle?: string | null
     ogDescription?: string | null
     ogImage?: string | null
-  }> }).translationsRaw ?? []
+  }> })?.translations ?? []
 
-  const enTrans = translations.find(t => t.lang === 'EN')
-  const arTrans = translations.find(t => t.lang === 'AR')
+  const enTrans = rawTranslations.find(t => t.lang === 'EN')
+  const arTrans = rawTranslations.find(t => t.lang === 'AR')
+
+  // Extract names from translations
+  const nameEn = enTrans?.name?.trim() || product.name || ''
+  const nameAr = arTrans?.name?.trim() || ''
+
+  // Extract descriptions from translations
+  const descriptionEn = enTrans?.description?.trim() || product.description || ''
+  const descriptionAr = arTrans?.description?.trim() || ''
+  const shortDescriptionEn = enTrans?.shortDescription?.trim() || product.shortDescription || ''
+  const shortDescriptionAr = arTrans?.shortDescription?.trim() || ''
+
+  const normalizedSeo = isRecord(product.seo) ? product.seo : undefined
+
+  // Legacy SEO fields - fallback to English translation meta fields
+  const seoTitle = toTrimmedString(normalizedSeo?.title ?? enTrans?.metaTitle ?? product.seoTitle)
+  const seoDescription = toTrimmedString(normalizedSeo?.description ?? enTrans?.metaDescription ?? product.seoDescription)
+  const seoCanonical = toTrimmedString(normalizedSeo?.canonical ?? product.seoCanonical ?? '')
+  const seoKeywordsSource = normalizedSeo?.keywords ?? product.seoKeywords
+  // Parse keywords from string or array
+  const seoKeywords = typeof enTrans?.metaKeywords === 'string' && enTrans.metaKeywords
+    ? enTrans.metaKeywords.split(',').map(k => k.trim()).filter(Boolean)
+    : toStringArray(seoKeywordsSource)
 
   return {
     nameEn,
@@ -91,6 +93,9 @@ export function mapProductDetailToEditorValues(product: ProductDetail): ProductE
     stock: product.stock ?? null,
     images: Array.isArray(product.images) ? [...product.images] : [],
     isArchived: product.isArchived,
+    // Availability fields
+    availabilityType: (product as unknown as { availabilityType?: string }).availabilityType ?? 'IN_STOCK_EGYPT',
+    expectedArrivalDate: (product as unknown as { expectedArrivalDate?: string | null }).expectedArrivalDate ?? null,
     seoTitle,
     seoDescription,
     seoCanonical,
@@ -106,6 +111,6 @@ export function mapProductDetailToEditorValues(product: ProductDetail): ProductE
     ogTitleAr: arTrans?.ogTitle ?? '',
     ogDescriptionEn: enTrans?.ogDescription ?? '',
     ogDescriptionAr: arTrans?.ogDescription ?? '',
-    translationsRaw: translations
+    translationsRaw: rawTranslations
   }
 }

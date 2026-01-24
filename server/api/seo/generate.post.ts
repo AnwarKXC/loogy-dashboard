@@ -33,7 +33,7 @@ const requestSchema = z.object({
   slug: z.string().trim().optional(),
   keywords: z.array(z.string().trim()).optional(),
   randomize: z.boolean().optional().default(false),
-  target: z.enum(['title', 'description', 'keywords', 'all', 'descriptionEn', 'descriptionAr', 'shortDescriptionEn', 'shortDescriptionAr', 'descriptions', 'shortDescriptions']).optional()
+  target: z.enum(['title', 'description', 'keywords', 'all', 'descriptionEn', 'descriptionAr', 'shortDescriptionEn', 'shortDescriptionAr', 'descriptions', 'shortDescriptions', 'bilingualSeo']).optional()
 })
 
 function containsShippingLanguage(text: string) {
@@ -947,6 +947,62 @@ export default defineEventHandler(async (event) => {
 
   const canonical = normalizeSlugToPath(slug)
 
+  // Generate bilingual SEO meta tags
+  const seoTitleEn = truncateText(
+    brand ? `${brand} ${name} | ${category}` : `${name} | ${category}`,
+    70
+  )
+
+  const seoTitleAr = (() => {
+    const arName = copy.nameAr ?? nameAr ?? body.nameAr
+    if (!arName) return undefined
+    return truncateText(
+      arabicBrandHint ? `${arabicBrandHint} ${arName}` : arName,
+      70
+    )
+  })()
+
+  const seoDescriptionEn = truncateText(
+    summary || `Shop ${name} from ${brand}. ${category} with quality and style.`,
+    160
+  )
+
+  const seoDescriptionAr = (() => {
+    const arDesc = copy.shortDescriptionAr ?? body.shortDescriptionAr ?? body.descriptionAr
+    if (arDesc) return truncateText(arDesc, 160)
+    const arName = copy.nameAr ?? nameAr ?? body.nameAr
+    if (!arName) return undefined
+    return truncateText(`تسوق ${arName} بجودة عالية وأسلوب مميز.`, 160)
+  })()
+
+  const seoKeywordsEn = keywords.slice(0, 10).join(', ')
+  const seoKeywordsAr = keywordsAr.slice(0, 10).join('، ')
+
+  // OG tags - slightly different format for social sharing
+  const ogTitleEn = truncateText(
+    brand ? `${brand} ${name}` : name,
+    70
+  )
+
+  const ogTitleAr = (() => {
+    const arName = copy.nameAr ?? nameAr ?? body.nameAr
+    if (!arName) return undefined
+    return truncateText(arName, 70)
+  })()
+
+  const ogDescriptionEn = truncateText(
+    copy.shortDescriptionEn || summary || `Discover ${name} - premium ${category} from ${brand}.`,
+    200
+  )
+
+  const ogDescriptionAr = (() => {
+    const arDesc = copy.shortDescriptionAr ?? body.shortDescriptionAr
+    if (arDesc) return truncateText(arDesc, 200)
+    const arName = copy.nameAr ?? nameAr ?? body.nameAr
+    if (!arName) return undefined
+    return truncateText(`اكتشف ${arName} - منتج مميز بجودة عالية.`, 200)
+  })()
+
   return {
     result: {
       title,
@@ -958,7 +1014,18 @@ export default defineEventHandler(async (event) => {
       descriptionAr: copy.descriptionAr,
       shortDescriptionEn: copy.shortDescriptionEn,
       shortDescriptionAr: copy.shortDescriptionAr,
-      keywordsAr
+      keywordsAr,
+      // Bilingual SEO fields
+      seoTitleEn,
+      seoTitleAr,
+      seoDescriptionEn,
+      seoDescriptionAr,
+      seoKeywordsEn,
+      seoKeywordsAr,
+      ogTitleEn,
+      ogTitleAr,
+      ogDescriptionEn,
+      ogDescriptionAr
     }
   }
 })

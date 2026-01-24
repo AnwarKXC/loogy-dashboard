@@ -67,8 +67,41 @@ interface AreaFromAPI {
 }
 
 const toast = useToast()
-const { lines, subtotal, clear: clearCart } = useCart()
+const {
+  lines,
+  subtotal,
+  clear: clearCart,
+  // Availability splits
+  inStockItems,
+  arrivingSoonItems,
+  checkoutItems,
+  checkoutSubtotal,
+  // Flags
+  hasPreOrderItems,
+  hasCheckoutItems,
+  hasMixedAvailability,
+  // Shipping calculation
+  calculateShippingCost
+} = useCart()
 const router = useRouter()
+
+// Split shipment preference (stored in localStorage for persistence)
+const splitShipment = ref(true)
+
+// Initialize from localStorage on client
+if (import.meta.client) {
+  const stored = localStorage.getItem('checkout_split_shipment')
+  if (stored !== null) {
+    splitShipment.value = stored === 'true'
+  }
+}
+
+// Persist preference
+watch(splitShipment, (val) => {
+  if (import.meta.client) {
+    localStorage.setItem('checkout_split_shipment', String(val))
+  }
+})
 
 // Steps (removed SHIPPING - shipping calculated based on location)
 const steps = ['INFORMATION', 'PAYMENT'] as const
@@ -189,12 +222,12 @@ const selectedGovernorate = computed(() => {
   return governorates.value.find(g => g.id === form.governorateId) || null
 })
 
-// Calculate shipping based on selected governorate
-const shipping = computed(() => {
+// Calculate base shipping based on selected governorate
+const baseShipping = computed(() => {
   if (selectedGovernorate.value?.shippingZone) {
-    // Check free shipping threshold
+    // Check free shipping threshold (based on checkout items only)
     const zone = selectedGovernorate.value.shippingZone
-    if (zone.freeShippingThreshold && subtotal.value >= zone.freeShippingThreshold) {
+    if (zone.freeShippingThreshold && checkoutSubtotal.value >= zone.freeShippingThreshold) {
       return 0
     }
     return zone.price
@@ -203,25 +236,41 @@ const shipping = computed(() => {
   return pricingSettings.value?.shippingFee ?? 50
 })
 
+// Apply split shipment multiplier if needed
+const shipping = computed(() => {
+  if (baseShipping.value === 0) return 0 // Free shipping, no multiplier
+  return calculateShippingCost(baseShipping.value, splitShipment.value)
+})
+
 // Check if free shipping applies
 const hasFreeShipping = computed(() => {
   if (!selectedGovernorate.value?.shippingZone) return false
   const zone = selectedGovernorate.value.shippingZone
-  return zone.freeShippingThreshold !== null && subtotal.value >= zone.freeShippingThreshold
+  return zone.freeShippingThreshold !== null && checkoutSubtotal.value >= zone.freeShippingThreshold
 })
 
-// Estimated delivery days
+// Estimated delivery days (adjusted for split shipment)
 const estimatedDelivery = computed(() => {
-  return selectedGovernorate.value?.shippingZone?.estimatedDays || null
+  const baseDelivery = selectedGovernorate.value?.shippingZone?.estimatedDays || null
+  if (!hasMixedAvailability.value || !baseDelivery) return baseDelivery
+
+  // If split shipment, show different delivery info
+  if (splitShipment.value) {
+    return {
+      inStock: baseDelivery,
+      arrivingSoon: '1-2 weeks + ' + baseDelivery
+    }
+  }
+  return baseDelivery
 })
 
-// Calculate bulk discount
+// Calculate bulk discount (based on checkout items only)
 const bulkDiscount = computed(() => {
   if (!pricingSettings.value?.bulkDiscountThreshold || !pricingSettings.value?.bulkDiscountPercentage) {
     return 0
   }
-  if (subtotal.value >= pricingSettings.value.bulkDiscountThreshold) {
-    return (subtotal.value * pricingSettings.value.bulkDiscountPercentage) / 100
+  if (checkoutSubtotal.value >= pricingSettings.value.bulkDiscountThreshold) {
+    return (checkoutSubtotal.value * pricingSettings.value.bulkDiscountPercentage) / 100
   }
   return 0
 })
@@ -232,19 +281,19 @@ const promoDiscount = computed(() => appliedPromo.value?.discountAmount ?? 0)
 // Total discount
 const totalDiscount = computed(() => bulkDiscount.value + promoDiscount.value)
 
-// Final total
-const total = computed(() => Math.max(0, subtotal.value - totalDiscount.value + shipping.value))
+// Final total (using checkoutSubtotal - excludes pre-order items)
+const total = computed(() => Math.max(0, checkoutSubtotal.value - totalDiscount.value + shipping.value))
 
-// Min order validation
+// Min order validation (based on checkout items)
 const belowMinOrder = computed(() => {
   if (!pricingSettings.value?.minOrderValue) return false
-  return subtotal.value < pricingSettings.value.minOrderValue
+  return checkoutSubtotal.value < pricingSettings.value.minOrderValue
 })
 
-// Max order validation
+// Max order validation (based on checkout items)
 const aboveMaxOrder = computed(() => {
   if (!pricingSettings.value?.maxOrderValue) return false
-  return subtotal.value > pricingSettings.value.maxOrderValue
+  return checkoutSubtotal.value > pricingSettings.value.maxOrderValue
 })
 
 const isSubmitting = ref(false)
@@ -462,7 +511,12 @@ const applyPromoCode = async () => {
       method: 'POST',
       body: {
         code: promoCode.value.trim(),
-        subtotal: subtotal.value
+        subtotal: checkoutSubtotal.value,
+        items: checkoutItems.value.map(item => ({
+          productId: Number(item.productId),
+          quantity: item.quantity,
+          price: item.price
+        }))
       }
     })
 
@@ -915,7 +969,7 @@ const getStepLabel = (step: string) => {
                   {{ $t('checkout.order.yourOrder') }}
                 </h2>
                 <span class="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs font-bold px-2.5 py-1 rounded-full">
-                  {{ lines.reduce((acc, i) => acc + i.quantity, 0) }} {{ locale === 'ar' ? 'منتجات' : 'items' }}
+                  {{ checkoutItems.reduce((acc, i) => acc + i.quantity, 0) }} {{ locale === 'ar' ? 'منتجات' : 'items' }}
                 </span>
               </div>
             </div>
@@ -924,7 +978,7 @@ const getStepLabel = (step: string) => {
             <div class="p-4 max-h-[450px] overflow-y-auto">
               <div class="space-y-4">
                 <div
-                  v-for="item in lines"
+                  v-for="item in checkoutItems"
                   :key="item.productId"
                   class="group bg-gray-50 dark:bg-gray-800 rounded-xl p-3 hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
                 >
@@ -956,7 +1010,22 @@ const getStepLabel = (step: string) => {
                         <h3 class="font-semibold text-sm text-gray-900 dark:text-white line-clamp-2 mb-1">
                           {{ item.title }}
                         </h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <!-- Availability Badge -->
+                        <span
+                          v-if="item.availabilityType === 'IN_STOCK_EGYPT'"
+                          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                        >
+                          <UIcon name="i-lucide-check-circle" class="w-3 h-3" />
+                          {{ locale === 'ar' ? 'متوفر' : 'In Stock' }}
+                        </span>
+                        <span
+                          v-else-if="item.availabilityType === 'ARRIVING_SOON'"
+                          class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"
+                        >
+                          <UIcon name="i-lucide-clock" class="w-3 h-3" />
+                          {{ locale === 'ar' ? 'قادم قريباً' : 'Arriving Soon' }}
+                        </span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {{ formatPrice(item.price) }} × {{ item.quantity }}
                         </p>
                       </div>
@@ -1030,17 +1099,64 @@ const getStepLabel = (step: string) => {
               </p>
             </div>
 
+            <!-- Split Shipment Option (when mixed availability) -->
+            <div v-if="hasMixedAvailability" class="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gradient-to-r from-amber-50 to-green-50 dark:from-amber-900/20 dark:to-green-900/20">
+              <h4 class="font-bold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2 text-sm">
+                <UIcon name="i-lucide-split" class="w-4 h-4" />
+                {{ locale === 'ar' ? 'خيارات الشحن' : 'Shipping Options' }}
+              </h4>
+              <div class="space-y-2">
+                <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors text-sm" :class="splitShipment ? 'bg-white dark:bg-gray-800 shadow-sm border border-amber-300 dark:border-amber-600' : 'hover:bg-white/50 dark:hover:bg-gray-800/50'">
+                  <input
+                    v-model="splitShipment"
+                    type="radio"
+                    :value="true"
+                    class="mt-0.5 text-amber-600 focus:ring-amber-500"
+                  >
+                  <div>
+                    <div class="font-medium text-gray-800 dark:text-gray-200">{{ locale === 'ar' ? 'شحن منفصل' : 'Ship separately' }}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">
+                      {{ locale === 'ar' ? 'استلم المنتجات المتوفرة الآن، والباقي لاحقاً' : 'Get in-stock items now, arriving items later' }}
+                      <span class="font-medium text-amber-700 dark:text-amber-400">(1.5× {{ locale === 'ar' ? 'شحن' : 'shipping' }})</span>
+                    </div>
+                  </div>
+                </label>
+                <label class="flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors text-sm" :class="!splitShipment ? 'bg-white dark:bg-gray-800 shadow-sm border border-green-300 dark:border-green-600' : 'hover:bg-white/50 dark:hover:bg-gray-800/50'">
+                  <input
+                    v-model="splitShipment"
+                    type="radio"
+                    :value="false"
+                    class="mt-0.5 text-green-600 focus:ring-green-500"
+                  >
+                  <div>
+                    <div class="font-medium text-gray-800 dark:text-gray-200">{{ locale === 'ar' ? 'شحن مجمع' : 'Ship together' }}</div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">
+                      {{ locale === 'ar' ? 'انتظر حتى تتوفر جميع المنتجات' : 'Wait for all items to be ready' }}
+                      <span class="font-medium text-green-700 dark:text-green-400">(1× {{ locale === 'ar' ? 'شحن' : 'shipping' }})</span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
             <!-- Summary Lines -->
             <div class="px-6 py-4 space-y-3 border-t border-gray-100 dark:border-gray-800">
               <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                <span>{{ $t('checkout.order.subtotal') }}</span>
-                <span class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(subtotal) }}</span>
+                <span>{{ $t('checkout.order.subtotal') }} ({{ checkoutItems.length }} {{ locale === 'ar' ? 'منتجات' : 'items' }})</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ formatPrice(checkoutSubtotal) }}</span>
+              </div>
+
+              <!-- Pre-order notice -->
+              <div v-if="hasPreOrderItems" class="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg flex items-center gap-1">
+                <UIcon name="i-lucide-info" class="w-3 h-3 flex-shrink-0" />
+                {{ locale === 'ar' ? 'المنتجات المسبقة الطلب غير مشمولة' : 'Pre-order items not included' }}
               </div>
 
               <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
                 <span class="flex items-center gap-1">
                   <UIcon name="i-lucide-truck" class="w-4 h-4" />
                   {{ $t('checkout.order.shipping') }}
+                  <span v-if="hasMixedAvailability && splitShipment" class="text-xs text-amber-600 dark:text-amber-400">({{ locale === 'ar' ? 'منفصل' : 'split' }})</span>
                 </span>
                 <span v-if="currentStep === 'INFORMATION'" class="text-xs text-gray-400 italic">
                   {{ $t('checkout.order.shippingCalc') }}

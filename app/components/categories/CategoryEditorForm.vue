@@ -63,6 +63,36 @@ const state = reactive({
 
 const imageArray = ref<string[]>(state.image ? [state.image] : [])
 const showSeoFields = ref(false)
+const generatingSeo = ref(false)
+
+async function generateCategorySeo() {
+  if (generatingSeo.value) return
+  if (!state.nameEn.trim()) return
+
+  generatingSeo.value = true
+
+  try {
+    const name = state.nameEn.trim()
+    const nameAr = state.nameAr.trim() || undefined
+    const description = state.descriptionEn.trim() || `Browse our ${name} collection`
+
+    // Generate SEO fields based on category name and description
+    state.seoTitleEn = `${name} | Shop Collection`.slice(0, MAX_SEO_TITLE_LENGTH)
+    state.seoTitleAr = nameAr ? `${nameAr} | تسوق المجموعة`.slice(0, MAX_SEO_TITLE_LENGTH) : ''
+    state.seoDescriptionEn = `${description}. Find the best ${name} products with great prices and quality.`.slice(0, MAX_SEO_DESCRIPTION_LENGTH)
+    state.seoDescriptionAr = nameAr ? `تصفح مجموعة ${nameAr}. اكتشف أفضل المنتجات بأسعار رائعة وجودة عالية.`.slice(0, MAX_SEO_DESCRIPTION_LENGTH) : ''
+    state.seoKeywordsEn = `${name}, ${name} products, shop ${name}, buy ${name}, ${name} collection`.slice(0, 255)
+    state.seoKeywordsAr = nameAr ? `${nameAr}، منتجات ${nameAr}، تسوق ${nameAr}، مجموعة ${nameAr}` : ''
+    state.ogTitleEn = `${name} Collection`.slice(0, MAX_SEO_TITLE_LENGTH)
+    state.ogTitleAr = nameAr?.slice(0, MAX_SEO_TITLE_LENGTH) || ''
+    state.ogDescriptionEn = `Explore our ${name} collection - quality products at great prices.`.slice(0, 200)
+    state.ogDescriptionAr = nameAr ? `استكشف مجموعة ${nameAr} - منتجات بجودة عالية وأسعار رائعة.`.slice(0, 200) : ''
+
+    showSeoFields.value = true
+  } finally {
+    generatingSeo.value = false
+  }
+}
 
 watch(
   () => props.initialValues,
@@ -220,14 +250,28 @@ function onSubmit(_event: FormSubmitEvent<Record<string, unknown>>) {
     </div>
 
     <!-- SEO Section Toggle -->
-    <UButton
-      type="button"
-      variant="ghost"
-      color="neutral"
-      :icon="showSeoFields ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-      :label="showSeoFields ? 'Hide SEO settings' : 'Show SEO settings'"
-      @click="showSeoFields = !showSeoFields"
-    />
+    <div class="flex items-center gap-2">
+      <UButton
+        type="button"
+        variant="ghost"
+        color="neutral"
+        :icon="showSeoFields ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+        :label="showSeoFields ? 'Hide SEO settings' : 'Show SEO settings'"
+        @click="showSeoFields = !showSeoFields"
+      />
+      <UButton
+        type="button"
+        variant="ghost"
+        color="primary"
+        icon="i-lucide-sparkles"
+        size="xs"
+        :loading="generatingSeo"
+        :disabled="generatingSeo || !state.nameEn.trim()"
+        @click="generateCategorySeo"
+      >
+        Generate SEO
+      </UButton>
+    </div>
 
     <template v-if="showSeoFields">
       <UDivider label="SEO Settings" />

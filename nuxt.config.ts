@@ -33,6 +33,9 @@ export default defineNuxtConfig({
     whatsappPhoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
     whatsappApiVersion: process.env.WHATSAPP_API_VERSION,
     adminWhatsappNumber: process.env.ADMIN_WHATSAPP_NUMBER,
+    // AI API Keys
+    groqApiKey: process.env.GROQ_API_KEY,
+    groqModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://loogy.store'
     }

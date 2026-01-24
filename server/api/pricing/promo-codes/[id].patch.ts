@@ -19,7 +19,10 @@ const updatePromoCodeSchema = z.object({
   validFrom: z.coerce.date().optional().nullable(),
   validTo: z.coerce.date().optional().nullable(),
   usageLimit: z.coerce.number().int().min(1).optional().nullable(),
-  isActive: z.boolean().optional()
+  isActive: z.boolean().optional(),
+  scope: z.enum(['GLOBAL', 'SPECIFIC_PRODUCTS', 'SPECIFIC_PRODUCT_TYPES']).optional(),
+  applicableAvailabilityTypes: z.array(z.enum(['IN_STOCK_EGYPT', 'ARRIVING_SOON', 'PRE_ORDER'])).optional(),
+  applicableProductIds: z.array(z.number().int().positive()).optional()
 }).refine((data) => {
   // Percentage must be between 0 and 100
   if (data.applicationType === 'PERCENTAGE' && data.value && data.value > 100) {
@@ -49,7 +52,12 @@ export default eventHandler(async (event) => {
 
   // Check if promo code exists
   const existing = await prisma.pricePromoCode.findUnique({
-    where: { id: params.id }
+    where: { id: params.id },
+    include: {
+      applicableProducts: {
+        select: { id: true }
+      }
+    }
   })
 
   if (!existing) {
@@ -83,6 +91,14 @@ export default eventHandler(async (event) => {
     })
   }
 
+  // Build product connections update if applicableProductIds is provided
+  const productConnectionsUpdate = payload.applicableProductIds !== undefined
+    ? {
+        set: [], // Disconnect all first
+        connect: payload.applicableProductIds.map(id => ({ id }))
+      }
+    : undefined
+
   const promoCode = await prisma.pricePromoCode.update({
     where: { id: params.id },
     data: {
@@ -92,7 +108,15 @@ export default eventHandler(async (event) => {
       validFrom: payload.validFrom !== undefined ? payload.validFrom : existing.validFrom,
       validTo: payload.validTo !== undefined ? payload.validTo : existing.validTo,
       usageLimit: payload.usageLimit !== undefined ? payload.usageLimit : existing.usageLimit,
-      isActive: payload.isActive ?? existing.isActive
+      isActive: payload.isActive ?? existing.isActive,
+      scope: payload.scope ?? existing.scope,
+      applicableAvailabilityTypes: payload.applicableAvailabilityTypes ?? existing.applicableAvailabilityTypes,
+      applicableProducts: productConnectionsUpdate
+    },
+    include: {
+      applicableProducts: {
+        select: { id: true }
+      }
     }
   })
 
@@ -115,6 +139,9 @@ export default eventHandler(async (event) => {
       usageLimit: promoCode.usageLimit,
       usageCount: promoCode.usageCount,
       isActive: promoCode.isActive,
+      scope: promoCode.scope,
+      applicableAvailabilityTypes: promoCode.applicableAvailabilityTypes,
+      applicableProductIds: promoCode.applicableProducts.map(p => p.id),
       status,
       createdAt: promoCode.createdAt.toISOString(),
       updatedAt: promoCode.updatedAt.toISOString()

@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 import { useState, useCookie } from '#app'
+import type { ProductAvailabilityType } from '~/types'
+import { buildPreOrderWhatsAppUrl, getDeliveryEstimate } from '~/utils/whatsapp'
 
 export interface CartLine {
   title: string
@@ -10,6 +12,8 @@ export interface CartLine {
   variantId?: number | string
   slug?: string
   salePrice?: number | null
+  availabilityType?: ProductAvailabilityType
+  expectedArrivalDate?: string | null
 }
 
 // Cookie name constant
@@ -41,6 +45,8 @@ export const useCart = () => {
           price: number
           salePrice?: number | null
           image?: string | null
+          availabilityType?: ProductAvailabilityType
+          expectedArrivalDate?: string | null
         }>
         subtotal: number
       }
@@ -54,7 +60,9 @@ export const useCart = () => {
         productId: item.productId,
         variantId: item.variantId ?? undefined,
         slug: item.slug,
-        salePrice: item.salePrice
+        salePrice: item.salePrice,
+        availabilityType: item.availabilityType ?? 'IN_STOCK_EGYPT',
+        expectedArrivalDate: item.expectedArrivalDate
       }))
     } finally {
       loading.value = false
@@ -199,6 +207,74 @@ export const useCart = () => {
   const itemCount = computed(() => lines.value.reduce((sum, line) => sum + line.quantity, 0))
   const isEmpty = computed(() => lines.value.length === 0)
 
+  // Split cart by availability type
+  const inStockItems = computed(() =>
+    lines.value.filter(line => line.availabilityType === 'IN_STOCK_EGYPT')
+  )
+
+  const arrivingSoonItems = computed(() =>
+    lines.value.filter(line => line.availabilityType === 'ARRIVING_SOON')
+  )
+
+  const preOrderItems = computed(() =>
+    lines.value.filter(line => line.availabilityType === 'PRE_ORDER')
+  )
+
+  // Items that can go through checkout (not pre-order)
+  const checkoutItems = computed(() =>
+    lines.value.filter(line => line.availabilityType !== 'PRE_ORDER')
+  )
+
+  // Subtotals by category
+  const inStockSubtotal = computed(() =>
+    inStockItems.value.reduce((sum, line) => sum + line.price * line.quantity, 0)
+  )
+
+  const arrivingSoonSubtotal = computed(() =>
+    arrivingSoonItems.value.reduce((sum, line) => sum + line.price * line.quantity, 0)
+  )
+
+  const preOrderSubtotal = computed(() =>
+    preOrderItems.value.reduce((sum, line) => sum + line.price * line.quantity, 0)
+  )
+
+  const checkoutSubtotal = computed(() =>
+    checkoutItems.value.reduce((sum, line) => sum + line.price * line.quantity, 0)
+  )
+
+  // Flags
+  const hasPreOrderItems = computed(() => preOrderItems.value.length > 0)
+  const hasCheckoutItems = computed(() => checkoutItems.value.length > 0)
+  const hasMixedAvailability = computed(() =>
+    inStockItems.value.length > 0 && arrivingSoonItems.value.length > 0
+  )
+
+  // Calculate shipping cost based on split preference
+  // splitShipment = true: 1.5x shipping (user pays full 2x upfront, gets 0.5x discount)
+  // splitShipment = false: 1x shipping (wait for all items to be ready)
+  const calculateShippingCost = (baseShippingCost: number, splitShipment: boolean) => {
+    if (!hasMixedAvailability.value) {
+      return baseShippingCost
+    }
+    return splitShipment ? baseShippingCost * 1.5 : baseShippingCost
+  }
+
+  // Generate WhatsApp URL for pre-order items
+  const getPreOrderWhatsAppUrl = (storePhone: string, baseUrl: string) => {
+    if (!hasPreOrderItems.value) return null
+
+    const items = preOrderItems.value.map(line => ({
+      name: line.title,
+      price: line.price,
+      quantity: line.quantity,
+      image: line.image,
+      slug: line.slug || '',
+      availabilityType: line.availabilityType || 'PRE_ORDER' as ProductAvailabilityType
+    }))
+
+    return buildPreOrderWhatsAppUrl(items, storePhone, baseUrl)
+  }
+
   return {
     lines,
     add,
@@ -211,6 +287,26 @@ export const useCart = () => {
     refresh,
     loading,
     getShareableCartUrl,
-    importSharedCart
+    importSharedCart,
+    // Availability-based splits
+    inStockItems,
+    arrivingSoonItems,
+    preOrderItems,
+    checkoutItems,
+    // Subtotals
+    inStockSubtotal,
+    arrivingSoonSubtotal,
+    preOrderSubtotal,
+    checkoutSubtotal,
+    // Flags
+    hasPreOrderItems,
+    hasCheckoutItems,
+    hasMixedAvailability,
+    // Shipping
+    calculateShippingCost,
+    // WhatsApp
+    getPreOrderWhatsAppUrl,
+    // Helpers
+    getDeliveryEstimate
   }
 }

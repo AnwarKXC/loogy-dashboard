@@ -66,7 +66,10 @@ const editInitialValues = computed<Partial<PromoCodeEditorValues>>(() => {
     validFrom: code.validFrom ? new Date(code.validFrom) : null,
     validTo: code.validTo ? new Date(code.validTo) : null,
     usageLimit: code.usageLimit,
-    isActive: code.isActive
+    isActive: code.isActive,
+    scope: code.scope ?? 'GLOBAL',
+    applicableAvailabilityTypes: code.applicableAvailabilityTypes ?? [],
+    applicableProductIds: code.applicableProductIds ?? []
   }
 })
 
@@ -100,6 +103,36 @@ const columns: TableColumn<PromoCodeListItem>[] = [
         return h('span', { class: 'font-medium' }, `${value}%`)
       }
       return h('span', { class: 'font-medium' }, `${value.toFixed(2)} EGP`)
+    }
+  },
+  {
+    accessorKey: 'scope',
+    header: 'Applies To',
+    cell: ({ row }) => {
+      const code = row.original
+      const scope = code.scope ?? 'GLOBAL'
+
+      if (scope === 'GLOBAL') {
+        return h(UBadge, { variant: 'soft', color: 'neutral' }, () => 'All Products')
+      }
+
+      if (scope === 'SPECIFIC_PRODUCT_TYPES') {
+        const types = code.applicableAvailabilityTypes ?? []
+        const typeLabels: Record<string, string> = {
+          IN_STOCK_EGYPT: 'In Stock',
+          ARRIVING_SOON: 'Arriving Soon',
+          PRE_ORDER: 'Pre-Order'
+        }
+        const label = types.map(t => typeLabels[t] || t).join(', ') || 'Product Types'
+        return h(UBadge, { variant: 'soft', color: 'info' }, () => label)
+      }
+
+      if (scope === 'SPECIFIC_PRODUCTS') {
+        const count = code.applicableProductIds?.length ?? 0
+        return h(UBadge, { variant: 'soft', color: 'primary' }, () => `${count} Product${count !== 1 ? 's' : ''}`)
+      }
+
+      return h('span', { class: 'text-sm text-muted' }, scope)
     }
   },
   {

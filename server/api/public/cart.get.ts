@@ -38,10 +38,15 @@ export default eventHandler(async (event) => {
         slug: product.slug,
         price,
         salePrice: product.salePrice,
-        image: product.image
+        image: product.image,
+        availabilityType: product.availabilityType,
+        expectedArrivalDate: product.expectedArrivalDate,
+        isArchived: product.isArchived
       }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
+    // Filter out archived products from cart
+    .filter(item => !item.isArchived)
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 

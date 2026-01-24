@@ -226,7 +226,10 @@ export function mapProductToListItem(product: ProductWithRelations) {
           translations: product.brand.translations
         }
       : null,
-    isArchived: product.isArchived
+    isArchived: product.isArchived,
+    // Availability fields
+    availabilityType: (product as unknown as { availabilityType?: string }).availabilityType ?? 'IN_STOCK_EGYPT',
+    expectedArrivalDate: (product as unknown as { expectedArrivalDate?: Date | null }).expectedArrivalDate?.toISOString() ?? null
   }
 }
 

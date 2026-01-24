@@ -62,6 +62,13 @@ enum PricingApplicationType {
   FIXED // e.g., 50 EGP off
 }
 
+/// Promo code scope type
+enum PromoCodeScope {
+  GLOBAL // Applies to all products
+  SPECIFIC_PRODUCTS // Applies to specific selected products
+  SPECIFIC_PRODUCT_TYPES // Applies to specific availability types
+}
+
 /// Supported languages for translations
 enum Language {
   EN // English
@@ -82,6 +89,13 @@ enum InventoryMovementType {
   ADJUSTMENT // Manual stock correction
   RETURN // Stock returned from customer
   DAMAGE // Stock lost due to damage
+}
+
+/// Product availability types for delivery estimation
+enum AvailabilityType {
+  IN_STOCK_EGYPT // Ready to ship from Egypt warehouse (2-4 days)
+  ARRIVING_SOON // In transit from KSA, will arrive soon (1-2 weeks)
+  PRE_ORDER // Made to order - purchased after customer order (WhatsApp only)
 }
 
 // ============================================================================
@@ -180,33 +194,37 @@ model BrandTranslation {
 // ============================================================================
 
 model Product {
-  id                 Int       @id @default(autoincrement())
-  slug               String    @unique
-  price              Decimal   @db.Decimal(10, 2)
-  salePrice          Decimal?  @db.Decimal(10, 2)
-  discountPercentage Decimal?  @db.Decimal(5, 2)
-  stock              Int       @default(0)
-  isPublished        Boolean   @default(false)
-  isHeroFeatured     Boolean   @default(false)
-  isArchived         Boolean   @default(false)
-  images             String[]  @default([])
-  rating             Decimal?  @db.Decimal(3, 2)
-  categoryId         Int?
-  brandId            Int?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  deletedAt          DateTime?
+  id                  Int              @id @default(autoincrement())
+  slug                String           @unique
+  price               Decimal          @db.Decimal(10, 2)
+  salePrice           Decimal?         @db.Decimal(10, 2)
+  discountPercentage  Decimal?         @db.Decimal(5, 2)
+  stock               Int              @default(0)
+  availabilityType    AvailabilityType @default(IN_STOCK_EGYPT)
+  expectedArrivalDate DateTime? // For ARRIVING_SOON products
+  isPublished         Boolean          @default(false)
+  isHeroFeatured      Boolean          @default(false)
+  isArchived          Boolean          @default(false)
+  images              String[]         @default([])
+  rating              Decimal?         @db.Decimal(3, 2)
+  categoryId          Int?
+  brandId             Int?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  deletedAt           DateTime?
 
-  category     Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  brand        Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  variants     ProductVariant[]
-  translations ProductTranslation[]
-  orderItems   OrderItem[]
+  category             Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  brand                Brand?               @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  variants             ProductVariant[]
+  translations         ProductTranslation[]
+  orderItems           OrderItem[]
+  applicablePromoCodes PricePromoCode[]
 
   @@index([categoryId, isPublished, isArchived, deletedAt])
   @@index([brandId, isPublished, isArchived, deletedAt])
   @@index([isPublished, createdAt])
   @@index([isPublished, rating])
+  @@index([availabilityType, isPublished])
 }
 
 model ProductTranslation {
@@ -371,8 +389,14 @@ model PricePromoCode {
   usageLimit        Int?
   usageCount        Int                    @default(0)
   isActive          Boolean                @default(true)
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
+
+  // Scope / Restrictions
+  scope                       PromoCodeScope     @default(GLOBAL)
+  applicableAvailabilityTypes AvailabilityType[] // Used when scope is SPECIFIC_PRODUCT_TYPES
+  applicableProducts          Product[] // Used when scope is SPECIFIC_PRODUCTS
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   pricingSettings PricingSettings? @relation(fields: [pricingSettingsId], references: [id], onDelete: SetNull)
 

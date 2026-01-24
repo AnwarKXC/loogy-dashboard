@@ -14,7 +14,10 @@ const createPromoCodeSchema = z.object({
   validFrom: z.coerce.date().optional().nullable(),
   validTo: z.coerce.date().optional().nullable(),
   usageLimit: z.coerce.number().int().min(1).optional().nullable(),
-  isActive: z.boolean().default(true)
+  isActive: z.boolean().default(true),
+  scope: z.enum(['GLOBAL', 'SPECIFIC_PRODUCTS', 'SPECIFIC_PRODUCT_TYPES']).default('GLOBAL'),
+  applicableAvailabilityTypes: z.array(z.enum(['IN_STOCK_EGYPT', 'ARRIVING_SOON', 'PRE_ORDER'])).optional().default([]),
+  applicableProductIds: z.array(z.number().int().positive()).optional().default([])
 }).refine((data) => {
   // Percentage must be between 0 and 100
   if (data.applicationType === 'PERCENTAGE' && data.value > 100) {
@@ -67,7 +70,17 @@ export default eventHandler(async (event) => {
       validTo: payload.validTo ?? null,
       usageLimit: payload.usageLimit ?? null,
       isActive: payload.isActive,
-      pricingSettingsId: pricingSettings?.id ?? null
+      pricingSettingsId: pricingSettings?.id ?? null,
+      scope: payload.scope,
+      applicableAvailabilityTypes: payload.applicableAvailabilityTypes ?? [],
+      applicableProducts: payload.applicableProductIds?.length
+        ? { connect: payload.applicableProductIds.map(id => ({ id })) }
+        : undefined
+    },
+    include: {
+      applicableProducts: {
+        select: { id: true }
+      }
     }
   })
 
@@ -84,6 +97,9 @@ export default eventHandler(async (event) => {
       usageLimit: promoCode.usageLimit,
       usageCount: promoCode.usageCount,
       isActive: promoCode.isActive,
+      scope: promoCode.scope,
+      applicableAvailabilityTypes: promoCode.applicableAvailabilityTypes,
+      applicableProductIds: promoCode.applicableProducts.map(p => p.id),
       createdAt: promoCode.createdAt.toISOString(),
       updatedAt: promoCode.updatedAt.toISOString()
     }

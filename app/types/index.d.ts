@@ -126,6 +126,8 @@ export interface Range {
 
 export type ProductInventoryStatus = 'in_stock' | 'low_stock' | 'out_of_stock' | 'archived'
 
+export type ProductAvailabilityType = 'IN_STOCK_EGYPT' | 'ARRIVING_SOON' | 'PRE_ORDER'
+
 export interface ProductFilterOption {
   id: number
   name: string
@@ -144,6 +146,8 @@ export interface ProductListItem {
   quantity: number
   stock: number | null
   status: ProductInventoryStatus
+  availabilityType: ProductAvailabilityType
+  expectedArrivalDate: string | null
   updatedAt: string
   category: ProductFilterOption | null
   brand: ProductFilterOption | null
@@ -214,6 +218,9 @@ export interface ProductEditorValues {
   stock?: number | null
   images: string[]
   isArchived: boolean
+  // Availability fields
+  availabilityType?: ProductAvailabilityType
+  expectedArrivalDate?: string | null
   // Legacy single-language SEO (kept for backward compatibility)
   seoTitle?: string
   seoDescription?: string
@@ -239,11 +246,34 @@ export interface ProductEditorValues {
 export interface ProductBasePayload {
   nameEn: string
   nameAr: string
+  slug?: string
   price: number
   salePrice: number | null
   quantity: number
   categoryId: number | null
   brandId: number | null
+  descriptionEn?: string
+  descriptionAr?: string
+  shortDescriptionEn?: string
+  shortDescriptionAr?: string
+  images?: string[]
+  isPublished?: boolean
+  isArchived?: boolean
+  isHeroFeatured?: boolean
+  // Availability fields
+  availabilityType?: ProductAvailabilityType
+  expectedArrivalDate?: string | null
+  // Bilingual SEO fields
+  seoTitleEn?: string
+  seoTitleAr?: string
+  seoDescriptionEn?: string
+  seoDescriptionAr?: string
+  seoKeywordsEn?: string
+  seoKeywordsAr?: string
+  ogTitleEn?: string
+  ogTitleAr?: string
+  ogDescriptionEn?: string
+  ogDescriptionAr?: string
 }
 
 export interface CategoryTreeNode {
@@ -344,12 +374,16 @@ export interface BrandEditorValues {
 // Pricing & Promo Codes
 export type PromoCodeStatus = 'active' | 'inactive' | 'expired'
 export type PromoCodeApplicationType = 'PERCENTAGE' | 'FIXED'
+export type PromoCodeScope = 'GLOBAL' | 'SPECIFIC_PRODUCTS' | 'SPECIFIC_PRODUCT_TYPES'
 
 export interface PromoCodeListItem {
   id: number
   code: string
   applicationType: PromoCodeApplicationType
   value: string
+  scope: PromoCodeScope
+  applicableAvailabilityTypes: ProductAvailabilityType[]
+  applicableProductIds: number[]
   validFrom: string | null
   validTo: string | null
   usageLimit: number | null
@@ -378,6 +412,9 @@ export interface PromoCodeEditorValues {
   validTo?: Date | null
   usageLimit?: number | null
   isActive: boolean
+  scope: PromoCodeScope
+  applicableAvailabilityTypes: ProductAvailabilityType[]
+  applicableProductIds: number[]
 }
 
 export interface PricingSettings {

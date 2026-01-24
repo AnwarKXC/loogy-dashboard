@@ -3,7 +3,7 @@ import { reactive, watch, computed, ref } from 'vue'
 import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
-import type { PromoCodeEditorValues, PromoCodeApplicationType } from '~/types'
+import type { PromoCodeEditorValues, PromoCodeApplicationType, PromoCodeScope, ProductAvailabilityType } from '~/types'
 
 const props = defineProps<{
   mode: 'create' | 'edit'
@@ -42,7 +42,10 @@ const schema = z.object({
   value: z.coerce.number().positive('Value must be greater than 0'),
   usageLimit: z.coerce.number().int().min(1).optional().nullable()
     .or(z.literal('').transform(() => null)),
-  isActive: z.boolean()
+  isActive: z.boolean(),
+  scope: z.enum(['GLOBAL', 'SPECIFIC_PRODUCTS', 'SPECIFIC_PRODUCT_TYPES']).default('GLOBAL'),
+  applicableAvailabilityTypes: z.array(z.enum(['IN_STOCK_EGYPT', 'ARRIVING_SOON', 'PRE_ORDER'])).optional(),
+  applicableProductIds: z.array(z.number()).optional()
 }).refine((data) => {
   if (data.applicationType === 'PERCENTAGE' && data.value > 100) {
     return false
@@ -51,6 +54,13 @@ const schema = z.object({
 }, {
   message: 'Percentage cannot exceed 100%',
   path: ['value']
+}).refine((data) => {
+  if (data.scope === 'SPECIFIC_PRODUCT_TYPES' && (!data.applicableAvailabilityTypes || data.applicableAvailabilityTypes.length === 0)) return false
+  if (data.scope === 'SPECIFIC_PRODUCTS' && (!data.applicableProductIds || data.applicableProductIds.length === 0)) return false
+  return true
+}, {
+  message: 'Please select at least one item',
+  path: ['scope']
 })
 
 type FormState = z.infer<typeof schema>
@@ -60,7 +70,10 @@ const state = reactive<FormState>({
   applicationType: props.initialValues?.applicationType ?? 'PERCENTAGE',
   value: props.initialValues?.value ?? 10,
   usageLimit: props.initialValues?.usageLimit ?? null,
-  isActive: props.initialValues?.isActive ?? true
+  isActive: props.initialValues?.isActive ?? true,
+  scope: props.initialValues?.scope ?? 'GLOBAL',
+  applicableAvailabilityTypes: props.initialValues?.applicableAvailabilityTypes ?? [],
+  applicableProductIds: props.initialValues?.applicableProductIds ?? []
 })
 
 // Separate refs for date inputs (strings for HTML input compatibility)
@@ -79,6 +92,107 @@ const valueLabel = computed(() => {
 const valuePlaceholder = computed(() => {
   return state.applicationType === 'PERCENTAGE' ? 'e.g. 15' : 'e.g. 50'
 })
+
+const scopeOptions = [
+  { label: 'All Products (Global)', value: 'GLOBAL' as PromoCodeScope },
+  { label: 'Specific Product Types', value: 'SPECIFIC_PRODUCT_TYPES' as PromoCodeScope },
+  { label: 'Specific Products', value: 'SPECIFIC_PRODUCTS' as PromoCodeScope }
+]
+
+const availabilityTypeOptions = [
+  { label: 'In Stock (Egypt)', value: 'IN_STOCK_EGYPT' as ProductAvailabilityType },
+  { label: 'Arriving Soon', value: 'ARRIVING_SOON' as ProductAvailabilityType },
+  { label: 'Pre-Order', value: 'PRE_ORDER' as ProductAvailabilityType }
+]
+
+const loadingProducts = ref(false)
+const allProducts = ref<{ id: number, label: string, labelAr: string, slug: string }[]>([])
+const productSearchQuery = ref('')
+
+interface MinimalProduct {
+  id: number
+  slug: string
+  nameEn: string
+  nameAr: string
+}
+
+// Fetch all products once (minimal endpoint)
+async function fetchAllProducts() {
+  if (allProducts.value.length > 0) return // Already loaded
+  loadingProducts.value = true
+  try {
+    const response = await $fetch<MinimalProduct[]>('/api/products/list-minimal')
+    allProducts.value = response.map(p => ({
+      id: p.id,
+      label: p.nameEn || p.slug || `Product #${p.id}`,
+      labelAr: p.nameAr || p.nameEn || p.slug || `Product #${p.id}`,
+      slug: p.slug
+    }))
+  } catch (e) {
+    console.error('Failed to fetch products', e)
+    allProducts.value = []
+  } finally {
+    loadingProducts.value = false
+  }
+}
+
+// Filtered products based on search query (client-side)
+const filteredProducts = computed(() => {
+  const query = productSearchQuery.value.toLowerCase().trim()
+  if (!query) return allProducts.value
+  return allProducts.value.filter(p =>
+    p.label.toLowerCase().includes(query)
+    || p.labelAr.includes(query)
+    || p.slug.toLowerCase().includes(query)
+  )
+})
+
+// Load products when switching to SPECIFIC_PRODUCTS scope
+watch(() => state.scope, async (newScope) => {
+  if (newScope === 'SPECIFIC_PRODUCTS') {
+    await fetchAllProducts()
+  }
+}, { immediate: true })
+
+// Handle search input (client-side filtering)
+function onProductSearch(query: string) {
+  productSearchQuery.value = query
+}
+
+// Computed for selected products as objects (for USelectMenu)
+const selectedProductObjects = computed(() => {
+  const ids = state.applicableProductIds || []
+  return allProducts.value.filter(p => ids.includes(p.id))
+})
+
+// Add a single product to the selection
+function addProduct(product: { id: number, label: string } | null) {
+  if (!product) return
+  const current = state.applicableProductIds || []
+  if (!current.includes(product.id)) {
+    state.applicableProductIds = [...current, product.id]
+  }
+}
+
+// Remove a product from the selection
+function removeProduct(productId: number) {
+  const current = state.applicableProductIds || []
+  state.applicableProductIds = current.filter(id => id !== productId)
+}
+
+// Handler for checkbox group
+function isAvailabilityTypeSelected(val: ProductAvailabilityType): boolean {
+  return state.applicableAvailabilityTypes?.includes(val) ?? false
+}
+
+function toggleAvailabilityType(val: ProductAvailabilityType) {
+  const current = state.applicableAvailabilityTypes || []
+  if (current.includes(val)) {
+    state.applicableAvailabilityTypes = current.filter(t => t !== val)
+  } else {
+    state.applicableAvailabilityTypes = [...current, val]
+  }
+}
 
 // Validate date range
 const dateError = computed(() => {
@@ -99,7 +213,10 @@ watch(
       applicationType: next.applicationType ?? 'PERCENTAGE',
       value: next.value ?? 10,
       usageLimit: next.usageLimit ?? null,
-      isActive: next.isActive ?? true
+      isActive: next.isActive ?? true,
+      scope: next.scope ?? 'GLOBAL',
+      applicableAvailabilityTypes: next.applicableAvailabilityTypes ?? [],
+      applicableProductIds: next.applicableProductIds ?? []
     })
     validFromStr.value = formatDateForInput(next.validFrom)
     validToStr.value = formatDateForInput(next.validTo)
@@ -121,7 +238,10 @@ function resetState() {
     applicationType: props.initialValues?.applicationType ?? 'PERCENTAGE',
     value: props.initialValues?.value ?? 10,
     usageLimit: props.initialValues?.usageLimit ?? null,
-    isActive: props.initialValues?.isActive ?? true
+    isActive: props.initialValues?.isActive ?? true,
+    scope: props.initialValues?.scope ?? 'GLOBAL',
+    applicableAvailabilityTypes: props.initialValues?.applicableAvailabilityTypes ?? [],
+    applicableProductIds: props.initialValues?.applicableProductIds ?? []
   })
   validFromStr.value = formatDateForInput(props.initialValues?.validFrom)
   validToStr.value = formatDateForInput(props.initialValues?.validTo)
@@ -140,7 +260,10 @@ function handleSubmit(_event: FormSubmitEvent<FormState>) {
     validFrom: parseDateFromInput(validFromStr.value),
     validTo: parseDateFromInput(validToStr.value),
     usageLimit: state.usageLimit || null,
-    isActive: state.isActive
+    isActive: state.isActive,
+    scope: state.scope,
+    applicableAvailabilityTypes: state.applicableAvailabilityTypes ?? [],
+    applicableProductIds: state.applicableProductIds ?? []
   }
 
   emit('submit', payload)
@@ -192,6 +315,7 @@ function generateRandomCode() {
       <UFormField label="Discount Type" name="applicationType" required>
         <USelect
           v-model="state.applicationType"
+          class="w-full"
           :items="applicationTypeOptions"
         />
       </UFormField>
@@ -214,9 +338,77 @@ function generateRandomCode() {
       </UFormField>
     </div>
 
+    <!-- Scope Selection -->
+    <UFormField label="Applicable To" name="scope">
+      <USelect v-model="state.scope" :items="scopeOptions" class="w-full" />
+    </UFormField>
+
+    <!-- Product Types Selector -->
+    <div v-if="state.scope === 'SPECIFIC_PRODUCT_TYPES'" class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+      <UFormField label="Select Product Types" name="applicableAvailabilityTypes">
+        <div class="flex flex-col gap-3">
+          <div
+            v-for="opt in availabilityTypeOptions"
+            :key="opt.value"
+            class="flex items-center gap-2 cursor-pointer"
+            @click.stop="toggleAvailabilityType(opt.value)"
+          >
+            <UCheckbox
+              :model-value="isAvailabilityTypeSelected(opt.value)"
+              @click.stop
+              @update:model-value="toggleAvailabilityType(opt.value)"
+            />
+            <span class="text-sm select-none">{{ opt.label }}</span>
+          </div>
+        </div>
+      </UFormField>
+    </div>
+
+    <!-- Specific Products Selector -->
+    <div v-if="state.scope === 'SPECIFIC_PRODUCTS'" class="space-y-3 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+      <UFormField label="Select Products" name="applicableProductIds">
+        <UInputMenu
+          :model-value="undefined"
+          :items="filteredProducts"
+          :loading="loadingProducts"
+          placeholder="Search and add products..."
+          option-attribute="label"
+          by="id"
+          class="w-full"
+          @update:model-value="addProduct"
+          @update:search-term="onProductSearch"
+        />
+      </UFormField>
+
+      <!-- Selected Products as Badges -->
+      <div v-if="selectedProductObjects.length > 0" class="flex flex-wrap gap-2 mt-3">
+        <UBadge
+          v-for="product in selectedProductObjects"
+          :key="product.id"
+          color="neutral"
+          variant="outline"
+          class="cursor-pointer hover:opacity-80 !py-0 transition-opacity"
+        >
+          <span class="mr-1">{{ product.label }}</span>
+          <UButton
+            icon="i-lucide-x"
+            size="xs"
+            color="primary"
+            variant="ghost"
+            class="ml-1 -mr-1 !p-0.5"
+            @click="removeProduct(product.id)"
+          />
+        </UBadge>
+      </div>
+
+      <p v-else class="text-sm text-gray-500 dark:text-gray-400 italic">
+        No products selected. Search and click to add products.
+      </p>
+    </div>
+
     <!-- Validity Period -->
-    <div class="grid grid-cols-2 gap-4">
-      <UFormField label="Valid From" name="validFrom">
+    <div class="grid grid-cols-2 gap-4 items-end">
+      <UFormField label="Valid From" name="validFrom" :ui="{ label: 'whitespace-nowrap pe-4' }">
         <UInput
           v-model="validFromStr"
           type="datetime-local"

@@ -16,7 +16,7 @@ const toggleLanguage = () => {
 
 <template>
   <button
-    class="group relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
+    class="group relative flex items-center gap-1.5 px-3 py-0.5 rounded-full border border-gray-200 dark:border-gray-700 hover:border-amber-500 dark:hover:border-amber-500 transition-all duration-300 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm"
     @click="toggleLanguage"
   >
     <!-- Current Language -->

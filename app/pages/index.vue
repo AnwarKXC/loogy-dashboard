@@ -310,20 +310,29 @@ const brandsStatic = [
               <!-- Left: Text Content -->
               <div class="lg:col-span-5 relative z-20 pt-12 lg:pt-0">
                 <div class="mb-4">
-                  <ul class="flex flex-col text-[10px] font-bold tracking-[0.2em] text-neutral-400 uppercase gap-1 mb-8 pl-1">
-                    <li>
-                      <NuxtLink to="/products?search=men" class="text-neutral-900 hover:text-amber-700 transition">
+                  <ul class="flex flex-col text-[11px] font-bold tracking-[0.25em] text-neutral-400 uppercase gap-2 mb-8 pl-1">
+                    <li class="group flex items-center gap-2">
+                      <span class="w-0 h-px bg-amber-600 group-hover:w-6 transition-all duration-300" />
+                      <NuxtLink to="/products?categorySlug=mens-fashion" class="text-neutral-900 hover:text-amber-600 transition-colors duration-300">
                         Men
                       </NuxtLink>
                     </li>
-                    <li>
-                      <NuxtLink to="/products?search=women" class="hover:text-neutral-900 transition">
+                    <li class="group flex items-center gap-2">
+                      <span class="w-0 h-px bg-amber-600 group-hover:w-6 transition-all duration-300" />
+                      <NuxtLink to="/products?categorySlug=womens-fashion" class="hover:text-amber-600 transition-colors duration-300">
                         Women
                       </NuxtLink>
                     </li>
-                    <li>
-                      <NuxtLink to="/products?search=kids" class="hover:text-neutral-900 transition">
-                        Kids
+                    <li class="group flex items-center gap-2">
+                      <span class="w-0 h-px bg-amber-600 group-hover:w-6 transition-all duration-300" />
+                      <NuxtLink to="/products?categorySlug=accessories" class="hover:text-amber-600 transition-colors duration-300">
+                        Accessories
+                      </NuxtLink>
+                    </li>
+                    <li class="group flex items-center gap-2">
+                      <span class="w-0 h-px bg-amber-600 group-hover:w-6 transition-all duration-300" />
+                      <NuxtLink to="/products?categorySlug=shoes" class="hover:text-amber-600 transition-colors duration-300">
+                        Shoes
                       </NuxtLink>
                     </li>
                   </ul>
@@ -357,15 +366,16 @@ const brandsStatic = [
                 <div class="flex items-center gap-6 pl-1">
                   <NuxtLink
                     :to="item.to"
-                    class="bg-neutral-200/80 hover:bg-neutral-900 hover:text-white transition-all duration-300 px-8 py-4 text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-4 group"
+                    class="relative bg-neutral-900 text-white hover:bg-amber-600 transition-all duration-300 px-8 py-4 text-xs font-bold uppercase tracking-[0.15em] flex items-center gap-4 group overflow-hidden"
                   >
-                    {{ item.cta }}
-                    <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <span class="relative z-10">{{ item.cta }}</span>
+                    <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform" />
+                    <span class="absolute inset-0 bg-amber-600 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300" />
                   </NuxtLink>
-                  <div class="flex border border-neutral-200">
+                  <div class="flex border border-neutral-300 bg-white/50 backdrop-blur-sm">
                     <button
                       type="button"
-                      class="w-12 h-12 flex items-center justify-center hover:bg-white transition hover:text-amber-700"
+                      class="w-12 h-12 flex items-center justify-center hover:bg-neutral-900 hover:text-white transition-all duration-300"
                       aria-label="Previous slide"
                       @click="goToPrevSlide"
                     >
@@ -374,7 +384,7 @@ const brandsStatic = [
                     <div class="w-px bg-neutral-200" />
                     <button
                       type="button"
-                      class="w-12 h-12 flex items-center justify-center hover:bg-white transition hover:text-amber-700"
+                      class="w-12 h-12 flex items-center justify-center hover:bg-neutral-900 hover:text-white transition-all duration-300"
                       aria-label="Next slide"
                       @click="goToNextSlide"
                     >
@@ -382,55 +392,73 @@ const brandsStatic = [
                     </button>
                   </div>
                   <!-- Slide Indicators -->
-                  <div class="flex gap-2 ml-4">
+                  <div class="flex gap-3 ml-4">
                     <button
                       v-for="(_, idx) in heroSlides"
                       :key="idx"
                       type="button"
-                      class="w-2 h-2 rounded-full transition-all duration-300"
-                      :class="activeSlideIndex === idx ? 'bg-neutral-900 w-6' : 'bg-neutral-300 hover:bg-neutral-500'"
+                      class="group/dot relative h-3 transition-all duration-300"
+                      :class="activeSlideIndex === idx ? 'w-8' : 'w-3'"
                       :aria-label="`Go to slide ${idx + 1}`"
                       @click="heroCarouselRef?.emblaApi?.scrollTo(idx)"
-                    />
+                    >
+                      <span
+                        class="absolute inset-0 rounded-full transition-all duration-300"
+                        :class="activeSlideIndex === idx ? 'bg-amber-600' : 'bg-neutral-300 group-hover/dot:bg-neutral-500'"
+                      />
+                    </button>
                   </div>
                 </div>
               </div>
 
               <!-- Right: Images (Overlapping) -->
-              <NuxtLink :to="item.to" class="lg:col-span-7 relative h-[60vh] lg:h-[85vh] w-full flex items-center justify-center lg:justify-end">
+              <NuxtLink :to="item.to" class="lg:col-span-7 relative h-[60vh] lg:h-[85vh] w-full flex items-center justify-center lg:justify-end group/hero">
                 <!-- Base Image (White) -->
                 <div class="relative w-[90%] h-full bg-gray-200 overflow-hidden ml-auto">
-                  <img :src="item.image" class="w-full h-full object-cover object-top" alt="Man in White Collection">
-                  <!-- Decorative Text Overlay on Image -->
-                  <h2 class="absolute bottom-16 right-[-2rem] text-6xl xl:text-8xl font-black text-neutral-900 opacity-80 whitespace-nowrap z-0 hidden lg:block">
-                    Man In White
-                  </h2>
+                  <img
+                    :src="item.image"
+                    class="w-full h-full object-cover object-top transition-transform duration-700 group-hover/hero:scale-105"
+                    alt="Collection Image"
+                  >
+                  <!-- Gradient overlay -->
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover/hero:opacity-100 transition-opacity duration-500" />
                 </div>
 
                 <!-- Floating Overlay Image (Black) -->
-                <div class="absolute top-[20%] lg:top-[15%] left-0 lg:-left-[5%] w-[55%] lg:w-[45%] aspect-[3/4] bg-neutral-900 border-4 lg:border-8 border-white shadow-2xl z-30 overflow-hidden flex flex-col items-center justify-center group">
-                  <div class="absolute inset-0 bg-neutral-900/40 z-10 transition-opacity group-hover:opacity-0" /> <!-- Dimmer -->
-                  <img :src="item.image2" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500" alt="Man in Black Collection">
+                <div class="absolute top-[20%] lg:top-[15%] left-0 lg:-left-[5%] w-[55%] lg:w-[45%] aspect-[3/4] bg-neutral-900 border-4 lg:border-8 border-white shadow-2xl z-30 overflow-hidden flex flex-col items-center justify-center group/overlay transition-transform duration-500 hover:scale-[1.02]">
+                  <div class="absolute inset-0 bg-neutral-900/40 z-10 transition-opacity group-hover/overlay:opacity-0" />
+                  <img
+                    :src="item.image2"
+                    class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover/overlay:opacity-100 transition-all duration-500 group-hover/overlay:scale-105"
+                    alt="Featured Collection"
+                  >
 
-                  <!-- Star Graphic & Text -->
+                  <!-- Animated Star Graphic & Text -->
                   <div class="relative z-20 text-center text-white">
-                    <div class="mb-4 animate-spin-slow">
-                      <!-- Star SVG -->
-                      <svg
-                        width="60"
-                        height="60"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        class="mx-auto stroke-current"
-                        stroke-width="1"
-                      >
-                        <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-                      </svg>
+                    <div class="mb-4">
+                      <!-- Spinning Star with glow effect -->
+                      <div class="relative">
+                        <svg
+                          width="60"
+                          height="60"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          class="mx-auto stroke-current animate-spin-slow drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                          stroke-width="1"
+                        >
+                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                        </svg>
+                      </div>
                     </div>
-                    <p class="text-3xl lg:text-4xl font-serif italic text-white mix-blend-difference">
-                      Man In Black
+                    <p class="text-3xl lg:text-4xl font-serif italic text-white drop-shadow-lg">
+                      Shop Now
                     </p>
                   </div>
+                </div>
+
+                <!-- Decorative floating badge -->
+                <div class="absolute bottom-8 right-8 bg-amber-600 text-white px-4 py-2 text-xs font-bold uppercase tracking-wider z-40 opacity-0 group-hover/hero:opacity-100 transition-all duration-500 transform translate-y-4 group-hover/hero:translate-y-0">
+                  View Collection
                 </div>
               </NuxtLink>
             </div>

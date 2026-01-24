@@ -106,6 +106,8 @@ export function mapProductToListItem(product: ProductWithRelations) {
     quantity: product.quantity,
     stock: product.stock,
     status: getProductInventoryStatus(product),
+    availabilityType: product.availabilityType,
+    expectedArrivalDate: product.expectedArrivalDate?.toISOString() ?? null,
     updatedAt: product.updatedAt.toISOString(),
     category: product.category
       ? {

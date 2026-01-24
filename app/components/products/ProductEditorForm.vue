@@ -70,6 +70,9 @@ const schema = z.object({
   shortDescriptionAr: z.string().trim().max(MAX_SHORT_DESCRIPTION_LENGTH, 'Short description (Arabic) is too long').optional(),
   images: z.array(z.string().trim()).default([]),
   isArchived: z.boolean().default(false),
+  // Availability fields
+  availabilityType: z.enum(['IN_STOCK_EGYPT', 'ARRIVING_SOON', 'PRE_ORDER']).default('IN_STOCK_EGYPT'),
+  expectedArrivalDate: z.string().nullable().optional(),
   // Legacy single-language SEO (kept for AI generator)
   seoTitle: z.string().trim().max(MAX_SEO_TITLE_LENGTH, 'SEO title is too long').optional(),
   seoDescription: z.string().trim().max(MAX_SEO_DESCRIPTION_LENGTH, 'SEO description is too long').optional(),
@@ -121,6 +124,9 @@ function createStateFromInitialValues(initial?: Partial<ProductEditorValues>) {
     shortDescriptionAr: initial?.shortDescriptionAr ?? '',
     images: [...images],
     isArchived: initial?.isArchived ?? false,
+    // Availability fields
+    availabilityType: initial?.availabilityType ?? 'IN_STOCK_EGYPT',
+    expectedArrivalDate: initial?.expectedArrivalDate ?? null,
     // Legacy SEO (for AI generator)
     seoTitle: initial?.seoTitle ?? '',
     seoDescription: initial?.seoDescription ?? '',
@@ -333,11 +339,25 @@ function applyInitialValues(initial?: Partial<ProductEditorValues>) {
   state.shortDescriptionAr = resolved.shortDescriptionAr
   state.images = [...resolved.images]
   state.isArchived = resolved.isArchived
+  // Availability fields
+  state.availabilityType = resolved.availabilityType
+  state.expectedArrivalDate = resolved.expectedArrivalDate
   state.seoTitle = resolved.seoTitle
   state.seoDescription = resolved.seoDescription
   state.seoCanonical = resolved.seoCanonical
   state.seoKeywords = [...resolved.seoKeywords]
   state.newSeoKeyword = ''
+  // Bilingual SEO fields
+  state.seoTitleEn = resolved.seoTitleEn
+  state.seoTitleAr = resolved.seoTitleAr
+  state.seoDescriptionEn = resolved.seoDescriptionEn
+  state.seoDescriptionAr = resolved.seoDescriptionAr
+  state.seoKeywordsEn = resolved.seoKeywordsEn
+  state.seoKeywordsAr = resolved.seoKeywordsAr
+  state.ogTitleEn = resolved.ogTitleEn
+  state.ogTitleAr = resolved.ogTitleAr
+  state.ogDescriptionEn = resolved.ogDescriptionEn
+  state.ogDescriptionAr = resolved.ogDescriptionAr
 
   const fallbackSlug = slugify(resolved.nameEn)
   const providedSlug = resolved.slug.trim()
@@ -357,7 +377,7 @@ let isApplyingGeneratedSeo = false
 const canonicalFollowsSlug = ref(!state.seoCanonical || state.seoCanonical === normalizeSlugToPath(state.slug))
 const shouldAutoPopulateSeo = computed(() => false)
 
-type GenerationLoadingKey = 'title' | 'description' | 'keywords' | 'all' | 'descriptionEn' | 'descriptionAr' | 'shortDescriptionEn' | 'shortDescriptionAr' | 'descriptions' | 'shortDescriptions'
+type GenerationLoadingKey = 'title' | 'description' | 'keywords' | 'all' | 'descriptionEn' | 'descriptionAr' | 'shortDescriptionEn' | 'shortDescriptionAr' | 'descriptions' | 'shortDescriptions' | 'bilingualSeo'
 
 const generationLoading = reactive<Record<GenerationLoadingKey, boolean>>({
   title: false,
@@ -369,10 +389,55 @@ const generationLoading = reactive<Record<GenerationLoadingKey, boolean>>({
   shortDescriptionEn: false,
   shortDescriptionAr: false,
   descriptions: false,
-  shortDescriptions: false
+  shortDescriptions: false,
+  bilingualSeo: false
 })
 const generationErrorMessage = ref<string | null>(null)
-let contentAbortController: AbortController | null = null
+// Use a Map to allow multiple concurrent requests with different targets
+const contentAbortControllers = new Map<GenerationLoadingKey, AbortController>()
+
+// Cache for AI-generated content to avoid multiple API calls per product
+interface GeneratedContentCache {
+  cacheKey: string
+  timestamp: number
+  data: SeoServiceResult
+}
+const generatedContentCache = ref<GeneratedContentCache | null>(null)
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes cache
+
+function getCacheKey(): string {
+  return `${state.nameEn.trim()}|${getBrandName(state.brandId)}|${getCategoryName(state.categoryId)}`
+}
+
+function isCacheValid(): boolean {
+  if (!generatedContentCache.value) return false
+  const cacheKey = getCacheKey()
+  if (generatedContentCache.value.cacheKey !== cacheKey) return false
+  if (Date.now() - generatedContentCache.value.timestamp > CACHE_TTL_MS) return false
+  return true
+}
+
+function getCachedData(): SeoServiceResult | null {
+  if (!isCacheValid()) return null
+  return generatedContentCache.value?.data ?? null
+}
+
+function setCachedData(data: SeoServiceResult): void {
+  generatedContentCache.value = {
+    cacheKey: getCacheKey(),
+    timestamp: Date.now(),
+    data
+  }
+}
+
+function clearCache(): void {
+  generatedContentCache.value = null
+}
+
+// Clear cache when product details change significantly
+watch(() => [state.nameEn, state.brandId, state.categoryId], () => {
+  clearCache()
+}, { deep: true })
 
 const salePriceHelp = computed(() => {
   if (salePriceInvalid.value) {
@@ -962,7 +1027,7 @@ function populateSeoIfEmpty() {
   }
 }
 
-type SeoTarget = 'title' | 'description' | 'keywords' | 'all' | 'descriptionEn' | 'descriptionAr' | 'shortDescriptionEn' | 'shortDescriptionAr' | 'descriptions' | 'shortDescriptions'
+type SeoTarget = 'title' | 'description' | 'keywords' | 'all' | 'descriptionEn' | 'descriptionAr' | 'shortDescriptionEn' | 'shortDescriptionAr' | 'descriptions' | 'shortDescriptions' | 'bilingualSeo'
 
 interface SeoServicePayload {
   name: string
@@ -988,10 +1053,23 @@ interface SeoServiceResult {
   descriptionAr?: string
   shortDescriptionEn?: string
   shortDescriptionAr?: string
+  // Bilingual SEO fields
+  seoTitleEn?: string
+  seoTitleAr?: string
+  seoDescriptionEn?: string
+  seoDescriptionAr?: string
+  seoKeywordsEn?: string
+  seoKeywordsAr?: string
+  ogTitleEn?: string
+  ogTitleAr?: string
+  ogDescriptionEn?: string
+  ogDescriptionAr?: string
 }
 
 interface SeoServiceResponse {
-  result?: SeoServiceResult
+  success?: boolean
+  data?: SeoServiceResult
+  result?: SeoServiceResult // Keep for backwards compatibility
   error?: string
 }
 
@@ -1013,7 +1091,61 @@ function buildSeoRequestPayload(randomize: boolean) {
   return payload
 }
 
-async function regenerateSeo(target: SeoTarget, randomize = true) {
+// Helper to apply cached result to specific target
+function applyCachedResultToTarget(target: SeoTarget, result: SeoServiceResult): boolean {
+  const fallbackSeo = generateSeoMetadata(true)
+  const fallbackCopy = generateProductCopy(true)
+
+  if ((target === 'title' || target === 'all') && (result?.title || fallbackSeo.title)) {
+    setSeoTitleFromGenerator(result?.title ?? fallbackSeo.title)
+  }
+
+  if ((target === 'description' || target === 'all') && (result?.description || fallbackSeo.description)) {
+    setSeoDescriptionFromGenerator(result?.description ?? fallbackSeo.description)
+  }
+
+  if ((target === 'keywords' || target === 'all') && ((result?.keywords?.length ?? 0) || fallbackSeo.keywords.length)) {
+    setSeoKeywordsFromGenerator(result?.keywords?.length ? result.keywords : fallbackSeo.keywords)
+  }
+
+  if ((target === 'descriptionEn' || target === 'descriptions' || target === 'all') && (result?.descriptionEn || fallbackCopy.descriptionEn)) {
+    setDescriptionEnFromGenerator(result?.descriptionEn ?? fallbackCopy.descriptionEn)
+  }
+
+  if ((target === 'descriptionAr' || target === 'descriptions' || target === 'all') && (result?.descriptionAr || fallbackCopy.descriptionAr)) {
+    setDescriptionArFromGenerator(result?.descriptionAr ?? fallbackCopy.descriptionAr)
+  }
+
+  if ((target === 'shortDescriptionEn' || target === 'shortDescriptions' || target === 'all') && (result?.shortDescriptionEn || fallbackCopy.shortDescriptionEn)) {
+    setShortDescriptionEnFromGenerator(result?.shortDescriptionEn ?? fallbackCopy.shortDescriptionEn)
+  }
+
+  if ((target === 'shortDescriptionAr' || target === 'shortDescriptions' || target === 'all') && (result?.shortDescriptionAr || fallbackCopy.shortDescriptionAr)) {
+    setShortDescriptionArFromGenerator(result?.shortDescriptionAr ?? fallbackCopy.shortDescriptionAr)
+  }
+
+  if ((target === 'all') && (result?.canonical || fallbackSeo.canonical)) {
+    setSeoCanonicalFromGenerator(result?.canonical ?? fallbackSeo.canonical, true)
+  }
+
+  // Handle bilingual SEO
+  if (target === 'bilingualSeo' || target === 'all') {
+    if (result?.seoTitleEn) state.seoTitleEn = result.seoTitleEn
+    if (result?.seoTitleAr) state.seoTitleAr = result.seoTitleAr
+    if (result?.seoDescriptionEn) state.seoDescriptionEn = result.seoDescriptionEn
+    if (result?.seoDescriptionAr) state.seoDescriptionAr = result.seoDescriptionAr
+    if (result?.seoKeywordsEn) state.seoKeywordsEn = result.seoKeywordsEn
+    if (result?.seoKeywordsAr) state.seoKeywordsAr = result.seoKeywordsAr
+    if (result?.ogTitleEn) state.ogTitleEn = result.ogTitleEn
+    if (result?.ogTitleAr) state.ogTitleAr = result.ogTitleAr
+    if (result?.ogDescriptionEn) state.ogDescriptionEn = result.ogDescriptionEn
+    if (result?.ogDescriptionAr) state.ogDescriptionAr = result.ogDescriptionAr
+  }
+
+  return true
+}
+
+async function regenerateSeo(target: SeoTarget, randomize = true, forceRefresh = false) {
   const loadingKey = (target === 'all' ? 'all' : target) as GenerationLoadingKey
 
   if (generationLoading[loadingKey]) {
@@ -1029,25 +1161,44 @@ async function regenerateSeo(target: SeoTarget, randomize = true) {
     return
   }
 
+  // Check cache first (unless force refresh or requesting 'all')
+  // For individual targets, try to use cached data from previous 'all' request
+  if (!forceRefresh && target !== 'all') {
+    const cached = getCachedData()
+    if (cached) {
+      generationLoading[loadingKey] = true
+      // Small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 100))
+      applyCachedResultToTarget(target, cached)
+      generationLoading[loadingKey] = false
+      return
+    }
+  }
+
   generationLoading[loadingKey] = true
   generationErrorMessage.value = null
 
-  if (contentAbortController) {
-    contentAbortController.abort()
+  // Abort any previous request for the same target
+  const existingController = contentAbortControllers.get(loadingKey)
+  if (existingController) {
+    existingController.abort()
   }
 
   const controller = new AbortController()
-  contentAbortController = controller
+  contentAbortControllers.set(loadingKey, controller)
 
   const payload = buildSeoRequestPayload(randomize)
 
+  // Always request 'all' to populate cache fully, then apply only the specific target fields
+  // This ensures one API call can serve multiple regenerate button clicks
+
   try {
-    const response = await fetch('/api/seo/generate', {
+    const response = await fetch('/api/seo/generate-v2', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ ...payload, target }),
+      body: JSON.stringify({ ...payload, target: 'all' }),
       signal: controller.signal
     })
 
@@ -1061,87 +1212,45 @@ async function regenerateSeo(target: SeoTarget, randomize = true) {
       throw new Error(data.error)
     }
 
-    const result = data.result
+    // Support both v1 (result) and v2 (data) response formats
+    const result = data.data ?? data.result
 
-    const fallbackSeo = generateSeoMetadata(randomize)
-    const fallbackCopy = generateProductCopy(randomize)
+    if (result) {
+      // Cache the result for future use
+      setCachedData(result)
 
-    if ((target === 'title' || target === 'all') && (result?.title || fallbackSeo.title)) {
-      setSeoTitleFromGenerator(result?.title ?? fallbackSeo.title)
-    }
-
-    if ((target === 'description' || target === 'all') && (result?.description || fallbackSeo.description)) {
-      setSeoDescriptionFromGenerator(result?.description ?? fallbackSeo.description)
-    }
-
-    if ((target === 'keywords' || target === 'all') && ((result?.keywords?.length ?? 0) || fallbackSeo.keywords.length)) {
-      setSeoKeywordsFromGenerator(result?.keywords?.length ? result.keywords : fallbackSeo.keywords)
-    }
-
-    if ((target === 'descriptionEn' || target === 'descriptions') && (result?.descriptionEn || fallbackCopy.descriptionEn)) {
-      setDescriptionEnFromGenerator(result?.descriptionEn ?? fallbackCopy.descriptionEn)
-    }
-
-    if ((target === 'descriptionAr' || target === 'descriptions') && (result?.descriptionAr || fallbackCopy.descriptionAr)) {
-      setDescriptionArFromGenerator(result?.descriptionAr ?? fallbackCopy.descriptionAr)
-    }
-
-    if ((target === 'shortDescriptionEn' || target === 'shortDescriptions') && (result?.shortDescriptionEn || fallbackCopy.shortDescriptionEn)) {
-      setShortDescriptionEnFromGenerator(result?.shortDescriptionEn ?? fallbackCopy.shortDescriptionEn)
-    }
-
-    if ((target === 'shortDescriptionAr' || target === 'shortDescriptions') && (result?.shortDescriptionAr || fallbackCopy.shortDescriptionAr)) {
-      setShortDescriptionArFromGenerator(result?.shortDescriptionAr ?? fallbackCopy.shortDescriptionAr)
-    }
-
-    if (target === 'all' && (result?.canonical || fallbackSeo.canonical)) {
-      setSeoCanonicalFromGenerator(result?.canonical ?? fallbackSeo.canonical, true)
+      // Apply only the requested target fields
+      applyCachedResultToTarget(target, result)
     }
   } catch (error) {
+    // If this request was aborted in favor of a new one, skip error handling
+    // The new request will take over
     if (controller.signal.aborted) {
       return
     }
 
     generationErrorMessage.value = error instanceof Error ? error.message : 'Failed to generate content'
 
+    // Use fallback generation on error
     const fallbackSeo = generateSeoMetadata(randomize)
     const fallbackCopy = generateProductCopy(randomize)
-
-    if (target === 'title' || target === 'all') {
-      setSeoTitleFromGenerator(fallbackSeo.title)
+    const fallbackResult: SeoServiceResult = {
+      title: fallbackSeo.title,
+      description: fallbackSeo.description,
+      keywords: fallbackSeo.keywords,
+      canonical: fallbackSeo.canonical,
+      descriptionEn: fallbackCopy.descriptionEn,
+      descriptionAr: fallbackCopy.descriptionAr,
+      shortDescriptionEn: fallbackCopy.shortDescriptionEn,
+      shortDescriptionAr: fallbackCopy.shortDescriptionAr
     }
-
-    if (target === 'description' || target === 'all') {
-      setSeoDescriptionFromGenerator(fallbackSeo.description)
-    }
-
-    if (target === 'keywords' || target === 'all') {
-      setSeoKeywordsFromGenerator(fallbackSeo.keywords)
-    }
-
-    if (target === 'descriptionEn' || target === 'descriptions') {
-      setDescriptionEnFromGenerator(fallbackCopy.descriptionEn)
-    }
-
-    if (target === 'descriptionAr' || target === 'descriptions') {
-      setDescriptionArFromGenerator(fallbackCopy.descriptionAr)
-    }
-
-    if (target === 'shortDescriptionEn' || target === 'shortDescriptions') {
-      setShortDescriptionEnFromGenerator(fallbackCopy.shortDescriptionEn)
-    }
-
-    if (target === 'shortDescriptionAr' || target === 'shortDescriptions') {
-      setShortDescriptionArFromGenerator(fallbackCopy.shortDescriptionAr)
-    }
-
-    if (target === 'all') {
-      setSeoCanonicalFromGenerator(fallbackSeo.canonical, true)
-    }
+    applyCachedResultToTarget(target, fallbackResult)
   } finally {
-    if (contentAbortController === controller) {
-      generationLoading[loadingKey] = false
-      contentAbortController = null
+    // Always reset loading state when done
+    generationLoading[loadingKey] = false
+    // Clean up the controller from the Map
+    if (contentAbortControllers.get(loadingKey) === controller) {
+      contentAbortControllers.delete(loadingKey)
     }
   }
 }
@@ -1156,6 +1265,13 @@ function handleRegenerateDescriptions(randomize = true) {
   }
   handleRegenerateSeo('descriptions', randomize)
   handleRegenerateSeo('shortDescriptions', randomize)
+}
+
+function handleRegenerateBilingualSeo(randomize = true) {
+  if (generationLoading.bilingualSeo) {
+    return
+  }
+  handleRegenerateSeo('bilingualSeo', randomize)
 }
 
 function openCategoryCreator() {
@@ -1223,11 +1339,32 @@ function toProductPayload(): ProductBasePayload {
   return {
     nameEn: state.nameEn.trim(),
     nameAr: state.nameAr.trim(),
+    slug: state.slug.trim() || undefined,
     price: state.price,
     salePrice,
     quantity: state.quantity,
     categoryId: state.categoryId ?? null,
-    brandId: state.brandId ?? null
+    brandId: state.brandId ?? null,
+    descriptionEn: state.descriptionEn.trim() || undefined,
+    descriptionAr: state.descriptionAr.trim() || undefined,
+    shortDescriptionEn: state.shortDescriptionEn.trim() || undefined,
+    shortDescriptionAr: state.shortDescriptionAr.trim() || undefined,
+    images: state.images.length > 0 ? state.images : undefined,
+    isArchived: state.isArchived,
+    // Availability fields
+    availabilityType: state.availabilityType,
+    expectedArrivalDate: state.expectedArrivalDate || undefined,
+    // Bilingual SEO fields
+    seoTitleEn: state.seoTitleEn.trim() || undefined,
+    seoTitleAr: state.seoTitleAr.trim() || undefined,
+    seoDescriptionEn: state.seoDescriptionEn.trim() || undefined,
+    seoDescriptionAr: state.seoDescriptionAr.trim() || undefined,
+    seoKeywordsEn: state.seoKeywordsEn.trim() || undefined,
+    seoKeywordsAr: state.seoKeywordsAr.trim() || undefined,
+    ogTitleEn: state.ogTitleEn.trim() || undefined,
+    ogTitleAr: state.ogTitleAr.trim() || undefined,
+    ogDescriptionEn: state.ogDescriptionEn.trim() || undefined,
+    ogDescriptionAr: state.ogDescriptionAr.trim() || undefined
   }
 }
 
@@ -1374,6 +1511,36 @@ defineExpose({
           </div>
         </section>
 
+        <!-- AI Content Generation Section -->
+        <section class="space-y-4 p-4 rounded-lg bg-elevated border border-default">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex-1">
+              <h2 class="text-lg font-medium text-highlighted flex items-center gap-2">
+                <UIcon name="i-lucide-sparkles" class="text-primary" />
+                AI Content Generator
+              </h2>
+              <p class="text-sm text-muted">
+                Generate all product content with one click. Uses 1 API request, then individual regenerate buttons use cached data.
+              </p>
+              <p v-if="generatedContentCache" class="text-xs text-success mt-1">
+                ✓ Cache active - individual regenerate buttons will use cached data
+              </p>
+            </div>
+            <UButton
+              variant="solid"
+              color="primary"
+              icon="i-lucide-wand-2"
+              size="lg"
+              class="shrink-0"
+              :loading="generationLoading.all"
+              :disabled="generationLoading.all || !state.nameEn.trim() || !state.brandId || !state.categoryId"
+              @click.prevent="handleRegenerateSeo('all')"
+            >
+              Generate All Content
+            </UButton>
+          </div>
+        </section>
+
         <section class="space-y-4">
           <div class="flex items-start justify-between gap-2">
             <div>
@@ -1384,19 +1551,20 @@ defineExpose({
                 Generate and refine core product descriptions in both languages.
               </p>
             </div>
-            <UButton
-              variant="ghost"
-              color="primary"
-
-              icon="i-lucide-sparkles"
-              class="shrink-0"
-              :loading="generationLoading.descriptions || generationLoading.shortDescriptions"
-              :disabled="generationLoading.descriptions || generationLoading.shortDescriptions"
-              aria-label="Regenerate basic product info"
-              @click.prevent="handleRegenerateDescriptions()"
-            >
-              <span class="hidden sm:inline">Regenerate basic info</span>
-            </UButton>
+            <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
+              <UButton
+                variant="ghost"
+                color="primary"
+                :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
+                class="shrink-0"
+                :loading="generationLoading.descriptions || generationLoading.shortDescriptions"
+                :disabled="generationLoading.descriptions || generationLoading.shortDescriptions"
+                aria-label="Regenerate basic product info"
+                @click.prevent="handleRegenerateDescriptions()"
+              >
+                <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Regenerate' }}</span>
+              </UButton>
+            </UTooltip>
           </div>
 
           <UFormField :help="`${descriptionEnLength}/${MAX_DESCRIPTION_LENGTH} characters`" label="Description (English)" name="descriptionEn">
@@ -1478,18 +1646,19 @@ defineExpose({
                 Generate SEO title, description, canonical, and keywords.
               </p>
             </div>
-            <UButton
-              variant="ghost"
-              color="primary"
-
-              icon="i-lucide-sparkles"
-              class="shrink-0"
-              :loading="generationLoading.all"
-              aria-label="Regenerate meta tags"
-              @click.prevent="handleRegenerateSeo('all')"
-            >
-              <span class="hidden sm:inline">Regenerate meta tags</span>
-            </UButton>
+            <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
+              <UButton
+                variant="ghost"
+                color="primary"
+                :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
+                class="shrink-0"
+                :loading="generationLoading.all"
+                aria-label="Regenerate meta tags"
+                @click.prevent="handleRegenerateSeo('all')"
+              >
+                <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Regenerate' }}</span>
+              </UButton>
+            </UTooltip>
           </div>
 
           <UAlert
@@ -1576,15 +1745,31 @@ defineExpose({
                 Per-language meta tags for English and Arabic storefronts.
               </p>
             </div>
-            <UButton
-              variant="ghost"
-              color="neutral"
-              size="xs"
-              :icon="showBilingualSeo ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-              @click="showBilingualSeo = !showBilingualSeo"
-            >
-              {{ showBilingualSeo ? 'Hide' : 'Show' }}
-            </UButton>
+            <div class="flex items-center gap-2">
+              <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
+                <UButton
+                  variant="ghost"
+                  color="primary"
+                  size="xs"
+                  :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
+                  :loading="generationLoading.bilingualSeo"
+                  :disabled="generationLoading.bilingualSeo"
+                  aria-label="Generate bilingual SEO"
+                  @click.prevent="handleRegenerateBilingualSeo()"
+                >
+                  <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Generate' }}</span>
+                </UButton>
+              </UTooltip>
+              <UButton
+                variant="ghost"
+                color="neutral"
+                size="xs"
+                :icon="showBilingualSeo ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                @click="showBilingualSeo = !showBilingualSeo"
+              >
+                {{ showBilingualSeo ? 'Hide' : 'Show' }}
+              </UButton>
+            </div>
           </div>
 
           <div
@@ -1800,6 +1985,57 @@ defineExpose({
             <Icon name="i-lucide-info" class="mr-1" />
             Archived products stay hidden from the storefront.
           </p>
+        </section>
+
+        <!-- Availability Section -->
+        <section class="space-y-4 mt-8">
+          <h2 class="text-lg font-medium text-highlighted flex items-center gap-2">
+            <Icon name="i-lucide-package-check" class="w-5 h-5" />
+            Availability
+          </h2>
+
+          <UFormField name="availabilityType" label="Availability Status">
+            <USelect
+              v-model="state.availabilityType"
+              :items="[
+                { value: 'IN_STOCK_EGYPT', label: '🟢 In Stock (Egypt)', description: 'Ready to ship in 2-4 days' },
+                { value: 'ARRIVING_SOON', label: '🟡 Arriving Soon', description: 'Coming in 1-2 weeks' },
+                { value: 'PRE_ORDER', label: '🔵 Pre-Order', description: 'Available on request (WhatsApp)' }
+              ]"
+              value-key="value"
+              label-key="label"
+              class="w-full"
+            />
+          </UFormField>
+
+          <div v-if="state.availabilityType === 'IN_STOCK_EGYPT'" class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
+            <Icon name="i-lucide-check-circle" class="w-4 h-4" />
+            Product is in your Egypt warehouse and ready to ship.
+          </div>
+
+          <div v-if="state.availabilityType === 'ARRIVING_SOON'" class="space-y-3">
+            <div class="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg text-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+              <Icon name="i-lucide-truck" class="w-4 h-4" />
+              Product is on its way from KSA to Egypt.
+            </div>
+            <UFormField name="expectedArrivalDate" label="Expected Arrival Date">
+              <UInput
+                v-model="state.expectedArrivalDate"
+                type="date"
+                class="w-full"
+                placeholder="Select expected arrival date"
+              />
+            </UFormField>
+            <p class="text-xs text-muted flex items-center">
+              <Icon name="i-lucide-info" class="mr-1" />
+              Set this to when you expect the product to arrive in Egypt. Update to "In Stock" when it arrives.
+            </p>
+          </div>
+
+          <div v-if="state.availabilityType === 'PRE_ORDER'" class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
+            <Icon name="i-lucide-message-circle" class="w-4 h-4" />
+            Customers will be redirected to WhatsApp to inquire about this product. It cannot be added to checkout.
+          </div>
         </section>
       </div>
     </div>

@@ -14,7 +14,12 @@ export default eventHandler(async (event) => {
   const params = paramsSchema.parse({ id: getRouterParam(event, 'id') })
 
   const promoCode = await prisma.pricePromoCode.findUnique({
-    where: { id: params.id }
+    where: { id: params.id },
+    include: {
+      applicableProducts: {
+        select: { id: true }
+      }
+    }
   })
 
   if (!promoCode) {
@@ -43,6 +48,9 @@ export default eventHandler(async (event) => {
       usageLimit: promoCode.usageLimit,
       usageCount: promoCode.usageCount,
       isActive: promoCode.isActive,
+      scope: promoCode.scope,
+      applicableAvailabilityTypes: promoCode.applicableAvailabilityTypes,
+      applicableProductIds: promoCode.applicableProducts.map(p => p.id),
       status,
       createdAt: promoCode.createdAt.toISOString(),
       updatedAt: promoCode.updatedAt.toISOString()

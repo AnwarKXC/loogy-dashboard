@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BrandQuickCreateModal from '~/components/brands/BrandQuickCreateModal.vue'
+import CategoryQuickCreateModal from '~/components/categories/CategoryQuickCreateModal.vue'
 import ProductEditorForm from '~/components/products/ProductEditorForm.vue'
 import type { BrandEditorValues, ProductBasePayload, ProductDetailResponse, ProductEditorValues, ProductFiltersResponse } from '~/types'
 import { mapProductDetailToEditorValues } from '~/utils/product-editor'
@@ -10,6 +11,8 @@ const toast = useToast()
 const saving = ref(false)
 const quickBrandOpen = ref(false)
 const quickBrandLoading = ref(false)
+const quickCategoryOpen = ref(false)
+const quickCategoryLoading = ref(false)
 const productFormRef = ref<{ setCategoryId: (id: number | null) => void, setBrandId: (id: number | null) => void } | null>(null)
 
 const productId = Number(route.params.id)
@@ -106,6 +109,35 @@ async function handleQuickBrandSubmit(values: BrandEditorValues) {
     quickBrandLoading.value = false
   }
 }
+
+async function handleQuickCategorySubmit(payload: { nameEn: string, parentId: number | null }) {
+  quickCategoryLoading.value = true
+
+  try {
+    const response = await $fetch<{ category: { id: number, name: string } }>('/api/categories', {
+      method: 'POST',
+      body: payload
+    })
+
+    toast.add({
+      title: 'Category created',
+      description: `${response.category.name} is ready.`
+    })
+
+    quickCategoryOpen.value = false
+    await refreshFilters()
+    productFormRef.value?.setCategoryId(response.category.id)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unable to create category'
+    toast.add({
+      title: 'Creation failed',
+      description: message,
+      color: 'error'
+    })
+  } finally {
+    quickCategoryLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -170,12 +202,20 @@ async function handleQuickBrandSubmit(values: BrandEditorValues) {
             :brands="brands"
             :loading="saving || productStatus === 'pending'"
             @submit="handleSubmit"
+            @open-category-create="quickCategoryOpen = true"
             @open-brand-create="quickBrandOpen = true"
           />
         </UCard>
       </div>
     </template>
   </UDashboardPanel>
+
+  <CategoryQuickCreateModal
+    v-model:open="quickCategoryOpen"
+    :categories="categories"
+    :submitting="quickCategoryLoading"
+    @submit="handleQuickCategorySubmit"
+  />
 
   <BrandQuickCreateModal
     v-model:open="quickBrandOpen"
