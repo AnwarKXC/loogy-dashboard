@@ -4,6 +4,9 @@ import prisma from '../../../db'
 import { getProductInclude, getPreferredTranslation, mapProductToListItem } from '../../../utils/products'
 import type { ProductWithRelations } from '../../../utils/products'
 
+// Main category slugs for the storefront sections
+const MAIN_CATEGORY_SLUGS = ['accessories', 'bags', 'shoes', 'watches', 'clothes'] as const
+
 const DEFAULT_HOME_CONTENT = {
   hero: {
     title: 'NEW COLLECTION',
@@ -63,7 +66,7 @@ export default eventHandler(async () => {
     }
   }
 
-  const [appSettings, categories, brands] = await prisma.$transaction([
+  const [appSettings, categories, brands, testimonials] = await prisma.$transaction([
     prisma.appSettings.findFirst(),
     prisma.category.findMany({
       select: {
@@ -101,11 +104,34 @@ export default eventHandler(async () => {
         },
         _count: {
           select: {
-            products: true
+            products: {
+              where: {
+                isPublished: true,
+                isArchived: false
+              }
+            }
           }
         }
       },
       orderBy: [{ createdAt: 'asc' }]
+    }),
+    // Fetch testimonials for homepage carousel (15 items)
+    prisma.testimonial.findMany({
+      where: { isPublished: true },
+      select: {
+        id: true,
+        customerName: true,
+        content: true,
+        images: true,
+        source: true,
+        rating: true,
+        createdAt: true
+      },
+      orderBy: [
+        { displayOrder: 'asc' },
+        { createdAt: 'desc' }
+      ],
+      take: 15
     })
   ])
 
@@ -144,6 +170,92 @@ export default eventHandler(async () => {
     resolveProducts(resolvedContent.sections.egyptProductIds, 6, { createdAt: 'desc' }),
     resolveProducts(resolvedContent.sections.previousOrderProductIds, 10, { createdAt: 'desc' })
   ])
+
+  // Fetch products by availability type
+  const [inStockEgyptProducts, arrivingSoonProducts, preOrderProducts] = await Promise.all([
+    prisma.product.findMany({
+      where: {
+        ...publishedFilter,
+        availabilityType: 'IN_STOCK_EGYPT'
+      },
+      include: getProductInclude(),
+      orderBy: { createdAt: 'desc' },
+      take: 8
+    }),
+    prisma.product.findMany({
+      where: {
+        ...publishedFilter,
+        availabilityType: 'ARRIVING_SOON'
+      },
+      include: getProductInclude(),
+      orderBy: { createdAt: 'desc' },
+      take: 8
+    }),
+    prisma.product.findMany({
+      where: {
+        ...publishedFilter,
+        availabilityType: 'PRE_ORDER'
+      },
+      include: getProductInclude(),
+      orderBy: { createdAt: 'desc' },
+      take: 8
+    })
+  ])
+
+  // Fetch sale products (products with salePrice set)
+  const saleProducts = await prisma.product.findMany({
+    where: {
+      ...publishedFilter,
+      salePrice: { not: null }
+    },
+    include: getProductInclude(),
+    orderBy: { createdAt: 'desc' },
+    take: 10
+  })
+
+  // Fetch products by main categories
+  const mainCategoryProducts: Record<string, HomeProductItem[]> = {}
+  const mainCategories = await prisma.category.findMany({
+    where: {
+      slug: { in: [...MAIN_CATEGORY_SLUGS] }
+    },
+    select: {
+      id: true,
+      slug: true,
+      translations: {
+        select: { lang: true, name: true }
+      }
+    }
+  })
+
+  const categoryProductsPromises = mainCategories.map(async (cat) => {
+    const products = await prisma.product.findMany({
+      where: {
+        ...publishedFilter,
+        categoryId: cat.id
+      },
+      include: getProductInclude(),
+      orderBy: { createdAt: 'desc' },
+      take: 8
+    })
+    return {
+      slug: cat.slug,
+      name: getPreferredTranslation(cat.translations, 'name') || cat.slug,
+      products: (products as unknown as ProductWithRelations[]).map(mapProductToListItem)
+    }
+  })
+
+  const categoryProductsResults = await Promise.all(categoryProductsPromises)
+  for (const result of categoryProductsResults) {
+    mainCategoryProducts[result.slug] = result.products
+  }
+
+  // Main categories metadata for display
+  const mainCategoriesData = categoryProductsResults.map(result => ({
+    slug: result.slug,
+    name: result.name,
+    count: result.products.length
+  }))
 
   const heroFeaturedProducts = resolvedContent.hero.slides.length
     ? []
@@ -222,17 +334,44 @@ export default eventHandler(async () => {
     slides: heroSlides
   }
 
+  // Sort brands by product count (descending) and take top 4
+  const topBrands = [...brands]
+    .sort((a, b) => b._count.products - a._count.products)
+    .slice(0, 4)
+    .map((brand: (typeof brands)[number]) => ({
+      id: brand.id,
+      slug: brand.slug,
+      name: getPreferredTranslation(brand.translations, 'name') || brand.slug,
+      logo: brand.logo ?? null,
+      productCount: brand._count.products
+    }))
+
   return {
     hero: homeHero,
+    // Currency from app settings
+    currency: appSettings?.currency ?? 'EGP',
     sections: {
       newArrivals,
       collections,
       egyptProducts,
-      previousOrders
+      previousOrders,
+      // Availability-based sections
+      inStockEgypt: (inStockEgyptProducts as unknown as ProductWithRelations[]).map(mapProductToListItem),
+      arrivingSoon: (arrivingSoonProducts as unknown as ProductWithRelations[]).map(mapProductToListItem),
+      preOrder: (preOrderProducts as unknown as ProductWithRelations[]).map(mapProductToListItem),
+      // Sale products
+      saleProducts: (saleProducts as unknown as ProductWithRelations[]).map(mapProductToListItem),
+      // Products by main category
+      byCategory: mainCategoryProducts
     },
     categories: featuredCategories,
+    mainCategories: mainCategoriesData,
     galleryImages: resolvedContent.galleryImages,
-    reviews: resolvedContent.reviews,
+    // Testimonials for carousel
+    testimonials,
+    // Top 4 brands by product count
+    topBrands,
+    // All brands (for reference)
     brands: brands.map((brand: (typeof brands)[number]) => ({
       id: brand.id,
       slug: brand.slug,

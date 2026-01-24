@@ -40,20 +40,6 @@ const createProductSchema = z.object({
   }
 })
 
-function createLocalizedName(en: string, ar?: string) {
-  const value: Record<string, string> = {}
-
-  if (en.trim().length > 0) {
-    value.en = en.trim()
-  }
-
-  if (ar && ar.trim().length > 0) {
-    value.ar = ar.trim()
-  }
-
-  return value
-}
-
 function toSlug(value: string) {
   return value
     .normalize('NFKD')
@@ -102,15 +88,12 @@ export default eventHandler(async (event) => {
 
   const product = await prisma.product.create({
     data: {
-      name: createLocalizedName(payload.nameEn, payload.nameAr),
       price: priceDecimal,
       salePrice: salePriceDecimal ?? undefined,
       discountPercentage: discountPercentage != null ? new Prisma.Decimal(discountPercentage) : undefined,
-      quantity: payload.quantity,
+      stock: payload.quantity,
       slug: await generateUniqueSlug(payload.nameEn),
       images: [],
-      stock: null,
-      rating: null,
       categoryId: payload.categoryId ?? undefined,
       brandId: payload.brandId ?? undefined,
       translations: {

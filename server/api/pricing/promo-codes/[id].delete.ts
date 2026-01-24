@@ -10,7 +10,7 @@ const paramsSchema = z.object({
 
 export default eventHandler(async (event) => {
   // Only OWNER can delete promo codes
-  await requireSuperAdmin(event, { roles: ['OWNER'] })
+  await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
   const params = paramsSchema.parse({ id: getRouterParam(event, 'id') })
 

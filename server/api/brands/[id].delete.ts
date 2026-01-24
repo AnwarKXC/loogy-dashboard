@@ -7,7 +7,7 @@ import { mapBrandRecord } from '../../utils/brands'
 import type { BrandRecord } from '../../utils/brands'
 
 export default eventHandler(async (event) => {
-  await requireSuperAdmin(event, { roles: ['OWNER'] })
+  await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
   const idParam = event.context.params?.id
   const brandId = Number(idParam)

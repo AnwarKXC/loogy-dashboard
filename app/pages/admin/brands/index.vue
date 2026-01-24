@@ -5,6 +5,7 @@ import type { TableColumn } from '@nuxt/ui'
 import BrandEditorForm from '~/components/brands/BrandEditorForm.vue'
 import type { BrandEditorValues, BrandListItem, BrandListResponse } from '~/types'
 
+const NuxtLink = resolveComponent('NuxtLink')
 const UAvatar = resolveComponent('UAvatar')
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
@@ -106,7 +107,20 @@ const columns: TableColumn<BrandListItem>[] = [
   {
     accessorKey: 'productCount',
     header: 'Products',
-    cell: ({ row }) => h(UBadge, { variant: 'subtle' }, () => row.original.productCount.toString())
+    cell: ({ row }) => {
+      const count = row.original.productCount
+      if (count === 0) {
+        return h(UBadge, { variant: 'subtle' }, () => '0')
+      }
+      return h(
+        NuxtLink,
+        {
+          to: { path: '/admin/products', query: { brandId: row.original.id } },
+          class: 'hover:underline'
+        },
+        () => h(UBadge, { variant: 'subtle', class: 'cursor-pointer hover:bg-primary-100 dark:hover:bg-primary-900' }, () => count.toString())
+      )
+    }
   },
   {
     accessorKey: 'updatedAt',

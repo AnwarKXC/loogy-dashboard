@@ -7,6 +7,7 @@ import type { CategoryEditorValues, CategoryListResponse } from '~/types'
 import type { FlattenedCategory } from '~/utils/categories'
 import { flattenCategoryTree } from '~/utils/categories'
 
+const NuxtLink = resolveComponent('NuxtLink')
 const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
@@ -92,7 +93,20 @@ const columns: TableColumn<FlattenedCategory>[] = [
   {
     accessorKey: 'productCount',
     header: 'Products',
-    cell: ({ row }) => h('span', { class: 'text-sm text-highlighted' }, row.original.productCount.toString())
+    cell: ({ row }) => {
+      const count = row.original.productCount
+      if (count === 0) {
+        return h('span', { class: 'text-sm text-muted' }, '0')
+      }
+      return h(
+        NuxtLink,
+        {
+          to: { path: '/admin/products', query: { categoryId: row.original.id } },
+          class: 'text-sm text-primary-500 hover:text-primary-600 hover:underline font-medium'
+        },
+        () => count.toString()
+      )
+    }
   },
   {
     accessorKey: 'childCount',

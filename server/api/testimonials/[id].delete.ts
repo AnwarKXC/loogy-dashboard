@@ -7,7 +7,7 @@ const RouteParamsSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  await requireSuperAdmin(event, { roles: ['OWNER'] })
+  await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
   const { id } = await getValidatedRouterParams(event, RouteParamsSchema.parse)
 

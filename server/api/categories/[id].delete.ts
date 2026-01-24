@@ -5,7 +5,7 @@ import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getLocalizedString } from '../products/utils'
 
 export default eventHandler(async (event) => {
-  await requireSuperAdmin(event, { roles: ['OWNER'] })
+  await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
   const idParam = event.context.params?.id
   const categoryId = Number(idParam)

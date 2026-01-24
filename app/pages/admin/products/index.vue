@@ -18,12 +18,20 @@ const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const toast = useToast()
+const route = useRoute()
+
+// Initialize filters from URL query params
+function parseQueryNumber(value: unknown): number | null {
+  if (value === undefined || value === null || value === '') return null
+  const parsed = Number(value)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+}
 
 const page = ref(1)
 const pageSize = ref(10)
 const search = ref('')
-const categoryId = ref<number | null>(null)
-const brandId = ref<number | null>(null)
+const categoryId = ref<number | null>(parseQueryNumber(route.query.categoryId))
+const brandId = ref<number | null>(parseQueryNumber(route.query.brandId))
 const sort = ref<'newest' | 'oldest' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc'>('newest')
 const showArchived = ref(false)
 

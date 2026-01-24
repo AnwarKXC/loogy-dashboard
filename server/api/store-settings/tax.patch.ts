@@ -12,7 +12,7 @@ const BodySchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
-  await requireSuperAdmin(event, { roles: ['OWNER'] })
+  await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
   const body = await readValidatedBody(event, BodySchema.parse)
 

@@ -23,7 +23,7 @@ const updatePricingSchema = z.object({
 })
 
 export default eventHandler(async (event) => {
-  await requireSuperAdmin(event, { roles: ['OWNER'] })
+  await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
   const body = await readBody(event)
   const payload = updatePricingSchema.parse(body)

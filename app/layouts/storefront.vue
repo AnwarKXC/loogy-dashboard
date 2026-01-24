@@ -38,9 +38,9 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
   <div
     class="min-h-screen flex flex-col bg-gradient-to-b from-white via-slate-50 to-white dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 text-gray-900 dark:text-gray-100"
   >
-    <header class="fixed top-0 left-0 right-0 z-50 bg-neutral-50/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-transparent transition-all duration-300">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-neutral-500/10  backdrop-blur-md border-b border-transparent transition-all duration-300">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="h-20 flex items-center justify-between">
+        <div class="h-14 flex items-center justify-between">
           <!-- Left: Nav -->
           <div class="flex items-center gap-8">
             <button class="lg:hidden" aria-label="Menu">
@@ -120,106 +120,112 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
     <main class="flex-1 mt-14">
       <slot />
     </main>
-    <footer class="bg-neutral-900 text-white pt-24 pb-12 overflow-hidden">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-24">
-          <!-- Brand -->
-          <div class="col-span-1 lg:col-span-1">
-            <img
-              v-if="layout.brand.logoUrl"
-              :src="layout.brand.logoUrl"
-              :alt="layout.brand.name"
-              class="h-12 w-auto object-contain mb-8 brightness-0 invert"
-            >
-            <div v-else class="w-12 h-12 rotate-45 bg-white mb-8" />
-            <p class="text-gray-400 text-sm leading-relaxed max-w-xs mb-8">
-              {{ layout.footer.description }}
-            </p>
-            <div v-if="layout.footer.socials?.length" class="flex gap-4">
-              <a
-                v-for="social in layout.footer.socials"
-                :key="social.label"
-                :href="social.url || '#'"
-                class="w-10 h-10 rounded-full border border-gray-700 flex items-center justify-center hover:bg-white hover:text-black transition-all"
-                :aria-label="social.label"
-                target="_blank"
-                rel="noopener"
-              >
-                <UIcon :name="social.icon" class="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-
-          <!-- Navigation Links -->
-          <div>
-            <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-8">
-              Navigation
-            </h4>
-            <ul class="space-y-4 text-sm font-medium">
-              <li v-for="link in layout.navLinks" :key="link.to">
-                <NuxtLink :to="link.to" class="hover:text-gray-300 transition-colors">
-                  {{ link.label }}
-                </NuxtLink>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Footer Links -->
-          <div>
-            <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-8">
-              Legal
-            </h4>
-            <ul class="space-y-4 text-sm font-medium">
-              <li v-for="link in layout.footer.links" :key="link.to">
-                <NuxtLink :to="link.to" class="hover:text-gray-300 transition-colors">
-                  {{ link.label }}
-                </NuxtLink>
-              </li>
-            </ul>
-          </div>
-
-          <!-- Newsletter -->
-          <div>
-            <h4 class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-8">
-              Newsletter
-            </h4>
-            <p class="text-sm text-gray-400 mb-6">
-              Subscribe to receive updates, access to exclusive deals, and more.
-            </p>
-            <form class="flex border-b border-gray-700 pb-2">
+    <footer class="bg-[#0a0a0a] text-white pt-32 pb-8 overflow-hidden font-sans border-t border-white/5 relative">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <!-- Top Section: Newsletter & Brand Message -->
+        <div class="flex flex-col lg:flex-row gap-16 lg:gap-32 mb-24">
+          <!-- Left: Big CTA -->
+          <div class="lg:w-1/2">
+            <h2 class="text-5xl lg:text-7xl font-serif font-light mb-8 leading-tight">
+              Join our <span class="italic text-amber-500">exclusive</span> list
+            </h2>
+            <form class="relative max-w-lg">
               <input
                 type="email"
-                placeholder="Enter your email"
-                class="bg-transparent w-full outline-none text-sm placeholder-gray-600 focus:placeholder-gray-400"
-                aria-label="Email address"
+                placeholder="your@email.com"
+                class="w-full bg-transparent border-b border-white/20 py-4 text-xl focus:outline-none focus:border-amber-500 transition-colors placeholder-neutral-600"
               >
-              <button type="submit" class="text-xs font-bold uppercase tracking-widest hover:text-gray-300">
-                Join
+              <button
+                type="submit"
+                class="absolute right-0 top-1/2 -translate-y-1/2 text-xs font-bold uppercase tracking-widest hover:text-amber-500 transition-colors"
+              >
+                Subscribe
               </button>
             </form>
+            <p class="mt-6 text-neutral-500 text-sm">
+              Get early access to new collections and special offers.
+            </p>
+          </div>
+
+          <!-- Right: Links Grid -->
+          <div class="lg:w-1/2 grid grid-cols-2 md:grid-cols-3 gap-8">
+            <!-- Navigation -->
+            <div class="space-y-6">
+              <h4 class="text-xs font-black uppercase tracking-widest text-neutral-500">
+                Shop
+              </h4>
+              <ul class="space-y-4">
+                <li v-for="link in layout.navLinks" :key="link.to">
+                  <NuxtLink :to="link.to" class="text-sm text-neutral-300 hover:text-white hover:translate-x-2 transition-all duration-300 inline-block">
+                    {{ link.label }}
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Legal -->
+            <div class="space-y-6">
+              <h4 class="text-xs font-black uppercase tracking-widest text-neutral-500">
+                Legal
+              </h4>
+              <ul class="space-y-4">
+                <li v-for="link in layout.footer.links" :key="link.to">
+                  <NuxtLink :to="link.to" class="text-sm text-neutral-300 hover:text-white hover:translate-x-2 transition-all duration-300 inline-block">
+                    {{ link.label }}
+                  </NuxtLink>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Socials -->
+            <div class="space-y-6">
+              <h4 class="text-xs font-black uppercase tracking-widest text-neutral-500">
+                Follow Us
+              </h4>
+              <div class="flex flex-col gap-4">
+                <a
+                  v-for="social in layout.footer.socials"
+                  :key="social.label"
+                  :href="social.url || '#'"
+                  target="_blank"
+                  class="group flex items-center gap-3 text-sm text-neutral-300 hover:text-white transition-colors"
+                >
+                  <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-black transition-all duration-300">
+                    <UIcon :name="social.icon" class="w-4 h-4" />
+                  </div>
+                  <span>{{ social.label }}</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Bottom -->
-        <div class="border-t border-gray-800 pt-12 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-          <p>{{ layout.footer.copyright }}</p>
-          <div class="flex gap-8">
-            <NuxtLink
-              v-for="link in layout.footer.links"
-              :key="link.to"
-              :to="link.to"
-              class="hover:text-white transition-colors"
+        <!-- Footer Bottom: Marquee & Copyright -->
+        <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div class="flex items-center gap-2">
+            <div v-if="!layout.brand.logoUrl" class="w-8 h-8 rotate-45 bg-white" />
+            <img
+              v-else
+              :src="layout.brand.logoUrl"
+              :alt="layout.brand.name"
+              class="h-8 w-auto brightness-0 invert opacity-80"
             >
-              {{ link.label }}
-            </NuxtLink>
+            <span class="text-xs text-neutral-500 font-bold tracking-widest uppercase ml-4">
+              {{ layout.footer.copyright }}
+            </span>
+          </div>
+
+          <div class="text-[10px] font-mono text-neutral-800 uppercase tracking-widest">
+            Designed for Luxury
           </div>
         </div>
       </div>
-      <!-- Large Background Text Effect -->
-      <div class="mt-12 overflow-hidden pointer-events-none opacity-5">
-        <h2 class="text-[15vw] leading-none font-black text-center whitespace-nowrap text-white">
+
+      <!-- Massive Brand Name Background -->
+      <div class="absolute bottom-[-5vw] left-0 right-0 overflow-hidden pointer-events-none opacity-[0.07] select-none">
+        <h1 class="text-[25vw] leading-none font-serif font-black text-center whitespace-nowrap tracking-tighter text-white">
           {{ layout.brand.name }}
-        </h2>
+        </h1>
       </div>
     </footer>
   </div>
