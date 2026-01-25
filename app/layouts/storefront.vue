@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 const { lines } = useCart()
 const cartCount = computed(() => lines.value.reduce((acc, line) => acc + line.quantity, 0))
+
+// Mobile menu state
+const isMobileMenuOpen = ref(false)
 
 type LayoutData = {
   brand: {
@@ -38,13 +43,17 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
   <div
     class="min-h-screen flex flex-col bg-gradient-to-b from-white via-slate-50 to-white dark:from-gray-900 dark:via-gray-950 dark:to-gray-900 text-gray-900 dark:text-gray-100"
   >
-    <header class="fixed top-0 left-0 right-0 z-50 bg-neutral-500/10  backdrop-blur-md border-b border-transparent transition-all duration-300">
+    <header class="fixed top-0 left-0 right-0 z-50 bg-neutral-500/10 backdrop-blur-md border-b border-transparent transition-all duration-300">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8">
         <div class="h-14 flex items-center justify-between">
           <!-- Left: Nav -->
           <div class="flex items-center gap-8">
-            <button class="lg:hidden" aria-label="Menu">
-              <UIcon name="i-heroicons-bars-3" class="w-6 h-6" />
+            <button
+              class="lg:hidden"
+              aria-label="Menu"
+              @click="isMobileMenuOpen = !isMobileMenuOpen"
+            >
+              <UIcon :name="isMobileMenuOpen ? 'i-heroicons-x-mark' : 'i-heroicons-bars-3'" class="w-6 h-6" />
             </button>
             <nav class="hidden lg:flex items-center gap-8 text-xs font-bold uppercase tracking-widest">
               <NuxtLink
@@ -69,8 +78,8 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
             <span v-else class="text-xl font-black tracking-tighter">{{ layout.brand.name }}</span>
           </NuxtLink>
 
-          <!-- Right: Actions -->
-          <div class="flex items-center gap-4">
+          <!-- Right: Actions (Desktop) -->
+          <div class="hidden sm:flex items-center gap-4">
             <!-- Language Switcher -->
             <StoreLanguageSwitcher />
 
@@ -114,10 +123,117 @@ const layout = computed<LayoutData>(() => layoutData.value?.layout ?? {
               <UIcon name="i-lucide-package" class="w-5 h-5" />
             </NuxtLink>
           </div>
+
+          <!-- Right: Minimal Actions (Mobile) -->
+          <div class="flex sm:hidden items-center gap-3">
+            <NuxtLink
+              v-if="layout.actions.showCart"
+              to="/cart"
+              class="relative"
+              aria-label="Cart"
+            >
+              <UIcon name="i-heroicons-shopping-bag" class="w-5 h-5" />
+              <div
+                v-if="cartCount > 0"
+                class="absolute -top-1.5 -right-1.5 bg-amber-600 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full"
+              >
+                {{ cartCount }}
+              </div>
+            </NuxtLink>
+          </div>
         </div>
       </div>
+
+      <!-- Mobile Menu Dropdown -->
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 -translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-2"
+      >
+        <div v-if="isMobileMenuOpen" class="lg:hidden bg-white/95 backdrop-blur-lg border-b border-neutral-200 shadow-lg">
+          <div class="container mx-auto px-4 py-4">
+            <nav class="flex flex-col gap-1">
+              <NuxtLink
+                v-for="link in layout.navLinks"
+                :key="link.to"
+                :to="link.to"
+                class="px-4 py-3 text-sm font-semibold text-neutral-700 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                @click="isMobileMenuOpen = false"
+              >
+                {{ link.label }}
+              </NuxtLink>
+            </nav>
+          </div>
+        </div>
+      </Transition>
     </header>
-    <main class="flex-1 mt-14">
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="fixed bottom-0 left-0 right-0 z-50 sm:hidden bg-white/95 backdrop-blur-lg border-t border-neutral-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      <div class="flex items-center justify-around h-16 px-2">
+        <!-- Home -->
+        <NuxtLink
+          to="/"
+          class="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-neutral-500 hover:text-amber-700 transition-colors"
+          active-class="text-amber-700"
+        >
+          <UIcon name="i-heroicons-home" class="w-5 h-5" />
+          <span class="text-[10px] font-medium">Home</span>
+        </NuxtLink>
+
+        <!-- Search -->
+        <NuxtLink
+          :to="layout.actions.searchUrl"
+          class="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-neutral-500 hover:text-amber-700 transition-colors"
+          active-class="text-amber-700"
+        >
+          <UIcon name="i-heroicons-magnifying-glass" class="w-5 h-5" />
+          <span class="text-[10px] font-medium">Search</span>
+        </NuxtLink>
+
+        <!-- Cart (Center - Highlighted) -->
+        <NuxtLink
+          to="/cart"
+          class="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 relative"
+        >
+          <div class="relative bg-neutral-900 text-white p-2.5 rounded-full -mt-5 shadow-lg">
+            <UIcon name="i-heroicons-shopping-bag" class="w-5 h-5" />
+            <div
+              v-if="cartCount > 0"
+              class="absolute -top-1 -right-1 bg-amber-600 text-white text-[9px] font-bold w-4 h-4 flex items-center justify-center rounded-full"
+            >
+              {{ cartCount }}
+            </div>
+          </div>
+          <span class="text-[10px] font-medium text-neutral-500">Cart</span>
+        </NuxtLink>
+
+        <!-- Wishlist -->
+        <NuxtLink
+          to="/wishlist"
+          class="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-neutral-500 hover:text-amber-700 transition-colors"
+          active-class="text-amber-700"
+        >
+          <UIcon name="i-heroicons-heart" class="w-5 h-5" />
+          <span class="text-[10px] font-medium">Wishlist</span>
+        </NuxtLink>
+
+        <!-- Profile/Orders -->
+        <NuxtLink
+          to="/profile"
+          class="flex flex-col items-center justify-center gap-0.5 flex-1 py-2 text-neutral-500 hover:text-amber-700 transition-colors"
+          active-class="text-amber-700"
+        >
+          <UIcon name="i-heroicons-user" class="w-5 h-5" />
+          <span class="text-[10px] font-medium">Profile</span>
+        </NuxtLink>
+      </div>
+    </nav>
+
+    <main class="flex-1 mt-14 pb-16 sm:pb-0">
       <slot />
     </main>
     <footer class="bg-[#0a0a0a] text-white pt-32 pb-8 overflow-hidden font-sans border-t border-white/5 relative">

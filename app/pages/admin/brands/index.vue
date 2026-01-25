@@ -88,7 +88,10 @@ const columns: TableColumn<BrandListItem>[] = [
     header: 'Brand',
     cell: ({ row }) => {
       const brand = row.original
-      return h('div', { class: 'flex items-center gap-3' }, [
+      return h('div', {
+        class: 'flex items-center gap-3 cursor-pointer group',
+        onClick: () => openView(brand)
+      }, [
         h(UAvatar, {
           src: brand.logo ?? undefined,
           icon: 'i-lucide-badge-check',
@@ -99,7 +102,7 @@ const columns: TableColumn<BrandListItem>[] = [
           }
         }),
         h('div', undefined, [
-          h('p', { class: 'text-sm font-semibold text-highlighted truncate max-w-[220px]' }, brand.name),
+          h('p', { class: 'text-sm font-semibold text-highlighted truncate max-w-[220px] group-hover:text-primary group-hover:underline' }, brand.name),
           h('p', { class: 'text-xs text-muted' }, `Slug: ${brand.slug}`)
         ])
       ])

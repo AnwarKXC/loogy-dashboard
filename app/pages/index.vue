@@ -35,36 +35,7 @@ const AVAILABILITY_CONFIG = {
   }
 } as const
 
-const BRAND_CARD_STYLES = [
-  {
-    bg: 'bg-neutral-900',
-    accent: 'text-amber-500',
-    blob: 'bg-amber-500',
-    border: 'border-amber-500/20',
-    shadow: 'shadow-amber-500/10'
-  },
-  {
-    bg: 'bg-blue-900',
-    accent: 'text-blue-400',
-    blob: 'bg-blue-500',
-    border: 'border-blue-400/20',
-    shadow: 'shadow-blue-500/10'
-  },
-  {
-    bg: 'bg-emerald-900',
-    accent: 'text-emerald-400',
-    blob: 'bg-emerald-500',
-    border: 'border-emerald-400/20',
-    shadow: 'shadow-emerald-500/10'
-  },
-  {
-    bg: 'bg-rose-900',
-    accent: 'text-rose-400',
-    blob: 'bg-rose-500',
-    border: 'border-rose-400/20',
-    shadow: 'shadow-rose-500/10'
-  }
-]
+// Brand card styles removed - using dynamic topBrands from API
 
 type AvailabilityType = keyof typeof AVAILABILITY_CONFIG
 
@@ -286,18 +257,9 @@ const newArrivals = computed(() =>
   }))
 )
 
-const _collections = computed(() =>
-  ((home.value.sections?.collections ?? []) as HomeProduct[]).map(item => ({
-    id: item.id,
-    slug: item.slug,
-    name: item.name,
-    price: item.price,
-    cat: item.category?.name ?? 'Collection',
-    image: item.image ?? fallbackCardImage
-  }))
-)
+// _collections removed - not used in template
 
-const galleryImages = computed(() => {
+const _galleryImages = computed(() => {
   const images = home.value.galleryImages?.length
     ? [...home.value.galleryImages]
     : newArrivals.value.map(item => item.image).filter(Boolean)
@@ -309,8 +271,8 @@ const galleryImages = computed(() => {
   return images.slice(0, 3)
 })
 
-const _brands = computed(() => home.value.brands ?? [])
-const promotionalCategories = computed(() =>
+// _brands removed - using topBrands instead
+const _promotionalCategories = computed(() =>
   (home.value.categories ?? []).map(category => ({
     ...category,
     slug: category.slug,
@@ -346,26 +308,9 @@ function openImage(img: string) {
   isImageModalOpen.value = true
 }
 
-const _egyptProducts = computed(() =>
-  ((home.value.sections?.egyptProducts ?? []) as HomeProduct[]).map(item => ({
-    id: item.id,
-    slug: item.slug,
-    name: item.name,
-    price: item.price,
-    image: item.image ?? fallbackCardImage
-  }))
-)
+// _egyptProducts removed - using availability-based sections instead
 
-const _forSaleProducts = computed(() =>
-  ((home.value.sections?.previousOrders ?? []) as HomeProduct[]).map(item => ({
-    id: item.id,
-    slug: item.slug,
-    name: item.name,
-    price: item.price,
-    status: item.status ?? 'Available',
-    image: item.image ?? fallbackCardImage
-  }))
-)
+// _forSaleProducts removed - not used in template
 
 // Availability-based sections
 const inStockEgyptProducts = computed(() =>
@@ -481,23 +426,7 @@ const handleAddToCart = async (item: { id: number, name: string, price: number, 
   }
 }
 
-const brandsStatic = [
-  { name: 'Nike', logo: 'i-simple-icons-nike' },
-  { name: 'Adidas', logo: 'i-simple-icons-adidas' },
-  { name: 'Puma', logo: 'i-simple-icons-puma' },
-  { name: 'Reebok', logo: 'i-simple-icons-reebok' },
-  { name: 'New Balance', logo: 'i-simple-icons-newbalance' },
-  { name: 'Under Armour', logo: 'i-simple-icons-underarmour' },
-  { name: 'Fila', logo: 'i-simple-icons-fila' },
-  { name: 'Jordan', logo: 'i-simple-icons-jordan' },
-  { name: 'The North Face', logo: 'i-simple-icons-thenorthface' },
-  { name: 'Zara', logo: 'i-simple-icons-zara' },
-
-  { name: 'Uniqlo', logo: 'i-simple-icons-uniqlo' },
-
-  { name: 'Garmin', logo: 'i-simple-icons-garmin' }
-]
-// Remove static brands - we now use topBrands from API
+// Static brands removed - now using dynamic topBrands from API with links
 </script>
 
 <template>
@@ -649,50 +578,62 @@ const brandsStatic = [
         </div>
       </section>
 
-      <!-- Brands Marquee (Seamless) -->
-      <section class="overflow-hidden bg-white py-8 border-y border-neutral-100 mt-20">
-        <div class="relative w-full max-w-full overflow-hidden flex">
-          <div class="flex animate-marquee">
-            <!-- Original Set -->
-            <div class="flex gap-24 pr-24 items-center shrink-0">
-              <UIcon
-                v-for="(brand, idx) in brandsStatic"
-                :key="'loop-1-' + idx"
-                :name="brand.logo"
-                class="w-16 h-16 text-neutral-300 hover:text-neutral-900 transition-colors duration-300"
-              />
-            </div>
-            <div class="flex gap-24 pr-24 items-center shrink-0">
-              <UIcon
-                v-for="(brand, idx) in brandsStatic"
-                :key="'loop-2-' + idx"
-                :name="brand.logo"
-                class="w-16 h-16 text-neutral-300 hover:text-neutral-900 transition-colors duration-300"
-              />
-            </div>
+      <!-- Brands Section - Clickable Links to Products -->
+      <section v-if="topBrands.length > 0" class="bg-white py-12 sm:py-16 border-y border-neutral-100 mt-20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+          <!-- Section Header -->
+          <div class="text-center mb-8 sm:mb-12">
+            <h2 class="text-2xl sm:text-3xl font-serif font-bold text-neutral-900 mb-2">
+              Shop by Brand
+            </h2>
+            <p class="text-sm text-neutral-500">
+              Explore products from your favorite brands
+            </p>
           </div>
-          <!-- Fades -->
-          <div class="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-10" />
-          <div class="pointer-events-none absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-10" />
-          <div class="hidden">
-            <!-- Duplicate Set -->
-            <!-- <div class="flex gap-24 pr-24 whitespace-nowrap items-center shrink-0">
-              <NuxtLink
-                v-for="(brand, idx) in brands"
-                :key="'dup-'+idx"
-                to="/products"
-                class="flex items-center justify-center text-neutral-400 hover:text-black transition-all duration-300 cursor-pointer hover:scale-110"
-              >
+
+          <!-- Brands Grid - Responsive -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
+            <NuxtLink
+              v-for="brand in topBrands"
+              :key="brand.id"
+              :to="`/products?brand=${brand.slug}`"
+              class="group flex flex-col items-center justify-center p-4 sm:p-6 rounded-xl bg-neutral-50 hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all duration-300 hover:shadow-md"
+            >
+              <!-- Brand Logo or Name -->
+              <div class="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center mb-3">
                 <img
                   v-if="brand.logo"
                   :src="brand.logo"
                   :alt="brand.name"
-                  class="h-12 sm:h-16 w-auto object-contain"
+                  class="max-w-full max-h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-300"
                   loading="lazy"
                 >
-                <span v-else class="text-xs font-bold uppercase tracking-widest">{{ brand.name }}</span>
-              </NuxtLink>
-            </div> -->
+                <span v-else class="text-2xl sm:text-3xl font-black text-neutral-300 group-hover:text-neutral-900 transition-colors">
+                  {{ brand.name.charAt(0) }}
+                </span>
+              </div>
+
+              <!-- Brand Name -->
+              <span class="text-xs sm:text-sm font-semibold text-neutral-600 group-hover:text-neutral-900 text-center truncate max-w-full transition-colors">
+                {{ brand.name }}
+              </span>
+
+              <!-- Product Count Badge -->
+              <span class="mt-1.5 text-[10px] sm:text-xs text-neutral-400 group-hover:text-amber-600 transition-colors">
+                {{ brand.productCount }} {{ brand.productCount === 1 ? 'product' : 'products' }}
+              </span>
+            </NuxtLink>
+          </div>
+
+          <!-- View All Brands Link -->
+          <div class="flex justify-center mt-8 sm:mt-12">
+            <NuxtLink
+              to="/products"
+              class="group flex items-center gap-2 text-xs sm:text-sm font-bold uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
+            >
+              <span>View All Products</span>
+              <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </NuxtLink>
           </div>
         </div>
       </section>
@@ -1418,15 +1359,5 @@ const brandsStatic = [
 .stroke-text {
   -webkit-text-stroke: 1px black;
   color: transparent;
-}
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.animate-marquee {
-  animation: marquee 40s linear infinite;
-}
-.animate-marquee:hover {
-  animation-play-state: paused;
 }
 </style>

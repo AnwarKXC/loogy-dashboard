@@ -78,13 +78,14 @@ const columns: TableColumn<FlattenedCategory>[] = [
       const category = row.original
 
       return h('div', {
-        class: 'flex items-center gap-2 text-sm text-highlighted',
+        class: 'flex items-center gap-2 text-sm text-highlighted cursor-pointer group',
         style: {
           paddingInlineStart: `${category.depth * 16}px`
-        }
+        },
+        onClick: () => openView(category)
       }, [
         h('span', { class: 'i-lucide-folder w-4 h-4 text-muted shrink-0' }),
-        h('span', { class: 'font-medium truncate max-w-[240px]' }, category.name)
+        h('span', { class: 'font-medium truncate max-w-[240px] group-hover:text-primary group-hover:underline' }, category.name)
       ])
     }
   },
