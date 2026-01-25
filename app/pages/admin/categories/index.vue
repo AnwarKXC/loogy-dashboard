@@ -17,6 +17,7 @@ const { data, status, error, refresh } = await useFetch<CategoryListResponse>('/
 
 const createOpen = ref(false)
 const editOpen = ref(false)
+const viewOpen = ref(false)
 const deleteOpen = ref(false)
 const formLoading = ref(false)
 const deleteLoading = ref(false)
@@ -41,6 +42,8 @@ const editInitialValues = computed<Partial<CategoryEditorValues>>(() => {
     descriptionEn: enTranslation?.description ?? undefined,
     descriptionAr: arTranslation?.description ?? undefined,
     parentId: category.parentId,
+    // Image - use ogImage from EN translation as the category image
+    image: enTranslation?.ogImage ?? undefined,
     // SEO fields
     seoTitleEn: enTranslation?.metaTitle ?? undefined,
     seoTitleAr: arTranslation?.metaTitle ?? undefined,
@@ -136,6 +139,11 @@ const columns: TableColumn<FlattenedCategory>[] = [
 function getRowActions(category: FlattenedCategory) {
   return [
     {
+      label: 'View',
+      icon: 'i-lucide-eye',
+      onSelect: () => openView(category)
+    },
+    {
       label: 'Edit',
       icon: 'i-lucide-pencil',
       onSelect: () => openEdit(category)
@@ -152,6 +160,11 @@ function getRowActions(category: FlattenedCategory) {
 function openCreate() {
   selectedCategory.value = null
   createOpen.value = true
+}
+
+function openView(category: FlattenedCategory) {
+  selectedCategory.value = category
+  viewOpen.value = true
 }
 
 function openEdit(category: FlattenedCategory) {
@@ -274,6 +287,12 @@ watch(editOpen, (open) => {
   }
 })
 
+watch(viewOpen, (open) => {
+  if (!open) {
+    selectedCategory.value = null
+  }
+})
+
 watch(deleteOpen, (open) => {
   if (!open) {
     deleteLoading.value = false
@@ -353,6 +372,185 @@ watch(deleteOpen, (open) => {
         :submitting="formLoading"
         @submit="handleCreate"
       />
+    </template>
+  </UModal>
+
+  <!-- View Category Modal -->
+  <UModal
+    v-model:open="viewOpen"
+    :title="selectedCategory?.name ?? 'Category Details'"
+    :ui="{ content: 'sm:max-w-2xl' }"
+  >
+    <template #body>
+      <div v-if="selectedCategory" class="space-y-6">
+        <!-- Category Header -->
+        <div class="flex items-start gap-4">
+          <UAvatar
+            v-if="editInitialValues.image"
+            :src="editInitialValues.image"
+            size="3xl"
+            :ui="{ image: 'object-contain' }"
+          />
+          <div v-else class="p-3 rounded-lg bg-primary/10">
+            <UIcon name="i-lucide-folder" class="w-8 h-8 text-primary" />
+          </div>
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-highlighted">
+              {{ selectedCategory.name }}
+            </h3>
+            <p class="text-sm text-muted">
+              Slug: <code class="font-mono bg-muted/20 px-1 rounded">{{ selectedCategory.slug }}</code>
+            </p>
+            <div class="flex gap-4 mt-2">
+              <UBadge variant="subtle" color="primary">
+                {{ selectedCategory.productCount }} {{ selectedCategory.productCount === 1 ? 'product' : 'products' }}
+              </UBadge>
+              <UBadge variant="subtle" color="neutral">
+                {{ selectedCategory.childCount }} {{ selectedCategory.childCount === 1 ? 'subcategory' : 'subcategories' }}
+              </UBadge>
+            </div>
+          </div>
+        </div>
+
+        <UDivider />
+
+        <!-- Parent Category -->
+        <div v-if="selectedCategory.parentId">
+          <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+            Parent Category
+          </p>
+          <p class="text-sm text-highlighted">
+            {{ flattenedCategories.find(c => c.id === selectedCategory?.parentId)?.name || `ID: ${selectedCategory.parentId}` }}
+          </p>
+        </div>
+
+        <!-- Translations -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Name (English)
+            </p>
+            <p class="text-sm text-highlighted">
+              {{ editInitialValues.nameEn || '-' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Name (Arabic)
+            </p>
+            <p class="text-sm text-highlighted" dir="rtl">
+              {{ editInitialValues.nameAr || '-' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Descriptions -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Description (English)
+            </p>
+            <p class="text-sm text-highlighted whitespace-pre-wrap">
+              {{ editInitialValues.descriptionEn || '-' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Description (Arabic)
+            </p>
+            <p class="text-sm text-highlighted whitespace-pre-wrap" dir="rtl">
+              {{ editInitialValues.descriptionAr || '-' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- SEO Section -->
+        <div v-if="editInitialValues.seoTitleEn || editInitialValues.seoDescriptionEn" class="space-y-4">
+          <UDivider label="SEO" />
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Title (EN)
+              </p>
+              <p class="text-sm text-highlighted">
+                {{ editInitialValues.seoTitleEn || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Title (AR)
+              </p>
+              <p class="text-sm text-highlighted" dir="rtl">
+                {{ editInitialValues.seoTitleAr || '-' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Description (EN)
+              </p>
+              <p class="text-sm text-highlighted">
+                {{ editInitialValues.seoDescriptionEn || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Description (AR)
+              </p>
+              <p class="text-sm text-highlighted" dir="rtl">
+                {{ editInitialValues.seoDescriptionAr || '-' }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="editInitialValues.seoKeywordsEn || editInitialValues.seoKeywordsAr" class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                Keywords (EN)
+              </p>
+              <p class="text-sm text-highlighted">
+                {{ editInitialValues.seoKeywordsEn || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                Keywords (AR)
+              </p>
+              <p class="text-sm text-highlighted" dir="rtl">
+                {{ editInitialValues.seoKeywordsAr || '-' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Category Path -->
+        <div v-if="selectedCategory.path" class="pt-4 border-t border-default">
+          <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+            Category Path
+          </p>
+          <p class="text-sm text-highlighted font-mono">
+            {{ selectedCategory.path }}
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Close"
+            color="neutral"
+            variant="subtle"
+            @click="viewOpen = false"
+          />
+          <UButton
+            label="Edit"
+            icon="i-lucide-pencil"
+            @click="viewOpen = false; openEdit(selectedCategory)"
+          />
+        </div>
+      </div>
     </template>
   </UModal>
 

@@ -62,7 +62,8 @@ export default eventHandler(async (event) => {
               metaDescription: payload.seoDescriptionEn ?? null,
               metaKeywords: payload.seoKeywordsEn ?? null,
               ogTitle: payload.ogTitleEn ?? null,
-              ogDescription: payload.ogDescriptionEn ?? null
+              ogDescription: payload.ogDescriptionEn ?? null,
+              ogImage: payload.image ?? null
             },
             ...(payload.nameAr
               ? [{
@@ -73,7 +74,8 @@ export default eventHandler(async (event) => {
                   metaDescription: payload.seoDescriptionAr ?? null,
                   metaKeywords: payload.seoKeywordsAr ?? null,
                   ogTitle: payload.ogTitleAr ?? null,
-                  ogDescription: payload.ogDescriptionAr ?? null
+                  ogDescription: payload.ogDescriptionAr ?? null,
+                  ogImage: payload.image ?? null
                 }]
               : [])
           ]

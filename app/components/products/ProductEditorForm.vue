@@ -151,6 +151,8 @@ const state = reactive(createStateFromInitialValues(props.initialValues))
 
 const hasManuallyEditedSlug = ref(state.slug.length > 0 && state.slug !== slugify(state.nameEn))
 const showBilingualSeo = ref(false)
+const showMetaTags = ref(false)
+const showDescriptions = ref(false)
 
 const submitLabel = computed(() => {
   if (props.mode === 'edit') {
@@ -1398,20 +1400,22 @@ defineExpose({
     class="space-y-8 relative"
     @submit="onSubmit"
   >
-    <div class="grid gap-y-8 gap-x-6   xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+    <div class="grid gap-y-8 gap-x-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
       <div class="space-y-10">
+        <!-- MAIN SECTION: Essential Product Information -->
         <section class="space-y-4">
           <div>
             <h2 class="text-lg font-medium text-highlighted">
-              General details
+              Product Information
             </h2>
             <p class="text-sm text-muted">
-              Names and slug used across the storefront.
+              Essential details for your product listing.
             </p>
           </div>
 
+          <!-- Product Names -->
           <div class="grid gap-4 md:grid-cols-2">
-            <UFormField :label="requiredLabel('Product name')" name="nameEn">
+            <UFormField :label="requiredLabel('Product name (English)')" name="nameEn">
               <UInput
                 v-model="state.nameEn"
                 placeholder="Awesome product"
@@ -1419,43 +1423,87 @@ defineExpose({
               />
             </UFormField>
 
-            <UFormField label="Product name (Arabic)" name="nameAr" dir="rtl">
+            <UFormField :label="requiredLabel('Product name (Arabic)')" name="nameAr" dir="rtl">
               <UInput
                 v-model="state.nameAr"
-                placeholder="Product name in Arabic"
+                placeholder="اسم المنتج بالعربية"
                 class="w-full"
                 dir="rtl"
               />
             </UFormField>
           </div>
 
-          <UFormField :help="slugHelp" label="Slug" name="slug">
-            <div class="flex gap-2">
-              <UInput
-                v-model="state.slug"
-                :placeholder="suggestedSlug || 'auto-generated-slug'"
-                class="flex-1"
-              />
-              <UButton
-                variant="ghost"
-                color="neutral"
-                icon="i-lucide-refresh-ccw"
-                @click.prevent="regenerateSlug"
-              />
-            </div>
+          <!-- Media / Images -->
+          <UFormField name="images">
+            <template #label>
+              <div class="flex items-center justify-between text-sm font-medium text-highlighted">
+                <span class="flex items-center gap-1">
+                  <span>Product Images</span>
+                  <span class="text-error" aria-hidden="true">*</span>
+                </span>
+                <span class="text-xs text-muted font-normal">First image becomes the thumbnail</span>
+              </div>
+            </template>
+            <S3ImageUploader
+              v-model="state.images"
+              placeholder-class="text-sm text-muted max-w-2xl"
+            />
           </UFormField>
-        </section>
 
-        <section class="space-y-4">
-          <div>
-            <h2 class="text-lg font-medium text-highlighted">
-              Classification
-            </h2>
-            <p class="text-sm text-muted">
-              Associate the product to improve navigation.
-            </p>
+          <!-- Pricing -->
+          <div class="grid gap-4 md:grid-cols-2">
+            <UFormField :label="requiredLabel('Price')" name="price">
+              <UInput
+                v-model.number="state.price"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField :help="salePriceHelp" label="Sale price" name="salePrice">
+              <UInput
+                v-model.number="state.salePrice"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Optional discounted price"
+                class="w-full"
+              />
+            </UFormField>
           </div>
 
+          <!-- Stock -->
+          <div class="grid gap-4 md:grid-cols-2">
+            <UFormField :label="requiredLabel('Quantity')" name="quantity">
+              <UInput
+                v-model.number="state.quantity"
+                type="number"
+                min="0"
+                placeholder="0"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField
+              help="Leave empty to follow available quantity"
+              label="Stock override"
+              name="stock"
+              :required="false"
+            >
+              <UInput
+                v-model.number="state.stock"
+                type="number"
+                min="0"
+                class="w-full"
+                placeholder="Defaults to quantity"
+              />
+            </UFormField>
+          </div>
+
+          <!-- Category & Brand -->
           <div class="grid gap-4 md:grid-cols-2">
             <UFormField name="categoryId">
               <template #label>
@@ -1509,6 +1557,23 @@ defineExpose({
               />
             </UFormField>
           </div>
+
+          <!-- Slug -->
+          <UFormField :help="slugHelp" label="Slug" name="slug">
+            <div class="flex gap-2">
+              <UInput
+                v-model="state.slug"
+                :placeholder="suggestedSlug || 'auto-generated-slug'"
+                class="flex-1"
+              />
+              <UButton
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-refresh-ccw"
+                @click.prevent="regenerateSlug"
+              />
+            </div>
+          </UFormField>
         </section>
 
         <!-- AI Content Generation Section -->
@@ -1520,7 +1585,7 @@ defineExpose({
                 AI Content Generator
               </h2>
               <p class="text-sm text-muted">
-                Generate all product content with one click. Uses 1 API request, then individual regenerate buttons use cached data.
+                Generate all SEO content with one click. Descriptions, meta tags, and keywords will be auto-generated.
               </p>
               <p v-if="generatedContentCache" class="text-xs text-success mt-1">
                 ✓ Cache active - individual regenerate buttons will use cached data
@@ -1541,208 +1606,242 @@ defineExpose({
           </div>
         </section>
 
-        <section class="space-y-4">
-          <div class="flex items-start justify-between gap-2">
+        <!-- COLLAPSIBLE: Product Descriptions -->
+        <section class="space-y-4 border border-default rounded-lg">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between p-4 text-left hover:bg-elevated/50 transition-colors rounded-t-lg"
+            @click="showDescriptions = !showDescriptions"
+          >
             <div>
-              <h2 class="text-lg font-medium text-highlighted">
-                Basic info
+              <h2 class="text-lg font-medium text-highlighted flex items-center gap-2">
+                <UIcon name="i-lucide-file-text" class="w-5 h-5" />
+                Product Descriptions
+                <UBadge
+                  v-if="state.descriptionEn || state.descriptionAr"
+                  color="success"
+                  variant="subtle"
+                  size="xs"
+                >
+                  Filled
+                </UBadge>
               </h2>
               <p class="text-sm text-muted">
-                Generate and refine core product descriptions in both languages.
+                Detailed descriptions in English and Arabic (AI-generated)
               </p>
             </div>
-            <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
-              <UButton
-                variant="ghost"
-                color="primary"
-                :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
-                class="shrink-0"
-                :loading="generationLoading.descriptions || generationLoading.shortDescriptions"
-                :disabled="generationLoading.descriptions || generationLoading.shortDescriptions"
-                aria-label="Regenerate basic product info"
-                @click.prevent="handleRegenerateDescriptions()"
-              >
-                <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Regenerate' }}</span>
-              </UButton>
-            </UTooltip>
-          </div>
+            <div class="flex items-center gap-2">
+              <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
+                <UButton
+                  variant="ghost"
+                  color="primary"
+                  size="xs"
+                  :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
+                  :loading="generationLoading.descriptions || generationLoading.shortDescriptions"
+                  :disabled="generationLoading.descriptions || generationLoading.shortDescriptions"
+                  aria-label="Regenerate descriptions"
+                  @click.stop.prevent="handleRegenerateDescriptions()"
+                >
+                  <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Generate' }}</span>
+                </UButton>
+              </UTooltip>
+              <UIcon
+                :name="showDescriptions ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                class="w-5 h-5 text-muted"
+              />
+            </div>
+          </button>
 
-          <UFormField :help="`${descriptionEnLength}/${MAX_DESCRIPTION_LENGTH} characters`" label="Description (English)" name="descriptionEn">
-            <UTextarea
-              v-model="state.descriptionEn"
-              placeholder="Full product description"
-              :rows="6"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField :help="`${descriptionArLength}/${MAX_DESCRIPTION_LENGTH} characters`" label="Description (Arabic)" name="descriptionAr">
-            <UTextarea
-              v-model="state.descriptionAr"
-              placeholder="Product description in Arabic"
-              :rows="6"
-              class="w-full"
-            />
-          </UFormField>
-
-          <div class="grid gap-4 md:grid-cols-2">
-            <UFormField :help="`${shortDescriptionEnLength}/${MAX_SHORT_DESCRIPTION_LENGTH} characters`" label="Short description" name="shortDescriptionEn">
+          <div v-show="showDescriptions" class="px-4 pb-4 space-y-4">
+            <UFormField :help="`${descriptionEnLength}/${MAX_DESCRIPTION_LENGTH} characters`" label="Description (English)" name="descriptionEn">
               <UTextarea
-                v-model="state.shortDescriptionEn"
-                placeholder="Quick summary shown in listings"
-                :rows="3"
+                v-model="state.descriptionEn"
+                placeholder="Full product description"
+                :rows="6"
                 class="w-full"
               />
             </UFormField>
 
-            <UFormField
-              :help="`${shortDescriptionArLength}/${MAX_SHORT_DESCRIPTION_LENGTH} characters`"
-              label="Short description (Arabic)"
-              name="shortDescriptionAr"
-              dir="rtl"
-            >
+            <UFormField :help="`${descriptionArLength}/${MAX_DESCRIPTION_LENGTH} characters`" label="Description (Arabic)" name="descriptionAr">
               <UTextarea
-                v-model="state.shortDescriptionAr"
-                placeholder="Short product summary in Arabic"
-                :rows="3"
+                v-model="state.descriptionAr"
+                placeholder="وصف المنتج بالعربية"
+                :rows="6"
                 dir="rtl"
                 class="w-full"
               />
             </UFormField>
-          </div>
-        </section>
 
-        <section class="space-y-4">
-          <div>
-            <h2 class="text-lg font-medium text-highlighted">
-              Media
-            </h2>
-            <p class="text-sm text-muted">
-              Upload product images in the desired order.
-            </p>
-          </div>
+            <div class="grid gap-4 md:grid-cols-2">
+              <UFormField :help="`${shortDescriptionEnLength}/${MAX_SHORT_DESCRIPTION_LENGTH} characters`" label="Short description" name="shortDescriptionEn">
+                <UTextarea
+                  v-model="state.shortDescriptionEn"
+                  placeholder="Quick summary shown in listings"
+                  :rows="3"
+                  class="w-full"
+                />
+              </UFormField>
 
-          <UFormField name="images">
-            <template #label>
-              <div class="flex items-center justify-between text-sm font-medium text-highlighted">
-                <span>Product gallery</span>
-                <span class="text-xs text-muted">First image becomes the storefront thumbnail.</span>
-              </div>
-            </template>
-            <S3ImageUploader
-              v-model="state.images"
-              placeholder-class="text-sm text-muted max-w-2xl"
-            />
-          </UFormField>
-        </section>
-
-        <section class="space-y-4">
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <h2 class="text-lg font-medium text-highlighted">
-                Meta tags
-              </h2>
-              <p class="text-sm text-muted">
-                Generate SEO title, description, canonical, and keywords.
-              </p>
-            </div>
-            <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
-              <UButton
-                variant="ghost"
-                color="primary"
-                :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
-                class="shrink-0"
-                :loading="generationLoading.all"
-                aria-label="Regenerate meta tags"
-                @click.prevent="handleRegenerateSeo('all')"
+              <UFormField
+                :help="`${shortDescriptionArLength}/${MAX_SHORT_DESCRIPTION_LENGTH} characters`"
+                label="Short description (Arabic)"
+                name="shortDescriptionAr"
+                dir="rtl"
               >
-                <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Regenerate' }}</span>
-              </UButton>
-            </UTooltip>
-          </div>
-
-          <UAlert
-            v-if="generationErrorMessage"
-            color="warning"
-            variant="soft"
-            :title="generationErrorMessage"
-            class="text-sm"
-          />
-
-          <UFormField :help="`${seoTitleLength}/${MAX_SEO_TITLE_LENGTH} characters`" label="SEO title" name="seoTitle">
-            <UInput
-              v-model="state.seoTitle"
-              placeholder="Title shown in search results"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField :help="`${seoDescriptionLength}/${MAX_SEO_DESCRIPTION_LENGTH} characters`" label="SEO description" name="seoDescription">
-            <UTextarea
-              v-model="state.seoDescription"
-              placeholder="Short summary displayed on search engines"
-              :rows="4"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField label="Canonical URL" name="seoCanonical">
-            <UInput
-              v-model="state.seoCanonical"
-              placeholder="https://example.com/products/product-slug"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField :help="seoKeywordHelp" name="seoKeywords">
-            <template #label>
-              <div class="flex items-center justify-between text-sm font-medium text-highlighted">
-                <span>SEO keywords</span>
-              </div>
-            </template>
-            <div class="space-y-3">
-              <UInput
-                v-model="state.newSeoKeyword"
-                placeholder="Press enter or comma to add keywords"
-                class="w-full"
-                @keydown="handleSeoKeywordKeydown"
-                @blur="handleSeoKeywordBlur"
-              />
-
-              <div v-if="state.seoKeywords.length" class="flex flex-wrap gap-2">
-                <span
-                  v-for="keyword in state.seoKeywords"
-                  :key="keyword"
-                  class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-highlighted"
-                >
-                  <span>{{ keyword }}</span>
-                  <UButton
-                    size="xs"
-                    variant="ghost"
-                    color="neutral"
-                    icon="i-lucide-x"
-                    class="-mr-2"
-                    @click.prevent="removeSeoKeyword(keyword)"
-                  />
-                </span>
-              </div>
-
-              <p v-else class="text-xs text-muted">
-                Add up to {{ MAX_SEO_KEYWORDS }} keywords.
-              </p>
+                <UTextarea
+                  v-model="state.shortDescriptionAr"
+                  placeholder="ملخص قصير للمنتج بالعربية"
+                  :rows="3"
+                  dir="rtl"
+                  class="w-full"
+                />
+              </UFormField>
             </div>
-          </UFormField>
+          </div>
         </section>
 
-        <!-- Bilingual SEO Section -->
-        <section class="space-y-4">
-          <div class="flex items-start justify-between gap-2">
+        <!-- COLLAPSIBLE: Meta Tags (SEO) -->
+        <section class="space-y-4 border border-default rounded-lg">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between p-4 text-left hover:bg-elevated/50 transition-colors rounded-t-lg"
+            @click="showMetaTags = !showMetaTags"
+          >
             <div>
-              <h2 class="text-lg font-medium text-highlighted">
-                Bilingual SEO
+              <h2 class="text-lg font-medium text-highlighted flex items-center gap-2">
+                <UIcon name="i-lucide-search" class="w-5 h-5" />
+                Meta Tags (SEO)
+                <UBadge
+                  v-if="state.seoTitle || state.seoDescription"
+                  color="success"
+                  variant="subtle"
+                  size="xs"
+                >
+                  Filled
+                </UBadge>
               </h2>
               <p class="text-sm text-muted">
-                Per-language meta tags for English and Arabic storefronts.
+                SEO title, description, canonical URL, and keywords (AI-generated)
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <UTooltip :text="generatedContentCache ? 'Uses cached data (instant)' : 'Will fetch from AI'">
+                <UButton
+                  variant="ghost"
+                  color="primary"
+                  size="xs"
+                  :icon="generatedContentCache ? 'i-lucide-zap' : 'i-lucide-sparkles'"
+                  :loading="generationLoading.all"
+                  aria-label="Regenerate meta tags"
+                  @click.stop.prevent="handleRegenerateSeo('all')"
+                >
+                  <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Generate' }}</span>
+                </UButton>
+              </UTooltip>
+              <UIcon
+                :name="showMetaTags ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                class="w-5 h-5 text-muted"
+              />
+            </div>
+          </button>
+
+          <div v-show="showMetaTags" class="px-4 pb-4 space-y-4">
+            <UAlert
+              v-if="generationErrorMessage"
+              color="warning"
+              variant="soft"
+              :title="generationErrorMessage"
+              class="text-sm"
+            />
+
+            <UFormField :help="`${seoTitleLength}/${MAX_SEO_TITLE_LENGTH} characters`" label="SEO title" name="seoTitle">
+              <UInput
+                v-model="state.seoTitle"
+                placeholder="Title shown in search results"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField :help="`${seoDescriptionLength}/${MAX_SEO_DESCRIPTION_LENGTH} characters`" label="SEO description" name="seoDescription">
+              <UTextarea
+                v-model="state.seoDescription"
+                placeholder="Short summary displayed on search engines"
+                :rows="4"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField label="Canonical URL" name="seoCanonical">
+              <UInput
+                v-model="state.seoCanonical"
+                placeholder="https://example.com/products/product-slug"
+                class="w-full"
+              />
+            </UFormField>
+
+            <UFormField :help="seoKeywordHelp" name="seoKeywords">
+              <template #label>
+                <div class="flex items-center justify-between text-sm font-medium text-highlighted">
+                  <span>SEO keywords</span>
+                </div>
+              </template>
+              <div class="space-y-3">
+                <UInput
+                  v-model="state.newSeoKeyword"
+                  placeholder="Press enter or comma to add keywords"
+                  class="w-full"
+                  @keydown="handleSeoKeywordKeydown"
+                  @blur="handleSeoKeywordBlur"
+                />
+
+                <div v-if="state.seoKeywords.length" class="flex flex-wrap gap-2">
+                  <span
+                    v-for="keyword in state.seoKeywords"
+                    :key="keyword"
+                    class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-highlighted"
+                  >
+                    <span>{{ keyword }}</span>
+                    <UButton
+                      size="xs"
+                      variant="ghost"
+                      color="neutral"
+                      icon="i-lucide-x"
+                      class="-mr-2"
+                      @click.prevent="removeSeoKeyword(keyword)"
+                    />
+                  </span>
+                </div>
+
+                <p v-else class="text-xs text-muted">
+                  Add up to {{ MAX_SEO_KEYWORDS }} keywords.
+                </p>
+              </div>
+            </UFormField>
+          </div>
+        </section>
+
+        <!-- COLLAPSIBLE: Bilingual SEO Section -->
+        <section class="space-y-4 border border-default rounded-lg">
+          <button
+            type="button"
+            class="w-full flex items-center justify-between p-4 text-left hover:bg-elevated/50 transition-colors rounded-t-lg"
+            @click="showBilingualSeo = !showBilingualSeo"
+          >
+            <div>
+              <h2 class="text-lg font-medium text-highlighted flex items-center gap-2">
+                <UIcon name="i-lucide-languages" class="w-5 h-5" />
+                Bilingual SEO
+                <UBadge
+                  v-if="state.seoTitleEn || state.seoTitleAr"
+                  color="success"
+                  variant="subtle"
+                  size="xs"
+                >
+                  Filled
+                </UBadge>
+              </h2>
+              <p class="text-sm text-muted">
+                Per-language meta tags and Open Graph for English and Arabic (AI-generated)
               </p>
             </div>
             <div class="flex items-center gap-2">
@@ -1755,26 +1854,21 @@ defineExpose({
                   :loading="generationLoading.bilingualSeo"
                   :disabled="generationLoading.bilingualSeo"
                   aria-label="Generate bilingual SEO"
-                  @click.prevent="handleRegenerateBilingualSeo()"
+                  @click.stop.prevent="handleRegenerateBilingualSeo()"
                 >
                   <span class="hidden sm:inline">{{ generatedContentCache ? 'Apply cached' : 'Generate' }}</span>
                 </UButton>
               </UTooltip>
-              <UButton
-                variant="ghost"
-                color="neutral"
-                size="xs"
-                :icon="showBilingualSeo ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
-                @click="showBilingualSeo = !showBilingualSeo"
-              >
-                {{ showBilingualSeo ? 'Hide' : 'Show' }}
-              </UButton>
+              <UIcon
+                :name="showBilingualSeo ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+                class="w-5 h-5 text-muted"
+              />
             </div>
-          </div>
+          </button>
 
           <div
             v-show="showBilingualSeo"
-            class="space-y-4"
+            class="px-4 pb-4 space-y-4"
           >
             <div class="grid gap-4 md:grid-cols-2">
               <UFormField
@@ -1914,66 +2008,9 @@ defineExpose({
         </section>
       </div>
 
+      <!-- SIDEBAR: Publishing & Availability -->
       <div class="xl:ring xl:p-6 ring-default xl:self-start rounded-2xl xl:sticky xl:top-8">
-        <section class="space-y-4">
-          <div>
-            <h2 class="text-lg font-medium text-highlighted">
-              Pricing &amp; inventory
-            </h2>
-            <p class="text-sm text-muted">
-              Set pricing and manage stock levels.
-            </p>
-          </div>
-
-          <UFormField :label="requiredLabel('Price')" name="price">
-            <UInput
-              v-model.number="state.price"
-              type="number"
-              min="0"
-              step="0.01"
-              class="w-full"
-            />
-          </UFormField>
-
-          <UFormField :help="salePriceHelp" label="Sale price" name="salePrice">
-            <UInput
-              v-model.number="state.salePrice"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Optional discounted price"
-              class="w-full"
-            />
-          </UFormField>
-
-          <div class="grid gap-4 ">
-            <UFormField :label="requiredLabel('Quantity')" name="quantity">
-              <UInput
-                v-model.number="state.quantity"
-                type="number"
-                min="0"
-                class="w-full"
-              />
-            </UFormField>
-
-            <UFormField
-              help="Leave empty to follow available quantity"
-              label="Stock override"
-              name="stock"
-              :required="false"
-            >
-              <UInput
-                v-model.number="state.stock"
-                type="number"
-                min="0"
-                class="w-full"
-                placeholder="Defaults to quantity"
-              />
-            </UFormField>
-          </div>
-        </section>
-
-        <section class="space-y-2 mt-8">
+        <section class="space-y-2">
           <h2 class="text-lg font-medium text-highlighted">
             Publishing
           </h2>

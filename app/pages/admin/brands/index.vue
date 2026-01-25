@@ -46,6 +46,7 @@ const totalPages = computed(() => data.value?.pagination.totalPages ?? 0)
 
 const createOpen = ref(false)
 const editOpen = ref(false)
+const viewOpen = ref(false)
 const deleteOpen = ref(false)
 const formLoading = ref(false)
 const deleteLoading = ref(false)
@@ -166,6 +167,11 @@ const pageSizeItems = [
 function getRowActions(brand: BrandListItem) {
   return [
     {
+      label: 'View',
+      icon: 'i-lucide-eye',
+      onSelect: () => openView(brand)
+    },
+    {
       label: 'Edit',
       icon: 'i-lucide-pencil',
       onSelect: () => openEdit(brand)
@@ -182,6 +188,11 @@ function getRowActions(brand: BrandListItem) {
 function openCreate() {
   selectedBrand.value = null
   createOpen.value = true
+}
+
+function openView(brand: BrandListItem) {
+  selectedBrand.value = brand
+  viewOpen.value = true
 }
 
 function openEdit(brand: BrandListItem) {
@@ -300,6 +311,12 @@ watch(editOpen, (open) => {
   }
 })
 
+watch(viewOpen, (open) => {
+  if (!open) {
+    selectedBrand.value = null
+  }
+})
+
 watch(deleteOpen, (open) => {
   if (!open) {
     deleteLoading.value = false
@@ -414,6 +431,166 @@ function handleRefresh() {
         :submitting="formLoading"
         @submit="handleCreate"
       />
+    </template>
+  </UModal>
+
+  <!-- View Brand Modal -->
+  <UModal
+    v-model:open="viewOpen"
+    :title="selectedBrand?.name ?? 'Brand Details'"
+    :ui="{ content: 'sm:max-w-2xl' }"
+  >
+    <template #body>
+      <div v-if="selectedBrand" class="space-y-6">
+        <!-- Brand Header -->
+        <div class="flex items-start gap-4">
+          <UAvatar
+            :src="selectedBrand.logo ?? undefined"
+            icon="i-lucide-badge-check"
+            size="3xl"
+            :ui="{ image: 'object-contain', root: 'ring-2 ring-default' }"
+          />
+          <div class="flex-1">
+            <h3 class="text-xl font-semibold text-highlighted">
+              {{ selectedBrand.name }}
+            </h3>
+            <p class="text-sm text-muted">
+              Slug: <code class="font-mono bg-muted/20 px-1 rounded">{{ selectedBrand.slug }}</code>
+            </p>
+            <div class="flex gap-4 mt-2">
+              <UBadge variant="subtle" color="primary">
+                {{ selectedBrand.productCount }} {{ selectedBrand.productCount === 1 ? 'product' : 'products' }}
+              </UBadge>
+            </div>
+          </div>
+        </div>
+
+        <UDivider />
+
+        <!-- Translations -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Name (English)
+            </p>
+            <p class="text-sm text-highlighted">
+              {{ editInitialValues.nameEn || '-' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Name (Arabic)
+            </p>
+            <p class="text-sm text-highlighted" dir="rtl">
+              {{ editInitialValues.nameAr || '-' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Descriptions -->
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Description (English)
+            </p>
+            <p class="text-sm text-highlighted whitespace-pre-wrap">
+              {{ editInitialValues.descriptionEn || '-' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+              Description (Arabic)
+            </p>
+            <p class="text-sm text-highlighted whitespace-pre-wrap" dir="rtl">
+              {{ editInitialValues.descriptionAr || '-' }}
+            </p>
+          </div>
+        </div>
+
+        <!-- SEO Section -->
+        <div v-if="editInitialValues.seoTitleEn || editInitialValues.seoDescriptionEn" class="space-y-4">
+          <UDivider label="SEO" />
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Title (EN)
+              </p>
+              <p class="text-sm text-highlighted">
+                {{ editInitialValues.seoTitleEn || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Title (AR)
+              </p>
+              <p class="text-sm text-highlighted" dir="rtl">
+                {{ editInitialValues.seoTitleAr || '-' }}
+              </p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Description (EN)
+              </p>
+              <p class="text-sm text-highlighted">
+                {{ editInitialValues.seoDescriptionEn || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                SEO Description (AR)
+              </p>
+              <p class="text-sm text-highlighted" dir="rtl">
+                {{ editInitialValues.seoDescriptionAr || '-' }}
+              </p>
+            </div>
+          </div>
+
+          <div v-if="editInitialValues.seoKeywordsEn || editInitialValues.seoKeywordsAr" class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                Keywords (EN)
+              </p>
+              <p class="text-sm text-highlighted">
+                {{ editInitialValues.seoKeywordsEn || '-' }}
+              </p>
+            </div>
+            <div>
+              <p class="text-xs font-medium text-muted uppercase tracking-wider mb-1">
+                Keywords (AR)
+              </p>
+              <p class="text-sm text-highlighted" dir="rtl">
+                {{ editInitialValues.seoKeywordsAr || '-' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timestamps -->
+        <div class="pt-4 border-t border-default">
+          <p class="text-xs text-muted">
+            Last updated: {{ new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(new Date(selectedBrand.updatedAt)) }}
+          </p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-2">
+          <UButton
+            label="Close"
+            color="neutral"
+            variant="subtle"
+            @click="viewOpen = false"
+          />
+          <UButton
+            label="Edit"
+            icon="i-lucide-pencil"
+            @click="viewOpen = false; openEdit(selectedBrand)"
+          />
+        </div>
+      </div>
     </template>
   </UModal>
 

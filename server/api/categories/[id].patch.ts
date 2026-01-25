@@ -115,7 +115,8 @@ export default eventHandler(async (event) => {
       metaDescription: payload.seoDescriptionEn ?? existingEn?.metaDescription,
       metaKeywords: payload.seoKeywordsEn ?? existingEn?.metaKeywords,
       ogTitle: payload.ogTitleEn ?? existingEn?.ogTitle,
-      ogDescription: payload.ogDescriptionEn ?? existingEn?.ogDescription
+      ogDescription: payload.ogDescriptionEn ?? existingEn?.ogDescription,
+      ogImage: payload.image ?? existingEn?.ogImage
     },
     create: {
       categoryId,
@@ -126,7 +127,8 @@ export default eventHandler(async (event) => {
       metaDescription: payload.seoDescriptionEn ?? null,
       metaKeywords: payload.seoKeywordsEn ?? null,
       ogTitle: payload.ogTitleEn ?? null,
-      ogDescription: payload.ogDescriptionEn ?? null
+      ogDescription: payload.ogDescriptionEn ?? null,
+      ogImage: payload.image ?? null
     }
   })
 
