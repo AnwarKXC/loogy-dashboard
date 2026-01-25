@@ -7,6 +7,33 @@ const vapidKeys = {
 
 export const getVapidPublicKey = () => vapidKeys.publicKey
 
+interface PushSubscription {
+  endpoint: string
+  keys: {
+    p256dh: string
+    auth: string
+  }
+}
+
+interface PushPayload {
+  title: string
+  body: string
+  url: string
+  icon: string
+  badge: string
+}
+
+/**
+ * Send a push notification to a subscription.
+ * This is a stub that should be implemented with web-push library.
+ */
+async function sendPushNotification(_subscription: PushSubscription, _payload: PushPayload): Promise<boolean> {
+  // TODO: Implement with web-push library
+  // For now, log and return false
+  console.log('Push notification would be sent (web-push not configured)')
+  return false
+}
+
 export const notifyAdmins = async (title: string, body: string, url?: string, type: 'ORDER' | 'MESSAGE' = 'ORDER') => {
   try {
     const subscriptions = await prisma.pushSubscription.findMany({
@@ -18,8 +45,10 @@ export const notifyAdmins = async (title: string, body: string, url?: string, ty
     const filteredSubscriptions = subscriptions.filter((sub) => {
       const adminPrefs = sub.admin
       if (!adminPrefs) return false
+      // Only notifyOrders is in the schema
       if (type === 'ORDER') return adminPrefs.notifyOrders
-      if (type === 'MESSAGE') return adminPrefs.notifyMessages
+      // For messages, include all admins (notifyMessages not in schema)
+      if (type === 'MESSAGE') return true
       return false
     })
 

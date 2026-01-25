@@ -47,8 +47,7 @@ export default eventHandler(async (event) => {
     whereClauses.push({
       OR: [
         { customerName: { contains: searchTerm, mode: 'insensitive' } },
-        { shippingPhone: { contains: searchTerm, mode: 'insensitive' } },
-        { shippingWhatsapp: { contains: searchTerm, mode: 'insensitive' } }
+        { shippingPhone: { contains: searchTerm, mode: 'insensitive' } }
       ]
     })
   }

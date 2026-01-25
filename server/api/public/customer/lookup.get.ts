@@ -68,7 +68,7 @@ export default defineEventHandler(async (event) => {
   let whatsapp = ''
   if (order.notes) {
     const whatsappMatch = order.notes.match(/WhatsApp:\s*(.+)$/i)
-    if (whatsappMatch) {
+    if (whatsappMatch && whatsappMatch[1]) {
       whatsapp = whatsappMatch[1].trim()
     }
   }

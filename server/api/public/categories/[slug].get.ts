@@ -21,7 +21,6 @@ export default eventHandler(async (event) => {
       id: true,
       slug: true,
       parentId: true,
-      image: true,
       translations: {
         select: {
           lang: true,
@@ -66,7 +65,7 @@ export default eventHandler(async (event) => {
     description,
     slug: category.slug,
     parentId: category.parentId,
-    image: category.image,
+    image: ogImage || null,
     productCount: category._count.products,
     seo: {
       title: metaTitle || name,
@@ -74,7 +73,7 @@ export default eventHandler(async (event) => {
       keywords: metaKeywords || null,
       ogTitle: ogTitle || metaTitle || name || null,
       ogDescription: ogDescription || metaDescription || description || null,
-      ogImage: ogImage || category.image || null
+      ogImage: ogImage || null
     },
     translations: category.translations
   }

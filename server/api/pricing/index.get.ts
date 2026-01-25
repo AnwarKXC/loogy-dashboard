@@ -18,8 +18,7 @@ export default eventHandler(async (event) => {
         minOrderValue: 0,
         maxOrderValue: null,
         bulkDiscountThreshold: null,
-        bulkDiscountPercentage: null,
-        currency: 'EGP'
+        bulkDiscountPercentage: null
       }
     })
   }
@@ -32,7 +31,7 @@ export default eventHandler(async (event) => {
       maxOrderValue: settings.maxOrderValue?.toString() ?? null,
       bulkDiscountThreshold: settings.bulkDiscountThreshold?.toString() ?? null,
       bulkDiscountPercentage: settings.bulkDiscountPercentage?.toString() ?? null,
-      currency: settings.currency,
+      currency: 'EGP',
       createdAt: settings.createdAt.toISOString(),
       updatedAt: settings.updatedAt.toISOString()
     }

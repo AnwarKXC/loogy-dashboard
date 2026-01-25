@@ -56,8 +56,7 @@ export default defineEventHandler(async (event) => {
         minOrderValue: 0,
         maxOrderValue: null,
         bulkDiscountThreshold: null,
-        bulkDiscountPercentage: null,
-        currency: 'EGP'
+        bulkDiscountPercentage: null
       }
     })
   }

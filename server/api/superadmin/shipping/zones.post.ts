@@ -76,7 +76,7 @@ export default defineEventHandler(async (event) => {
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: error.errors[0]?.message || 'Validation error'
+        statusMessage: error.issues[0]?.message || 'Validation error'
       })
     }
     console.error('Error creating shipping zone:', error)

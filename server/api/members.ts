@@ -9,8 +9,7 @@ export default eventHandler(async (event) => {
     select: {
       id: true,
       email: true,
-      firstName: true,
-      lastName: true,
+      name: true,
       role: true,
       createdAt: true
     },
@@ -21,7 +20,7 @@ export default eventHandler(async (event) => {
 
   return superAdmins.map(admin => ({
     id: admin.id,
-    name: `${admin.firstName || ''} ${admin.lastName || ''}`.trim() || admin.email,
+    name: admin.name || admin.email,
     username: admin.email.split('@')[0],
     email: admin.email,
     role: admin.role.toLowerCase(),

@@ -9,8 +9,7 @@ const updatePricingSchema = z.object({
   minOrderValue: z.coerce.number().min(0).optional().nullable(),
   maxOrderValue: z.coerce.number().min(0).optional().nullable(),
   bulkDiscountThreshold: z.coerce.number().min(0).optional().nullable(),
-  bulkDiscountPercentage: z.coerce.number().min(0).max(100).optional().nullable(),
-  currency: z.string().min(1).max(10).optional()
+  bulkDiscountPercentage: z.coerce.number().min(0).max(100).optional().nullable()
 }).refine((data) => {
   // If both min and max are set, max must be greater than min
   if (data.minOrderValue != null && data.maxOrderValue != null) {
@@ -47,8 +46,7 @@ export default eventHandler(async (event) => {
       minOrderValue: payload.minOrderValue ?? existing.minOrderValue,
       maxOrderValue: payload.maxOrderValue,
       bulkDiscountThreshold: payload.bulkDiscountThreshold,
-      bulkDiscountPercentage: payload.bulkDiscountPercentage,
-      currency: payload.currency ?? existing.currency
+      bulkDiscountPercentage: payload.bulkDiscountPercentage
     }
   })
 
@@ -60,7 +58,7 @@ export default eventHandler(async (event) => {
       maxOrderValue: settings.maxOrderValue?.toString() ?? null,
       bulkDiscountThreshold: settings.bulkDiscountThreshold?.toString() ?? null,
       bulkDiscountPercentage: settings.bulkDiscountPercentage?.toString() ?? null,
-      currency: settings.currency,
+      currency: 'EGP',
       createdAt: settings.createdAt.toISOString(),
       updatedAt: settings.updatedAt.toISOString()
     }

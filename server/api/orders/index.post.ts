@@ -43,7 +43,12 @@ export default defineEventHandler(async (event) => {
 
   for (const item of items) {
     const product = await prisma.product.findUnique({
-      where: { id: item.productId }
+      where: { id: item.productId },
+      include: {
+        translations: {
+          select: { lang: true, name: true }
+        }
+      }
     })
 
     if (!product) {
@@ -54,10 +59,11 @@ export default defineEventHandler(async (event) => {
     }
 
     // Check stock (simplified)
-    if (product.quantity < item.quantity) {
+    if (product.stock < item.quantity) {
+      const productName = product.translations.find(t => t.name)?.name || `Product ${product.id}`
       throw createError({
         statusCode: 400,
-        statusMessage: `Insufficient stock for product ${product.name}`
+        statusMessage: `Insufficient stock for product ${productName}`
       })
     }
 
@@ -65,13 +71,14 @@ export default defineEventHandler(async (event) => {
     const totalPrice = price * item.quantity
     subtotal += totalPrice
 
+    const productName = product.translations.find(t => t.name)?.name || `Product ${product.id}`
     orderItemsData.push({
       productId: item.productId,
       variantId: item.variantId,
       quantity: item.quantity,
       price,
       totalPrice,
-      productName: (product.name ?? Prisma.JsonNull) as Prisma.InputJsonValue
+      productName: (productName ?? Prisma.JsonNull) as Prisma.InputJsonValue
     })
   }
 
@@ -99,7 +106,7 @@ export default defineEventHandler(async (event) => {
     await prisma.product.update({
       where: { id: item.productId },
       data: {
-        quantity: { decrement: item.quantity }
+        stock: { decrement: item.quantity }
       }
     })
   }

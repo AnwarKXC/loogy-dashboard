@@ -10,7 +10,6 @@ const updateOrderSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED']).optional(),
   paymentMethod: z.enum(['CASH', 'VODAFONE_CASH', 'INSTAPAY', 'VISA']).optional(),
   shippingPhone: z.string().trim().optional(),
-  shippingWhatsapp: z.string().trim().optional().nullable(),
   shippingStreet: z.string().trim().optional(),
   shippingCity: z.string().trim().optional(),
   shippingCountry: z.string().trim().optional()
@@ -73,7 +72,6 @@ export default eventHandler(async (event) => {
       status: payload.status ?? order.status,
       paymentMethod: payload.paymentMethod ?? order.paymentMethod,
       shippingPhone: payload.shippingPhone ?? order.shippingPhone,
-      shippingWhatsapp: payload.shippingWhatsapp !== undefined ? payload.shippingWhatsapp : order.shippingWhatsapp,
       shippingStreet: payload.shippingStreet ?? order.shippingStreet,
       shippingCity: payload.shippingCity ?? order.shippingCity,
       shippingCountry: payload.shippingCountry ?? order.shippingCountry

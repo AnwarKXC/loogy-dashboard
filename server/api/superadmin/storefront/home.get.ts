@@ -6,7 +6,6 @@ import { requireSuperAdmin } from '../../../utils/superadmin-session'
 export default eventHandler(async (event) => {
   await requireSuperAdmin(event, { roles: ['OWNER', 'MANAGER'] })
 
-  // @ts-expect-error Prisma client will be regenerated after migration
   const content = await prisma.storefrontContent.findUnique({
     where: { key: 'home' },
     select: {

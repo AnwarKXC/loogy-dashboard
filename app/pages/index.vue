@@ -35,7 +35,36 @@ const AVAILABILITY_CONFIG = {
   }
 } as const
 
-// Brand card styles removed - using dynamic topBrands from API
+const BRAND_CARD_STYLES = [
+  {
+    bg: 'bg-neutral-900',
+    accent: 'text-amber-500',
+    blob: 'bg-amber-500',
+    border: 'border-amber-500/20',
+    shadow: 'shadow-amber-500/10'
+  },
+  {
+    bg: 'bg-blue-900',
+    accent: 'text-blue-400',
+    blob: 'bg-blue-500',
+    border: 'border-blue-400/20',
+    shadow: 'shadow-blue-500/10'
+  },
+  {
+    bg: 'bg-emerald-900',
+    accent: 'text-emerald-400',
+    blob: 'bg-emerald-500',
+    border: 'border-emerald-400/20',
+    shadow: 'shadow-emerald-500/10'
+  },
+  {
+    bg: 'bg-rose-900',
+    accent: 'text-rose-400',
+    blob: 'bg-rose-500',
+    border: 'border-rose-400/20',
+    shadow: 'shadow-rose-500/10'
+  }
+]
 
 type AvailabilityType = keyof typeof AVAILABILITY_CONFIG
 
@@ -395,13 +424,13 @@ const CATEGORY_CONFIG: Record<string, { icon: string, color: string, bgColor: st
   clothes: { icon: 'i-heroicons-user', color: 'text-rose-600', bgColor: 'bg-rose-50' }
 }
 
-const handleAddToCart = async (item: { id: number, name: string, price: number, image?: string }) => {
+const handleAddToCart = async (item: { id: number, name: string, price: number, image?: string | null }) => {
   try {
     await addToCart({
       title: item.name,
       price: item.price,
       quantity: 1,
-      image: item.image,
+      image: item.image ?? undefined,
       productId: item.id
     })
 
@@ -681,8 +710,7 @@ const handleAddToCart = async (item: { id: number, name: string, price: number, 
             :items="inStockEgyptProducts"
             :ui="{
               item: 'basis-[80%] sm:basis-[45%] lg:basis-[24%] pr-6',
-              container: 'snap-x snap-mandatory py-12',
-              indicators: { wrapper: 'absolute bottom-0 inset-x-0 flex justify-center gap-3' }
+              container: 'snap-x snap-mandatory py-12'
             }"
             arrows
           >
@@ -1250,7 +1278,7 @@ const handleAddToCart = async (item: { id: number, name: string, price: number, 
                   <div class="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center">
                     <UIcon
                       v-if="item.source && sourceIcons[item.source]"
-                      :name="sourceIcons[item.source]"
+                      :name="sourceIcons[item.source] || 'i-lucide-user'"
                       class="w-6 h-6"
                     />
                     <UIcon v-else name="i-lucide-user" class="w-6 h-6 text-neutral-400" />

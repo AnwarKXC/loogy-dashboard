@@ -168,8 +168,8 @@ export function getLocalizedString(value: unknown, preferred: string[] = ['en', 
   return ''
 }
 
-export function getInventoryStatus(quantity: number, stock: Product['stock']): InventoryStatus {
-  const available = typeof stock === 'number' ? stock : quantity
+export function getInventoryStatus(stock: Product['stock']): InventoryStatus {
+  const available = typeof stock === 'number' ? stock : 0
 
   if (available <= 0) {
     return 'out_of_stock'
@@ -187,7 +187,7 @@ export function getProductInventoryStatus(product: ProductWithRelations): Invent
     return 'archived'
   }
 
-  return getInventoryStatus(product.quantity, product.stock)
+  return getInventoryStatus(product.stock)
 }
 
 export function mapProductToListItem(product: ProductWithRelations) {
@@ -206,7 +206,6 @@ export function mapProductToListItem(product: ProductWithRelations) {
     salePrice,
     discountPercentage,
     rating,
-    quantity: product.quantity,
     stock: product.stock,
     status: getProductInventoryStatus(product),
     updatedAt: product.updatedAt.toISOString(),

@@ -7,8 +7,7 @@ export default defineEventHandler(async (event) => {
   const admin = await prisma.admin.findUnique({
     where: { id: session.id },
     select: {
-      notifyOrders: true,
-      notifyMessages: true
+      notifyOrders: true
     }
   })
 
@@ -19,5 +18,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return admin
+  return {
+    notifyOrders: admin.notifyOrders,
+    notifyMessages: false // Field not in schema, default to false
+  }
 })

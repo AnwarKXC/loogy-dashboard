@@ -4,7 +4,7 @@ import prisma from '../../db'
 
 const updateSchema = z.object({
   notifyOrders: z.boolean(),
-  notifyMessages: z.boolean()
+  notifyMessages: z.boolean().optional() // Not in schema, ignored
 })
 
 export default defineEventHandler(async (event) => {
@@ -23,14 +23,15 @@ export default defineEventHandler(async (event) => {
   const admin = await prisma.admin.update({
     where: { id: session.id },
     data: {
-      notifyOrders: result.data.notifyOrders,
-      notifyMessages: result.data.notifyMessages
+      notifyOrders: result.data.notifyOrders
     },
     select: {
-      notifyOrders: true,
-      notifyMessages: true
+      notifyOrders: true
     }
   })
 
-  return admin
+  return {
+    notifyOrders: admin.notifyOrders,
+    notifyMessages: false // Field not in schema, default to false
+  }
 })

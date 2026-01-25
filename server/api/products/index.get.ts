@@ -62,8 +62,8 @@ export default eventHandler(async (event) => {
     'oldest': [{ createdAt: 'asc' }],
     'price-asc': [{ price: 'asc' }],
     'price-desc': [{ price: 'desc' }],
-    'stock-asc': [{ stock: 'asc' }, { quantity: 'asc' }],
-    'stock-desc': [{ stock: 'desc' }, { quantity: 'desc' }]
+    'stock-asc': [{ stock: 'asc' }],
+    'stock-desc': [{ stock: 'desc' }]
   }
 
   const page = query.page

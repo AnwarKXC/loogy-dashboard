@@ -6,15 +6,25 @@ const productInclude = {
   category: {
     select: {
       id: true,
-      name: true,
-      slug: true
+      slug: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true
+        }
+      }
     }
   },
   brand: {
     select: {
       id: true,
-      name: true,
-      slug: true
+      slug: true,
+      translations: {
+        select: {
+          lang: true,
+          name: true
+        }
+      }
     }
   },
   translations: {
@@ -66,8 +76,8 @@ export function getLocalizedString(jsonValue: unknown, fallback = 'en'): string 
   return ''
 }
 
-export function getInventoryStatus(quantity: number, stock: Product['stock']): InventoryStatus {
-  const available = typeof stock === 'number' ? stock : quantity
+export function getInventoryStatus(stock: Product['stock']): InventoryStatus {
+  const available = typeof stock === 'number' ? stock : 0
 
   if (available <= 0) {
     return 'out_of_stock'
@@ -85,7 +95,21 @@ export function getProductInventoryStatus(product: ProductWithRelations): Invent
     return 'archived'
   }
 
-  return getInventoryStatus(product.quantity, product.stock)
+  return getInventoryStatus(product.stock)
+}
+
+function getPreferredTranslation<T extends { lang: string, name?: string | null }>(translations: T[] | null | undefined, field: keyof Omit<T, 'lang'>, preferred: string[] = ['en', 'ar']): string {
+  if (!translations || translations.length === 0) return ''
+  for (const lang of preferred) {
+    const match = translations.find(t => t.lang.toLowerCase() === lang.toLowerCase())
+    const value = match?.[field]
+    if (typeof value === 'string' && value.trim().length > 0) return value
+  }
+  for (const t of translations) {
+    const value = t[field]
+    if (typeof value === 'string' && value.trim().length > 0) return value
+  }
+  return ''
 }
 
 export function mapProductToListItem(product: ProductWithRelations) {
@@ -93,17 +117,17 @@ export function mapProductToListItem(product: ProductWithRelations) {
   const salePrice = product.salePrice?.toNumber() ?? null
   const discountPercentage = product.discountPercentage?.toNumber() ?? null
   const rating = product.rating?.toNumber() ?? null
+  const preferredName = getPreferredTranslation(product.translations, 'name')
 
   return {
     id: product.id,
-    name: getLocalizedString(product.name),
+    name: preferredName,
     slug: product.slug,
     image: product.images[0] ?? null,
     price,
     salePrice,
     discountPercentage,
     rating,
-    quantity: product.quantity,
     stock: product.stock,
     status: getProductInventoryStatus(product),
     availabilityType: product.availabilityType,
@@ -112,14 +136,14 @@ export function mapProductToListItem(product: ProductWithRelations) {
     category: product.category
       ? {
           id: product.category.id,
-          name: getLocalizedString(product.category.name),
+          name: getPreferredTranslation(product.category.translations, 'name'),
           slug: product.category.slug
         }
       : null,
     brand: product.brand
       ? {
           id: product.brand.id,
-          name: getLocalizedString(product.brand.name),
+          name: getPreferredTranslation(product.brand.translations, 'name'),
           slug: product.brand.slug
         }
       : null,
@@ -130,38 +154,19 @@ export function mapProductToListItem(product: ProductWithRelations) {
 export function mapProductToDetail(product: ProductWithRelations) {
   const listItem = mapProductToListItem(product)
 
-  const seo = parseSeoMetadata(product.seo)
-
   // Get translations for bilingual SEO
-  const translations = (product as unknown as { translations?: Array<{
-    lang: string
-    name: string
-    shortDescription?: string | null
-    description?: string | null
-    metaTitle?: string | null
-    metaDescription?: string | null
-    metaKeywords?: string | null
-    ogTitle?: string | null
-    ogDescription?: string | null
-    ogImage?: string | null
-  }> }).translations ?? []
+  const translations = product.translations ?? []
+  const description = getPreferredTranslation(translations as Array<{ lang: string, name?: string | null, description?: string | null }>, 'description' as 'name')
+  const shortDescription = getPreferredTranslation(translations as Array<{ lang: string, name?: string | null, shortDescription?: string | null }>, 'shortDescription' as 'name')
 
   return {
     ...listItem,
     images: product.images,
-    description: getLocalizedString(product.description),
-    shortDescription: getLocalizedString(product.shortDescription),
-    seoTitle: seo?.title ?? null,
-    seoDescription: seo?.description ?? null,
-    seoCanonical: seo?.canonical ?? null,
-    seoKeywords: seo?.keywords ?? [],
-    seo,
+    description,
+    shortDescription,
     translationsRaw: translations,
     raw: {
-      name: product.name,
-      description: product.description,
-      shortDescription: product.shortDescription,
-      seo: product.seo
+      translations
     }
   }
 }

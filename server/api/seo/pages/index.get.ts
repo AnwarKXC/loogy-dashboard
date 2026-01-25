@@ -12,10 +12,11 @@ export default defineEventHandler(async () => {
 
   // Group by pageKey
   const grouped = pages.reduce((acc, page) => {
-    if (!acc[page.pageKey]) {
-      acc[page.pageKey] = {}
+    const key = page.pageKey
+    if (!acc[key]) {
+      acc[key] = {}
     }
-    acc[page.pageKey][page.lang] = page
+    acc[key]![page.lang] = page
     return acc
   }, {} as Record<string, Record<string, typeof pages[0]>>)
 

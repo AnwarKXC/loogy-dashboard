@@ -18,7 +18,6 @@ export default eventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Content data is required' })
   }
 
-  // @ts-expect-error Prisma client will be regenerated after migration
   const content = await prisma.storefrontContent.upsert({
     where: { key: 'categories' },
     create: {

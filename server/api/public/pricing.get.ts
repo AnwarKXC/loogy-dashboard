@@ -20,8 +20,7 @@ export default defineEventHandler(async () => {
         minOrderValue: 0,
         maxOrderValue: null,
         bulkDiscountThreshold: null,
-        bulkDiscountPercentage: null,
-        currency: 'EGP'
+        bulkDiscountPercentage: null
       }
     })
   }
@@ -32,6 +31,6 @@ export default defineEventHandler(async () => {
     maxOrderValue: settings.maxOrderValue ? Number(settings.maxOrderValue) : null,
     bulkDiscountThreshold: settings.bulkDiscountThreshold ? Number(settings.bulkDiscountThreshold) : null,
     bulkDiscountPercentage: settings.bulkDiscountPercentage ? Number(settings.bulkDiscountPercentage) : null,
-    currency: settings.currency
+    currency: 'EGP'
   }
 })
