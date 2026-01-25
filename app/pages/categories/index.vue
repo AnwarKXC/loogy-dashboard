@@ -104,7 +104,7 @@ useSchemaOrg([
 
     <UAlert
       v-if="error"
-      color="red"
+      color="error"
       icon="i-lucide-alert-triangle"
       title="Failed to load categories"
       :description="error?.message || 'Please try again.'"
@@ -169,7 +169,7 @@ useSchemaOrg([
             v-else
             :key="cat.slug"
             class="flex items-center justify-between px-4 py-3"
-            :style="{ paddingLeft: `${16 + cat.depth * 16}px` }"
+            :style="{ paddingLeft: `${16 + (cat.depth ?? 0) * 16}px` }"
           >
             <div class="space-y-1">
               <p class="font-medium text-gray-900 dark:text-gray-100">

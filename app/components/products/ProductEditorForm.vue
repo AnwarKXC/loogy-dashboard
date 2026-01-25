@@ -4,7 +4,7 @@ import { z } from 'zod'
 import type { FormSubmitEvent } from '@nuxt/ui'
 
 import type { CategoryTreeNode, ProductBasePayload, ProductEditorValues, ProductFilterOption } from '~/types'
-import { flattenCategoryTree } from '~/utils/categories'
+import { flattenCategoryTree, type FlattenedCategory } from '~/utils/categories'
 import S3ImageUploader from '~/components/media/S3ImageUploader.vue'
 
 const props = defineProps<{
@@ -170,7 +170,7 @@ const categoryItems = computed(() => {
 
   return [
     { label: 'No category', value: null },
-    ...flattened.map((category: CategoryTreeNode) => ({
+    ...flattened.map((category: FlattenedCategory) => ({
       label: `${category.depth > 0 ? `${'-'.repeat(category.depth * 2)} ` : ''}${category.name || `Category #${category.id}`}`,
       value: category.id
     }))

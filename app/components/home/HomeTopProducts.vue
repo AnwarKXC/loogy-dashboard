@@ -7,11 +7,11 @@ const props = defineProps<{
 }>()
 
 interface TopProduct {
-  id: number
-  name: string
+  productId: number
+  productName: string
   image: string | null
-  quantity: number
-  revenue: number
+  totalQuantity: number
+  totalRevenue: number
 }
 
 const { data: products } = await useAsyncData('top-products', async () => {
@@ -38,7 +38,7 @@ function formatCurrency(value: number) {
 </script>
 
 <template>
-  <UCard :ui="{ body: { padding: 'p-0' } }">
+  <UCard>
     <template #header>
       <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
         Top Products

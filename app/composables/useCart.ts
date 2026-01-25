@@ -162,8 +162,8 @@ export const useCart = () => {
       if (shareParam.includes(':')) {
         // New format: slug1:qty1,slug2:qty2
         items = shareParam.split(',').map((pair) => {
-          const [slug, qty] = pair.split(':')
-          return { slug, quantity: parseInt(qty, 10) || 1 }
+          const [slugPart, qty] = pair.split(':')
+          return { slug: slugPart ?? '', quantity: parseInt(qty ?? '1', 10) || 1 }
         }).filter(item => item.slug)
       } else {
         // Legacy base64 format - try to decode

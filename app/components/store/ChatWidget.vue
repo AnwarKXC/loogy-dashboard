@@ -60,7 +60,7 @@ const sendToWhatsApp = () => {
         </UButton>
       </div>
 
-      <UModal v-model="isDialogOpen" :ui="{ width: 'sm:max-w-md' }">
+      <UModal v-model="isDialogOpen" class="sm:max-w-md">
         <template #header>
           <div class="space-y-1">
             <p class="text-lg font-semibold">

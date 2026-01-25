@@ -120,7 +120,7 @@ const qualifiesForFreeShipping = computed(() => {
 })
 
 // Shipping with split shipment consideration
-const baseShipping = computed(() => qualifiesForFreeShipping.value ? 0 : pricing.value.shippingFee)
+const _baseShipping = computed(() => qualifiesForFreeShipping.value ? 0 : pricing.value.shippingFee)
 const shipping = computed(() => {
   if (qualifiesForFreeShipping.value) return 0
   return calculateShippingCost(pricing.value.shippingFee, splitShipment.value)
@@ -196,7 +196,7 @@ const copyShareLink = async () => {
 
 // Native share API
 const canNativeShare = computed(() => {
-  if (import.meta.client && navigator.share) {
+  if (import.meta.client && typeof navigator !== 'undefined' && 'share' in navigator) {
     return true
   }
   return false

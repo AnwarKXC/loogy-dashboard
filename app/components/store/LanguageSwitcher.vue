@@ -4,13 +4,18 @@ const { locale, setLocale } = useI18n()
 const languages = [
   { code: 'en', label: 'EN', flag: '🇺🇸' },
   { code: 'ar', label: 'عربي', flag: '🇪🇬' }
-]
+] as const
 
-const currentLang = computed(() => languages.find(l => l.code === locale.value) || languages[0])
-const otherLang = computed(() => languages.find(l => l.code !== locale.value) || languages[1])
+const defaultLang = languages[0]
+
+const currentLang = computed(() => languages.find(l => l.code === locale.value) ?? defaultLang)
+const otherLang = computed(() => languages.find(l => l.code !== locale.value) ?? languages[1])
 
 const toggleLanguage = () => {
-  setLocale(otherLang.value.code)
+  const code = otherLang.value?.code
+  if (code === 'en' || code === 'ar') {
+    setLocale(code)
+  }
 }
 </script>
 

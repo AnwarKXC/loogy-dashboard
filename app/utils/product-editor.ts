@@ -1,4 +1,4 @@
-import type { ProductDetail, ProductEditorValues } from '~/types'
+import type { ProductAvailabilityType, ProductDetail, ProductEditorValues } from '~/types'
 
 type LocalizedRecord = Record<string, unknown>
 
@@ -10,7 +10,7 @@ function toTrimmedString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-function extractLocalized(record: unknown, locale: string): string {
+function _extractLocalized(record: unknown, locale: string): string {
   if (!isRecord(record)) {
     return ''
   }
@@ -18,7 +18,7 @@ function extractLocalized(record: unknown, locale: string): string {
   return toTrimmedString(record[locale])
 }
 
-function withFallback(value: string, fallback: string | null | undefined): string {
+function _withFallback(value: string, fallback: string | null | undefined): string {
   if (value.trim().length > 0) {
     return value
   }
@@ -94,7 +94,7 @@ export function mapProductDetailToEditorValues(product: ProductDetail): ProductE
     images: Array.isArray(product.images) ? [...product.images] : [],
     isArchived: product.isArchived,
     // Availability fields
-    availabilityType: (product as unknown as { availabilityType?: string }).availabilityType ?? 'IN_STOCK_EGYPT',
+    availabilityType: ((product as unknown as { availabilityType?: string }).availabilityType ?? 'IN_STOCK_EGYPT') as ProductAvailabilityType,
     expectedArrivalDate: (product as unknown as { expectedArrivalDate?: string | null }).expectedArrivalDate ?? null,
     seoTitle,
     seoDescription,

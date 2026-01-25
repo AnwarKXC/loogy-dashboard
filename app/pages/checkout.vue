@@ -69,16 +69,12 @@ interface AreaFromAPI {
 const toast = useToast()
 const {
   lines,
-  subtotal,
   clear: clearCart,
   // Availability splits
-  inStockItems,
-  arrivingSoonItems,
   checkoutItems,
   checkoutSubtotal,
   // Flags
   hasPreOrderItems,
-  hasCheckoutItems,
   hasMixedAvailability,
   // Shipping calculation
   calculateShippingCost
@@ -420,9 +416,9 @@ const lookupCustomerByPhone = (phone: string) => {
         if (response.customer.address) {
           // Handle legacy format that might have WhatsApp embedded
           const whatsappMatch = response.customer.address.match(/\s*\(WhatsApp:\s*([^)]+)\)$/)
-          if (whatsappMatch) {
+          if (whatsappMatch && whatsappMatch[1]) {
             form.fullLocation = response.customer.address.replace(/\s*\(WhatsApp:\s*[^)]+\)$/, '').trim()
-            form.whatsappNumber = whatsappMatch[1].trim()
+            form.whatsapp = whatsappMatch[1].trim()
           } else {
             form.fullLocation = response.customer.address
           }
@@ -430,7 +426,7 @@ const lookupCustomerByPhone = (phone: string) => {
 
         // Set WhatsApp if provided separately (new format)
         if (response.customer.whatsapp) {
-          form.whatsappNumber = response.customer.whatsapp
+          form.whatsapp = response.customer.whatsapp
         }
 
         toast.add({
@@ -602,7 +598,7 @@ const placeOrder = async () => {
           governorateId: form.governorateId || null,
           areaId: form.areaId || null,
           address: `${areaLabel || ''}, ${form.fullLocation}`,
-          whatsapp: form.whatsappNumber || ''
+          whatsapp: form.whatsapp || ''
         },
         paymentMethod: form.payment,
         items: lines.value,

@@ -229,7 +229,7 @@ useSchemaOrg([
       defineOffer({
         price: () => productPrice.value,
         priceCurrency: currency,
-        availability: () => product.value.status === 'out_of_stock'
+        availability: product.value.status === 'out_of_stock'
           ? 'OutOfStock'
           : 'InStock',
         itemCondition: 'NewCondition'

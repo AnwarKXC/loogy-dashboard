@@ -67,7 +67,7 @@ function openImage(img: string) {
               <div class="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center">
                 <UIcon
                   v-if="testimonial.source && sourceIcons[testimonial.source]"
-                  :name="sourceIcons[testimonial.source]"
+                  :name="sourceIcons[testimonial.source] || 'i-lucide-user'"
                   class="w-5 h-5"
                 />
                 <UIcon v-else name="i-lucide-user" class="w-5 h-5 text-neutral-400" />

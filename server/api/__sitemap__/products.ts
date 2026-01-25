@@ -1,7 +1,7 @@
-import { defineSitemapEventHandler } from '#imports'
+import { defineEventHandler } from 'h3'
 import prisma from '../../db'
 
-export default defineSitemapEventHandler(async () => {
+export default defineEventHandler(async () => {
   // Fetch all published products with translations for SEO data
   const products = await prisma.product.findMany({
     where: {

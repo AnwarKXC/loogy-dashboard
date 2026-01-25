@@ -72,18 +72,10 @@ export function getProductInclude() {
 
 export function getPreferredTranslation<T extends {
   lang: string
-  name?: string | null
-  description?: string | null
-  shortDescription?: string | null
-  metaTitle?: string | null
-  metaDescription?: string | null
-  metaKeywords?: string | null
-  ogTitle?: string | null
-  ogDescription?: string | null
-  ogImage?: string | null
+  [key: string]: string | null | undefined
 }>(
   translations: T[] | null | undefined,
-  field: keyof Omit<T, 'lang'>,
+  field: string,
   preferred: string[] = ['en', 'ar']
 ): string {
   if (!translations || translations.length === 0) return ''

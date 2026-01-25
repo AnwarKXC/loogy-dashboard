@@ -1,7 +1,7 @@
-import { defineSitemapEventHandler } from '#imports'
+import { defineEventHandler } from 'h3'
 import prisma from '../../db'
 
-export default defineSitemapEventHandler(async () => {
+export default defineEventHandler(async () => {
   // Fetch all categories with translations
   const categories = await prisma.category.findMany({
     where: {

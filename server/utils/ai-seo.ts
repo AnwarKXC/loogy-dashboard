@@ -686,19 +686,19 @@ function generateWithTemplates(
 
   // Generate based on target
   if (['descriptionEn', 'descriptions', 'all'].includes(target)) {
-    result.descriptionEn = truncate(descriptionTemplatesEn[randomIndex], MAX_DESCRIPTION)
+    result.descriptionEn = truncate(descriptionTemplatesEn[randomIndex] || descriptionTemplatesEn[0] || '', MAX_DESCRIPTION)
   }
 
   if (['descriptionAr', 'descriptions', 'all'].includes(target)) {
-    result.descriptionAr = truncate(descriptionTemplatesAr[randomIndex], MAX_DESCRIPTION)
+    result.descriptionAr = truncate(descriptionTemplatesAr[randomIndex] || descriptionTemplatesAr[0] || '', MAX_DESCRIPTION)
   }
 
   if (['shortDescriptionEn', 'shortDescriptions', 'all'].includes(target)) {
-    result.shortDescriptionEn = truncate(shortDescTemplatesEn[randomIndex], MAX_SHORT_DESCRIPTION)
+    result.shortDescriptionEn = truncate(shortDescTemplatesEn[randomIndex] || shortDescTemplatesEn[0] || '', MAX_SHORT_DESCRIPTION)
   }
 
   if (['shortDescriptionAr', 'shortDescriptions', 'all'].includes(target)) {
-    result.shortDescriptionAr = truncate(shortDescTemplatesAr[randomIndex], MAX_SHORT_DESCRIPTION)
+    result.shortDescriptionAr = truncate(shortDescTemplatesAr[randomIndex] || shortDescTemplatesAr[0] || '', MAX_SHORT_DESCRIPTION)
   }
 
   if (['bilingualSeo', 'all'].includes(target)) {

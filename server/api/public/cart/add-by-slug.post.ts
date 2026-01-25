@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     item => item.productId === product.id && !item.variantId
   )
 
-  if (existingIndex >= 0) {
+  if (existingIndex >= 0 && cart.items[existingIndex]) {
     // Update quantity
     cart.items[existingIndex].quantity += quantity
   }

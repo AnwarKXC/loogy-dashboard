@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Period, Range, Sale } from '~/types'
+import type { Period, Range, Sale, SaleStatus } from '~/types'
 
 const props = defineProps<{
   period: Period
@@ -35,9 +35,9 @@ const { data } = await useAsyncData('sales', async () => {
   })
 
   return response.items.map(order => ({
-    id: order.id,
+    id: String(order.id),
     date: order.createdAt,
-    status: order.status.toLowerCase(),
+    status: order.status.toLowerCase() as SaleStatus,
     email: order.customer.email,
     amount: order.totalAmount
   }))

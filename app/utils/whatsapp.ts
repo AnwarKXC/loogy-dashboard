@@ -105,7 +105,7 @@ export function getDeliveryEstimate(
 /**
  * Get badge color for availability type
  */
-export function getAvailabilityBadgeColor(availabilityType: ProductAvailabilityType): string {
+export function getAvailabilityBadgeColor(availabilityType: ProductAvailabilityType): 'success' | 'warning' | 'info' | 'neutral' {
   switch (availabilityType) {
     case 'IN_STOCK_EGYPT':
       return 'success' // Green

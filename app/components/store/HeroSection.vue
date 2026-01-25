@@ -4,7 +4,7 @@ const props = defineProps<{
   description?: string
   primaryCta?: { label: string, to: string }
   secondaryCta?: { label: string, to: string }
-}>
+}>()
 </script>
 
 <template>

@@ -175,7 +175,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-function parseSeoMetadata(value: unknown) {
+function _parseSeoMetadata(value: unknown) {
   if (!isPlainObject(value)) {
     return null
   }

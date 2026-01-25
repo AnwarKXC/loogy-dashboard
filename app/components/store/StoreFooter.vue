@@ -36,12 +36,14 @@ const socials = computed(() => footer.value.socials ?? [])
       </div>
     </template>
 
-    <UNavigationMenu
-      variant="link"
-      :items="links"
-      class="text-sm"
-    >
-      <template #right>
+    <template #right>
+      <div class="flex items-center gap-4">
+        <UNavigationMenu
+          variant="link"
+          :items="links"
+          class="text-sm"
+        />
+
         <div class="flex items-center gap-2">
           <UButton
             v-for="social in socials"
@@ -53,7 +55,7 @@ const socials = computed(() => footer.value.socials ?? [])
             target="_blank"
           />
         </div>
-      </template>
-    </UNavigationMenu>
+      </div>
+    </template>
   </UFooter>
 </template>

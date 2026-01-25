@@ -72,7 +72,7 @@ const availabilityIcon = computed(() => {
   return getAvailabilityIcon(props.availabilityType)
 })
 
-const isPreOrder = computed(() => props.availabilityType === 'PRE_ORDER')
+const _isPreOrder = computed(() => props.availabilityType === 'PRE_ORDER')
 
 const formatPrice = (value: number) => `${value.toLocaleString('en-US')} EGP`
 </script>
