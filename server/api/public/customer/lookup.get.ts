@@ -73,6 +73,26 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  // Strip area name prefix from address to prevent duplication
+  // Address format: "AreaName, Actual Address Details"
+  let cleanAddress = order.shippingStreet
+  if (order.area) {
+    // Remove area name (both Arabic and English) from the start of the address
+    const areaPatterns = [
+      order.area.nameEn,
+      order.area.nameAr
+    ].filter(Boolean)
+
+    for (const areaName of areaPatterns) {
+      // Match pattern: "AreaName, " or "AreaName," at the start
+      const regex = new RegExp(`^${areaName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')},\\s*`, 'i')
+      if (regex.test(cleanAddress)) {
+        cleanAddress = cleanAddress.replace(regex, '')
+        break
+      }
+    }
+  }
+
   return {
     found: true,
     customer: {
@@ -81,7 +101,7 @@ export default defineEventHandler(async (event) => {
       phone: order.customerPhone,
       governorateId: order.governorateId,
       areaId: order.areaId,
-      address: order.shippingStreet,
+      address: cleanAddress,
       whatsapp
     }
   }

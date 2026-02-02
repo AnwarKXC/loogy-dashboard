@@ -127,7 +127,7 @@ export default defineNuxtConfig({
     identity: {
       type: 'Organization',
       name: 'Loogy Store',
-      url: process.env.NUXT_PUBLIC_SITE_URL || 'https://loogy.store',
+      url: process.env.NUXT_PUBLIC_SITE_URL || 'loogy-dashboard.vercel.app',
       logo: '/logo.png'
     }
   },

@@ -1,6 +1,7 @@
-import { defineEventHandler, readBody, createError } from 'h3'
+import { defineEventHandler, readBody, createError, getRequestURL } from 'h3'
 import { z } from 'zod'
 import prisma from '../../../db'
+import { sendOrderNotification } from '../../../utils/whatsapp'
 
 /**
  * Public guest checkout endpoint for Cash on Delivery orders.
@@ -205,6 +206,25 @@ export default defineEventHandler(async (event) => {
       data: { usageCount: { increment: 1 } }
     })
   }
+
+  // Send WhatsApp notification to business (async, don't wait)
+  const baseUrl = getRequestURL(event).origin
+  sendOrderNotification({
+    id: order.id,
+    customerName: customer.name,
+    customerPhone: customer.phone,
+    shippingCity: customer.governorate || 'Egypt',
+    shippingStreet: customer.address,
+    totalAmount,
+    items: items.map(item => ({
+      productName: item.title,
+      quantity: item.quantity,
+      price: item.price
+    })),
+    notes: customer.whatsapp ? `WhatsApp: ${customer.whatsapp}` : null
+  }, baseUrl).catch(error => {
+    console.error('Failed to send WhatsApp notification:', error)
+  })
 
   return {
     success: true,

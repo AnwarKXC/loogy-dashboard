@@ -26,6 +26,7 @@
     "@unovis/ts": "^1.6.1",
     "@unovis/vue": "^1.6.1",
     "@vueuse/nuxt": "^13.9.0",
+    "@wppconnect-team/wppconnect": "^1.38.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
     "date-fns": "^4.1.0",

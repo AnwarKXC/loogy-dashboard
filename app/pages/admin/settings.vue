@@ -26,6 +26,10 @@ const links = [[{
   label: 'Social Links',
   icon: 'i-lucide-share-2',
   to: '/admin/settings/social'
+}, {
+  label: 'WhatsApp',
+  icon: 'i-simple-icons-whatsapp',
+  to: '/admin/settings/whatsapp'
 }], [{
   label: 'Shipping',
   icon: 'i-lucide-truck',

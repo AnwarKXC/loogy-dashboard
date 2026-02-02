@@ -2,9 +2,9 @@
 const { locale } = useI18n()
 const toast = useToast()
 
-// Cookie for phone persistence
-const phoneCookie = useCookie('customer_phone', {
-  maxAge: 60 * 60 * 24 * 30, // 30 days
+// Cookie for auth token persistence (no expiry - lasts until regenerated)
+const authTokenCookie = useCookie('customer_auth_token', {
+  maxAge: 60 * 60 * 24 * 365 * 10, // 10 years (effectively forever)
   sameSite: 'lax'
 })
 
@@ -13,6 +13,19 @@ const phone = ref('')
 const phoneError = ref('')
 const loading = ref(false)
 const isAuthenticated = ref(false)
+
+// OTP verification state
+const {
+  sendCode: sendOtpCode,
+  verifyCode: verifyOtpCode,
+  codeSent: otpCodeSent,
+  loading: otpLoading,
+  error: otpError,
+  cooldownSeconds,
+  attemptsRemaining,
+  reset: resetOtp
+} = usePhoneOtp()
+const otpCode = ref('')
 
 // Types
 interface OrderItem {
@@ -57,6 +70,7 @@ interface Customer {
 
 interface OrdersResponse {
   found: boolean
+  phone: string
   customer: Customer | null
   orders: Order[]
 }
@@ -64,6 +78,7 @@ interface OrdersResponse {
 const customer = ref<Customer | null>(null)
 const orders = ref<Order[]>([])
 const expandedOrderId = ref<number | null>(null)
+const authenticatedPhone = ref<string | null>(null)
 
 // Fetch contact settings for WhatsApp
 const { data: contactSettings } = await useFetch<{ phoneNumber: string | null }>('/api/public/settings/contact')
@@ -88,9 +103,9 @@ const handlePhoneInput = (event: Event) => {
 
   // Limit length based on format
   if (value.startsWith('+20')) {
-    value = value.slice(0, 13) // +20 + 10 digits
+    value = value.slice(0, 13)
   } else if (value.startsWith('0')) {
-    value = value.slice(0, 11) // 11 digits
+    value = value.slice(0, 11)
   } else if (value.startsWith('+')) {
     value = value.slice(0, 13)
   } else {
@@ -113,27 +128,70 @@ const handlePhoneInput = (event: Event) => {
   }
 }
 
-// Fetch orders by phone
-const fetchOrders = async (phoneNumber: string) => {
-  if (!validateEgyptianPhone(phoneNumber)) {
-    phoneError.value = locale.value === 'ar'
-      ? 'رقم غير صحيح'
-      : 'Invalid phone number'
+// Send OTP
+const handleSendOtp = async () => {
+  if (!validateEgyptianPhone(phone.value)) {
+    toast.add({
+      title: locale.value === 'ar' ? 'خطأ' : 'Error',
+      description: locale.value === 'ar' ? 'يرجى إدخال رقم هاتف صحيح' : 'Please enter a valid phone number',
+      color: 'error'
+    })
+    return
+  }
+  await sendOtpCode(phone.value)
+}
+
+// Verify OTP and get token
+const handleVerifyOtp = async () => {
+  if (otpCode.value.length !== 6) {
+    toast.add({
+      title: locale.value === 'ar' ? 'خطأ' : 'Error',
+      description: locale.value === 'ar' ? 'يرجى إدخال رمز التحقق المكون من 6 أرقام' : 'Please enter the 6-digit verification code',
+      color: 'error'
+    })
     return
   }
 
+  const success = await verifyOtpCode(phone.value, otpCode.value)
+  if (success) {
+    // The token is returned from the verify API - fetch it
+    try {
+      const result = await $fetch<{ success: boolean, token: string }>('/api/public/otp/verify', {
+        method: 'POST',
+        body: { phone: phone.value, code: otpCode.value }
+      })
+      if (result.token) {
+        authTokenCookie.value = result.token
+        await fetchOrdersWithToken(result.token)
+        toast.add({
+          title: locale.value === 'ar' ? 'تم التحقق!' : 'Verified!',
+          description: locale.value === 'ar' ? 'تم التحقق من رقم هاتفك بنجاح' : 'Your phone number has been verified',
+          color: 'success'
+        })
+      }
+    } catch {
+      // Token might already be verified from the composable call
+      // Try to fetch orders anyway if we have a token in cookie
+      if (authTokenCookie.value) {
+        await fetchOrdersWithToken(authTokenCookie.value)
+      }
+    }
+  }
+}
+
+// Fetch orders using auth token
+const fetchOrdersWithToken = async (token: string) => {
   loading.value = true
   try {
-    const response = await $fetch<OrdersResponse>('/api/public/orders/by-phone', {
-      query: { phone: phoneNumber }
+    const response = await $fetch<OrdersResponse>('/api/public/orders/my-orders', {
+      query: { token }
     })
 
     if (response.found && response.customer) {
       customer.value = response.customer
       orders.value = response.orders
+      authenticatedPhone.value = response.phone
       isAuthenticated.value = true
-      // Save phone to cookie
-      phoneCookie.value = phoneNumber
     } else {
       toast.add({
         title: locale.value === 'ar' ? 'لا توجد طلبات' : 'No orders found',
@@ -142,25 +200,39 @@ const fetchOrders = async (phoneNumber: string) => {
           : 'We couldn\'t find any orders associated with this phone number',
         color: 'warning'
       })
+      isAuthenticated.value = true // Still authenticated, just no orders
+      authenticatedPhone.value = response.phone
     }
   } catch {
+    // Token invalid - clear it
+    authTokenCookie.value = null
     toast.add({
-      title: locale.value === 'ar' ? 'خطأ' : 'Error',
-      description: locale.value === 'ar' ? 'حدث خطأ أثناء جلب الطلبات' : 'Failed to fetch orders',
-      color: 'error'
+      title: locale.value === 'ar' ? 'جلسة منتهية' : 'Session expired',
+      description: locale.value === 'ar' ? 'يرجى التحقق من رقم هاتفك مرة أخرى' : 'Please verify your phone number again',
+      color: 'warning'
     })
   } finally {
     loading.value = false
   }
 }
 
-// Logout - clear cookie and reset state
+// Change phone number (go back to verification)
+const changePhoneNumber = () => {
+  resetOtp()
+  otpCode.value = ''
+  phone.value = ''
+}
+
+// Logout - clear token and reset state
 const logout = () => {
-  phoneCookie.value = null
+  authTokenCookie.value = null
   isAuthenticated.value = false
   customer.value = null
   orders.value = []
   phone.value = ''
+  authenticatedPhone.value = null
+  resetOtp()
+  otpCode.value = ''
 }
 
 // Format currency
@@ -232,11 +304,10 @@ const toggleOrder = (orderId: number) => {
   expandedOrderId.value = expandedOrderId.value === orderId ? null : orderId
 }
 
-// Check cookie on mount
+// Check token on mount
 onMounted(async () => {
-  if (phoneCookie.value) {
-    phone.value = phoneCookie.value
-    await fetchOrders(phoneCookie.value)
+  if (authTokenCookie.value) {
+    await fetchOrdersWithToken(authTokenCookie.value)
   }
 })
 
@@ -253,22 +324,23 @@ definePageMeta({
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <div class="container mx-auto px-4 py-8 max-w-4xl">
-      <!-- Phone Input Section (Not Authenticated) -->
+      <!-- Phone Verification Section (Not Authenticated) -->
       <div v-if="!isAuthenticated" class="max-w-md mx-auto">
         <div class="text-center mb-8">
-          <div class="inline-flex items-center justify-center w-20 h-20 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
-            <UIcon name="i-lucide-package-search" class="w-10 h-10 text-primary-600 dark:text-primary-400" />
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
+            <UIcon name="i-simple-icons-whatsapp" class="w-10 h-10 text-green-600 dark:text-green-400" />
           </div>
           <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {{ locale === 'ar' ? 'تتبع طلباتك' : 'Track Your Orders' }}
+            {{ locale === 'ar' ? 'طلباتي' : 'My Orders' }}
           </h1>
           <p class="text-gray-600 dark:text-gray-400">
-            {{ locale === 'ar' ? 'أدخل رقم هاتفك لعرض جميع طلباتك' : 'Enter your phone number to view all your orders' }}
+            {{ locale === 'ar' ? 'تحقق من رقم هاتفك لعرض جميع طلباتك' : 'Verify your phone number to view all your orders' }}
           </p>
         </div>
 
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <div class="space-y-4">
+          <!-- Phone Input (before OTP sent) -->
+          <div v-if="!otpCodeSent" class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {{ locale === 'ar' ? 'رقم الهاتف' : 'Phone Number' }}
@@ -280,27 +352,109 @@ definePageMeta({
                   type="tel"
                   dir="ltr"
                   :placeholder="locale === 'ar' ? '01012345678' : '01012345678'"
-                  class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  :class="{ 'border-red-500 focus:ring-red-500': phoneError }"
+                  class="w-full bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl pl-10 pr-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  :class="{ 'border-red-500 focus:ring-red-500': phoneError || otpError }"
                   @input="handlePhoneInput"
-                  @keyup.enter="fetchOrders(phone)"
+                  @keyup.enter="handleSendOtp"
                 >
               </div>
               <p v-if="phoneError" class="mt-2 text-sm text-red-500 flex items-center gap-1">
                 <UIcon name="i-lucide-alert-circle" class="w-4 h-4" />
                 {{ phoneError }}
               </p>
+              <p v-else-if="otpError" class="mt-2 text-sm text-red-500 flex items-center gap-1">
+                <UIcon name="i-lucide-alert-circle" class="w-4 h-4" />
+                {{ otpError }}
+              </p>
             </div>
 
             <button
-              :disabled="loading || !phone || !!phoneError"
-              class="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
-              @click="fetchOrders(phone)"
+              :disabled="otpLoading || !phone || !!phoneError"
+              class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              @click="handleSendOtp"
             >
-              <UIcon v-if="loading" name="i-lucide-loader-2" class="w-5 h-5 animate-spin" />
-              <UIcon v-else name="i-lucide-search" class="w-5 h-5" />
-              {{ locale === 'ar' ? 'عرض طلباتي' : 'View My Orders' }}
+              <UIcon v-if="otpLoading" name="i-lucide-loader-2" class="w-5 h-5 animate-spin" />
+              <UIcon v-else name="i-simple-icons-whatsapp" class="w-5 h-5" />
+              {{ locale === 'ar' ? 'إرسال رمز التحقق' : 'Send Verification Code' }}
             </button>
+          </div>
+
+          <!-- OTP Input (after sent) -->
+          <div v-else class="space-y-4">
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+              <p class="text-green-700 dark:text-green-300 text-sm">
+                {{ locale === 'ar' ? 'تم إرسال رمز التحقق إلى' : 'Verification code sent to' }}
+                <span class="font-mono font-bold block mt-1" dir="ltr">{{ phone }}</span>
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
+                {{ locale === 'ar' ? 'أدخل رمز التحقق' : 'Enter Verification Code' }}
+              </label>
+              <input
+                v-model="otpCode"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="000000"
+                class="w-full bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 px-4 py-4 text-2xl text-center font-mono tracking-[0.5em] focus:outline-none focus:border-green-500 transition-colors rounded-lg"
+                :class="{ 'border-red-500': otpError }"
+                @keyup.enter="handleVerifyOtp"
+              >
+              <p v-if="otpError" class="mt-2 text-sm text-red-500 text-center">
+                {{ otpError }}
+              </p>
+              <p v-else class="mt-2 text-xs text-gray-500 text-center">
+                {{ locale === 'ar' ? `المحاولات المتبقية: ${attemptsRemaining}` : `Attempts remaining: ${attemptsRemaining}` }}
+              </p>
+            </div>
+
+            <button
+              :disabled="otpLoading || otpCode.length !== 6"
+              class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              @click="handleVerifyOtp"
+            >
+              <UIcon v-if="otpLoading" name="i-lucide-loader-2" class="w-5 h-5 animate-spin" />
+              <UIcon v-else name="i-lucide-check" class="w-5 h-5" />
+              {{ locale === 'ar' ? 'تحقق' : 'Verify' }}
+            </button>
+
+            <!-- Resend & Change Number -->
+            <div class="flex flex-col sm:flex-row gap-3 pt-4">
+              <button
+                class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-3 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                :disabled="cooldownSeconds > 0 || otpLoading"
+                @click="handleSendOtp"
+              >
+                <span v-if="cooldownSeconds > 0">
+                  {{ locale === 'ar' ? `إعادة الإرسال (${cooldownSeconds}ث)` : `Resend (${cooldownSeconds}s)` }}
+                </span>
+                <span v-else>
+                  {{ locale === 'ar' ? 'إعادة إرسال الرمز' : 'Resend Code' }}
+                </span>
+              </button>
+              <button
+                class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-3 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                @click="changePhoneNumber"
+              >
+                {{ locale === 'ar' ? 'تغيير الرقم' : 'Change Number' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick track order link -->
+          <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              {{ locale === 'ar' ? 'لديك رقم طلب معين؟' : 'Have a specific order number?' }}
+            </p>
+            <NuxtLink
+              to="/track-order"
+              class="text-primary-600 dark:text-primary-400 hover:underline font-medium inline-flex items-center gap-1"
+            >
+              <UIcon name="i-lucide-search" class="w-4 h-4" />
+              {{ locale === 'ar' ? 'تتبع طلب محدد' : 'Track a specific order' }}
+            </NuxtLink>
           </div>
         </div>
       </div>
@@ -316,10 +470,10 @@ definePageMeta({
               </div>
               <div>
                 <h1 class="text-xl font-bold text-gray-900 dark:text-white">
-                  {{ locale === 'ar' ? 'مرحباً' : 'Welcome' }}, {{ customer?.name }}
+                  {{ locale === 'ar' ? 'مرحباً' : 'Welcome' }}{{ customer?.name ? `, ${customer.name}` : '' }}
                 </h1>
                 <p class="text-gray-500 dark:text-gray-400" dir="ltr">
-                  {{ customer?.phone }}
+                  {{ authenticatedPhone || customer?.phone }}
                 </p>
               </div>
             </div>
@@ -333,10 +487,10 @@ definePageMeta({
           </div>
 
           <!-- Stats -->
-          <div class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+          <div v-if="customer" class="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
             <div class="text-center">
               <p class="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {{ customer?.totalOrders }}
+                {{ customer.totalOrders }}
               </p>
               <p class="text-sm text-gray-500 dark:text-gray-400">
                 {{ locale === 'ar' ? 'إجمالي الطلبات' : 'Total Orders' }}
@@ -344,13 +498,36 @@ definePageMeta({
             </div>
             <div class="text-center">
               <p class="text-2xl font-bold text-green-600 dark:text-green-400">
-                {{ formatPrice(customer?.totalSpent || 0) }}
+                {{ formatPrice(customer.totalSpent) }}
               </p>
               <p class="text-sm text-gray-500 dark:text-gray-400">
                 {{ locale === 'ar' ? 'إجمالي المشتريات' : 'Total Spent' }}
               </p>
             </div>
           </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mb-6">
+          <NuxtLink
+            to="/track-order"
+            class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                <UIcon name="i-lucide-package-search" class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div>
+                <p class="font-medium text-gray-900 dark:text-white">
+                  {{ locale === 'ar' ? 'تتبع طلب برقمه' : 'Track Order by Number' }}
+                </p>
+                <p class="text-sm text-gray-500">
+                  {{ locale === 'ar' ? 'أدخل رقم الطلب للتتبع' : 'Enter order number to track' }}
+                </p>
+              </div>
+            </div>
+            <UIcon name="i-lucide-chevron-right" class="w-5 h-5 text-gray-400" :class="{ 'rotate-180': locale === 'ar' }" />
+          </NuxtLink>
         </div>
 
         <!-- Orders List -->
@@ -361,9 +538,16 @@ definePageMeta({
 
         <div v-if="orders.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl">
           <UIcon name="i-lucide-package-x" class="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-          <p class="text-gray-500 dark:text-gray-400">
-            {{ locale === 'ar' ? 'لا توجد طلبات' : 'No orders found' }}
+          <p class="text-gray-500 dark:text-gray-400 mb-4">
+            {{ locale === 'ar' ? 'لا توجد طلبات بعد' : 'No orders yet' }}
           </p>
+          <NuxtLink
+            to="/"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+          >
+            <UIcon name="i-lucide-shopping-bag" class="w-4 h-4" />
+            {{ locale === 'ar' ? 'تسوق الآن' : 'Shop Now' }}
+          </NuxtLink>
         </div>
 
         <div v-else class="space-y-4">
@@ -483,6 +667,13 @@ definePageMeta({
 
               <!-- Actions -->
               <div class="px-4 pb-4 flex flex-wrap gap-2">
+                <NuxtLink
+                  :to="`/track-order?orderNumber=${order.id}`"
+                  class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-medium rounded-lg transition-colors"
+                >
+                  <UIcon name="i-lucide-map-pin" class="w-5 h-5" />
+                  {{ locale === 'ar' ? 'تتبع الطلب' : 'Track Order' }}
+                </NuxtLink>
                 <a
                   v-if="getWhatsAppUrl(order.id)"
                   :href="getWhatsAppUrl(order.id)!"
@@ -491,7 +682,7 @@ definePageMeta({
                   class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-colors"
                 >
                   <UIcon name="i-simple-icons-whatsapp" class="w-5 h-5" />
-                  {{ locale === 'ar' ? 'استفسار عبر واتساب' : 'Inquire via WhatsApp' }}
+                  {{ locale === 'ar' ? 'استفسار' : 'Inquire' }}
                 </a>
               </div>
             </div>

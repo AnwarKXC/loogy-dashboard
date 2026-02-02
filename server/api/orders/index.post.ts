@@ -1,7 +1,7 @@
-import { defineEventHandler, readBody, createError } from 'h3'
+import { defineEventHandler, readBody, createError, getRequestURL } from 'h3'
 import { z } from 'zod'
-import { Prisma } from '@prisma/client'
 import prisma from '../../db'
+import { sendOrderNotification, sendCustomerOrderConfirmation } from '../../utils/whatsapp'
 
 const createOrderSchema = z.object({
   customerPhone: z.string().min(1),
@@ -39,7 +39,15 @@ export default defineEventHandler(async (event) => {
 
   // Calculate totals and verify stock
   let subtotal = 0
-  const orderItemsData = []
+  const orderItemsData: Array<{
+    productId: number
+    variantId: number | null
+    quantity: number
+    price: number
+    totalPrice: number
+  }> = []
+  // Store product names separately for notifications (not stored in DB)
+  const productNamesMap = new Map<number, string>()
 
   for (const item of items) {
     const product = await prisma.product.findUnique({
@@ -72,13 +80,13 @@ export default defineEventHandler(async (event) => {
     subtotal += totalPrice
 
     const productName = product.translations.find(t => t.name)?.name || `Product ${product.id}`
+    productNamesMap.set(item.productId, productName)
     orderItemsData.push({
       productId: item.productId,
-      variantId: item.variantId,
+      variantId: item.variantId ?? null,
       quantity: item.quantity,
       price,
-      totalPrice,
-      productName: (productName ?? Prisma.JsonNull) as Prisma.InputJsonValue
+      totalPrice
     })
   }
 
@@ -110,6 +118,42 @@ export default defineEventHandler(async (event) => {
       }
     })
   }
+
+  // Send WhatsApp notification to business (async, don't block response)
+  const baseUrl = getRequestURL(event).origin
+  sendOrderNotification({
+    id: order.id,
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    shippingCity: order.shippingCity,
+    shippingStreet: order.shippingStreet,
+    totalAmount: Number(order.totalAmount),
+    items: order.items.map(item => ({
+      productName: productNamesMap.get(item.productId) || `Product ${item.productId}`,
+      quantity: item.quantity,
+      price: Number(item.price)
+    })),
+    notes: order.notes
+  }, baseUrl).catch((err) => {
+    console.error('Failed to send WhatsApp order notification:', err)
+  })
+
+  // Send WhatsApp confirmation to customer (async, don't block response)
+  sendCustomerOrderConfirmation({
+    id: order.id,
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    shippingCity: order.shippingCity,
+    shippingStreet: order.shippingStreet,
+    totalAmount: Number(order.totalAmount),
+    items: order.items.map(item => ({
+      productName: productNamesMap.get(item.productId) || `Product ${item.productId}`,
+      quantity: item.quantity,
+      price: Number(item.price)
+    }))
+  }, baseUrl).catch((err) => {
+    console.error('Failed to send WhatsApp customer confirmation:', err)
+  })
 
   return {
     success: true,

@@ -96,6 +96,7 @@ export default eventHandler(async (event) => {
       images: [],
       categoryId: payload.categoryId ?? undefined,
       brandId: payload.brandId ?? undefined,
+      isPublished: true, // Publish products by default so they appear in storefront
       translations: {
         createMany: {
           data: [

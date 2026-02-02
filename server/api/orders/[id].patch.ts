@@ -1,10 +1,11 @@
-import { eventHandler, readBody, createError } from 'h3'
+import { eventHandler, readBody, createError, getRequestURL } from 'h3'
 import { z } from 'zod'
 
 import prisma from '../../db'
 import { requireSuperAdmin } from '../../utils/superadmin-session'
 import { getOrderInclude, mapOrderToDetail } from './utils'
 import type { OrderWithRelations } from './utils'
+import { sendOrderProcessingNotification, sendOrderShippingNotification } from '../../utils/whatsapp'
 
 const updateOrderSchema = z.object({
   status: z.enum(['PENDING', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED', 'RETURNED']).optional(),
@@ -66,6 +67,10 @@ export default eventHandler(async (event) => {
     })
   }
 
+  // Check for status change notifications
+  const isBeingProcessed = payload.status === 'PROCESSING' && order.status !== 'PROCESSING'
+  const isBeingShipped = payload.status === 'SHIPPING' && order.status !== 'SHIPPING'
+
   const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
@@ -78,6 +83,34 @@ export default eventHandler(async (event) => {
     },
     include: getOrderInclude()
   })
+
+  // Send WhatsApp notifications for status changes (async, don't block response)
+  const baseUrl = getRequestURL(event).origin
+
+  if (isBeingProcessed) {
+    sendOrderProcessingNotification({
+      id: updated.id,
+      customerName: updated.customerName,
+      customerPhone: updated.customerPhone,
+      totalAmount: Number(updated.totalAmount)
+    }, baseUrl).catch((err) => {
+      console.error('Failed to send order processing notification:', err)
+    })
+  }
+
+  if (isBeingShipped) {
+    sendOrderShippingNotification({
+      id: updated.id,
+      customerName: updated.customerName,
+      customerPhone: updated.customerPhone,
+      shippingCity: updated.shippingCity,
+      shippingStreet: updated.shippingStreet,
+      totalAmount: Number(updated.totalAmount),
+      paymentMethod: updated.paymentMethod
+    }, baseUrl).catch((err) => {
+      console.error('Failed to send order shipping notification:', err)
+    })
+  }
 
   return {
     order: mapOrderToDetail(updated as unknown as OrderWithRelations)

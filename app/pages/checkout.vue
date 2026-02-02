@@ -100,8 +100,24 @@ watch(splitShipment, (val) => {
 })
 
 // Steps (removed SHIPPING - shipping calculated based on location)
-const steps = ['INFORMATION', 'PAYMENT'] as const
-const currentStep = ref<typeof steps[number]>('INFORMATION')
+const steps = ['PHONE_VERIFY', 'INFORMATION', 'PAYMENT'] as const
+const currentStep = ref<typeof steps[number]>('PHONE_VERIFY')
+
+// OTP verification
+const {
+  sendCode: sendOtpCode,
+  verifyCode: verifyOtpCode,
+  verified: phoneVerified,
+  codeSent: otpCodeSent,
+  loading: otpLoading,
+  error: otpError,
+  cooldownSeconds,
+  attemptsRemaining,
+  reset: resetOtp
+} = usePhoneOtp()
+
+const otpCode = ref('')
+const phoneInputForOtp = ref('')
 
 // Governorates data from API
 const governorates = ref<GovernorateFromAPI[]>([])
@@ -357,6 +373,69 @@ const handlePhoneInput = (event: Event) => {
   }
 }
 
+// OTP phone input handler
+const handleOtpPhoneInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  let value = input.value.replace(/[^\d+]/g, '')
+  if (value.includes('+') && !value.startsWith('+')) {
+    value = value.replace(/\+/g, '')
+  }
+  if (value.startsWith('+')) {
+    value = value.slice(0, 13)
+  } else {
+    value = value.slice(0, 11)
+  }
+  phoneInputForOtp.value = value
+}
+
+// Send OTP code
+const handleSendOtp = async () => {
+  if (!validateEgyptianPhone(phoneInputForOtp.value)) {
+    toast.add({
+      title: locale.value === 'ar' ? 'خطأ' : 'Error',
+      description: locale.value === 'ar' ? 'يرجى إدخال رقم هاتف مصري صحيح' : 'Please enter a valid Egyptian phone number',
+      color: 'error'
+    })
+    return
+  }
+  await sendOtpCode(phoneInputForOtp.value)
+}
+
+// Verify OTP code
+const handleVerifyOtp = async () => {
+  if (otpCode.value.length !== 6) {
+    toast.add({
+      title: locale.value === 'ar' ? 'خطأ' : 'Error',
+      description: locale.value === 'ar' ? 'يرجى إدخال رمز التحقق المكون من 6 أرقام' : 'Please enter the 6-digit verification code',
+      color: 'error'
+    })
+    return
+  }
+  const success = await verifyOtpCode(phoneInputForOtp.value, otpCode.value)
+  if (success) {
+    // Set the verified phone to form
+    form.phone = phoneInputForOtp.value
+    // Lookup previous orders for this phone
+    await lookupCustomerByPhone(phoneInputForOtp.value)
+    // Move to information step
+    currentStep.value = 'INFORMATION'
+    toast.add({
+      title: locale.value === 'ar' ? 'تم التحقق!' : 'Verified!',
+      description: locale.value === 'ar' ? 'تم التحقق من رقم هاتفك بنجاح' : 'Your phone number has been verified',
+      color: 'success'
+    })
+  }
+}
+
+// Change phone number (go back to verification)
+const changePhoneNumber = () => {
+  resetOtp()
+  otpCode.value = ''
+  phoneInputForOtp.value = ''
+  form.phone = ''
+  currentStep.value = 'PHONE_VERIFY'
+}
+
 // Customer lookup state
 const lookupLoading = ref(false)
 const customerFound = ref(false)
@@ -547,8 +626,20 @@ const nextStep = () => {
 }
 
 const goToStep = (step: typeof steps[number]) => {
-  const stepOrder = { INFORMATION: 1, PAYMENT: 2 }
-  if (stepOrder[step] < stepOrder[currentStep.value]) {
+  const stepOrder = { PHONE_VERIFY: 0, INFORMATION: 1, PAYMENT: 2 }
+
+  // Can't go forward to INFORMATION without phone verification
+  if (step === 'INFORMATION' && !phoneVerified.value) {
+    return
+  }
+
+  // Can't go forward to PAYMENT without completing INFORMATION
+  if (step === 'PAYMENT' && currentStep.value === 'PHONE_VERIFY') {
+    return
+  }
+
+  // Allow going back or staying at same step
+  if (stepOrder[step] <= stepOrder[currentStep.value]) {
     currentStep.value = step
   }
 }
@@ -642,8 +733,12 @@ const placeOrder = async () => {
 // Get step label based on locale
 const getStepLabel = (step: string) => {
   const stepKeys: Record<string, string> = {
+    PHONE_VERIFY: locale.value === 'ar' ? 'التحقق' : 'Verify',
     INFORMATION: 'checkout.steps.information',
     PAYMENT: 'checkout.steps.payment'
+  }
+  if (step === 'PHONE_VERIFY') {
+    return stepKeys[step]
   }
   return t(stepKeys[step] || step)
 }
@@ -682,7 +777,7 @@ const getStepLabel = (step: string) => {
       <div class="mb-10">
         <button
           class="mb-6 hover:opacity-70 transition-opacity"
-          @click="currentStep === 'INFORMATION' ? router.push('/cart') : goToStep('INFORMATION')"
+          @click="currentStep === 'PHONE_VERIFY' ? router.push('/cart') : currentStep === 'INFORMATION' ? goToStep('PHONE_VERIFY') : goToStep('INFORMATION')"
         >
           <UIcon
             :name="locale === 'ar' ? 'i-heroicons-arrow-long-right' : 'i-heroicons-arrow-long-left'"
@@ -713,6 +808,116 @@ const getStepLabel = (step: string) => {
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
         <!-- Left Column: Forms -->
         <div class="lg:col-span-7 space-y-8">
+          <!-- PHONE VERIFICATION Step -->
+          <div v-show="currentStep === 'PHONE_VERIFY'">
+            <div class="space-y-6">
+              <div class="text-center mb-8">
+                <div class="size-16 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                  <UIcon name="i-simple-icons-whatsapp" class="size-8 text-green-600 dark:text-green-400" />
+                </div>
+                <h2 class="text-2xl font-bold text-black dark:text-white mb-2">
+                  {{ locale === 'ar' ? 'تحقق من رقم هاتفك' : 'Verify Your Phone Number' }}
+                </h2>
+                <p class="text-gray-600 dark:text-gray-400">
+                  {{ locale === 'ar' ? 'سنرسل رمز تحقق إلى واتساب الخاص بك' : 'We will send a verification code to your WhatsApp' }}
+                </p>
+              </div>
+
+              <!-- Phone Input -->
+              <div v-if="!otpCodeSent" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    {{ locale === 'ar' ? 'رقم الهاتف' : 'Phone Number' }}
+                  </label>
+                  <input
+                    :value="phoneInputForOtp"
+                    type="tel"
+                    inputmode="tel"
+                    :placeholder="locale === 'ar' ? '01012345678' : '01012345678'"
+                    class="w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 px-4 py-4 text-lg text-center font-mono focus:outline-none focus:border-green-500 transition-colors rounded-lg"
+                    @input="handleOtpPhoneInput"
+                  >
+                  <p class="mt-2 text-xs text-gray-500 text-center">
+                    {{ locale === 'ar' ? 'أدخل رقم هاتفك المصري للتحقق' : 'Enter your Egyptian phone number to verify' }}
+                  </p>
+                </div>
+
+                <button
+                  class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 font-bold text-lg rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  :disabled="otpLoading || !validateEgyptianPhone(phoneInputForOtp)"
+                  @click="handleSendOtp"
+                >
+                  <UIcon v-if="otpLoading" name="i-lucide-loader-2" class="w-5 h-5 animate-spin" />
+                  <UIcon v-else name="i-simple-icons-whatsapp" class="w-5 h-5" />
+                  {{ locale === 'ar' ? 'إرسال رمز التحقق' : 'Send Verification Code' }}
+                </button>
+              </div>
+
+              <!-- OTP Input -->
+              <div v-else class="space-y-4">
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 text-center">
+                  <p class="text-green-700 dark:text-green-300 text-sm">
+                    {{ locale === 'ar' ? 'تم إرسال رمز التحقق إلى' : 'Verification code sent to' }}
+                    <span class="font-mono font-bold block mt-1">{{ phoneInputForOtp }}</span>
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">
+                    {{ locale === 'ar' ? 'أدخل رمز التحقق' : 'Enter Verification Code' }}
+                  </label>
+                  <input
+                    v-model="otpCode"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="6"
+                    placeholder="000000"
+                    class="w-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 px-4 py-4 text-2xl text-center font-mono tracking-[0.5em] focus:outline-none focus:border-green-500 transition-colors rounded-lg"
+                    :class="{ 'border-red-500': otpError }"
+                  >
+                  <p v-if="otpError" class="mt-2 text-sm text-red-500 text-center">
+                    {{ otpError }}
+                  </p>
+                  <p v-else class="mt-2 text-xs text-gray-500 text-center">
+                    {{ locale === 'ar' ? `المحاولات المتبقية: ${attemptsRemaining}` : `Attempts remaining: ${attemptsRemaining}` }}
+                  </p>
+                </div>
+
+                <button
+                  class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 font-bold text-lg rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  :disabled="otpLoading || otpCode.length !== 6"
+                  @click="handleVerifyOtp"
+                >
+                  <UIcon v-if="otpLoading" name="i-lucide-loader-2" class="w-5 h-5 animate-spin" />
+                  <UIcon v-else name="i-lucide-check" class="w-5 h-5" />
+                  {{ locale === 'ar' ? 'تحقق' : 'Verify' }}
+                </button>
+
+                <!-- Resend & Change Number -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                  <button
+                    class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-3 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    :disabled="cooldownSeconds > 0 || otpLoading"
+                    @click="handleSendOtp"
+                  >
+                    <span v-if="cooldownSeconds > 0">
+                      {{ locale === 'ar' ? `إعادة الإرسال (${cooldownSeconds}ث)` : `Resend (${cooldownSeconds}s)` }}
+                    </span>
+                    <span v-else>
+                      {{ locale === 'ar' ? 'إعادة إرسال الرمز' : 'Resend Code' }}
+                    </span>
+                  </button>
+                  <button
+                    class="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-3 font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    @click="changePhoneNumber"
+                  >
+                    {{ locale === 'ar' ? 'تغيير الرقم' : 'Change Number' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- INFORMATION Step -->
           <div v-show="currentStep === 'INFORMATION'">
             <!-- Contact Info -->
@@ -721,32 +926,31 @@ const getStepLabel = (step: string) => {
                 {{ $t('checkout.contactInfo') }}
               </h2>
 
-              <!-- Phone -->
+              <!-- Phone (Verified - Read Only) -->
               <div>
                 <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
-                  {{ $t('checkout.fields.phone') }} <span class="text-red-500">*</span>
-                  <span v-if="lookupLoading" class="ml-2 inline-flex items-center">
-                    <UIcon name="i-lucide-loader-2" class="w-3 h-3 animate-spin" />
-                  </span>
-                  <span v-else-if="customerFound" class="ml-2 text-green-600">
-                    <UIcon name="i-lucide-check-circle" class="w-3 h-3 inline" />
-                    {{ locale === 'ar' ? 'تم التعرف عليك' : 'Recognized' }}
+                  {{ $t('checkout.fields.phone') }}
+                  <span class="ml-2 text-green-600">
+                    <UIcon name="i-lucide-shield-check" class="w-3 h-3 inline" />
+                    {{ locale === 'ar' ? 'تم التحقق' : 'Verified' }}
                   </span>
                 </label>
-                <input
-                  :value="form.phone"
-                  type="tel"
-                  inputmode="tel"
-                  :placeholder="locale === 'ar' ? '01012345678' : '01012345678'"
-                  class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-4 py-4 text-sm focus:outline-none focus:border-black dark:focus:border-white transition-colors"
-                  :class="{ 'border-red-500 dark:border-red-500': errors.phone, 'border-green-500 dark:border-green-500': customerFound && !errors.phone }"
-                  @input="handlePhoneInput"
-                >
-                <p v-if="errors.phone" class="mt-1 text-xs text-red-500">
-                  {{ errors.phone }}
-                </p>
-                <p v-else class="mt-1 text-xs text-gray-400">
-                  {{ locale === 'ar' ? 'مثال: 01012345678 أو +201012345678' : 'Example: 01012345678 or +201012345678' }}
+                <div class="flex items-center gap-2">
+                  <div class="flex-1 bg-gray-100 dark:bg-gray-800 border border-green-500 px-4 py-4 text-sm font-mono flex items-center justify-between">
+                    <span>{{ form.phone }}</span>
+                    <UIcon name="i-lucide-check-circle" class="w-5 h-5 text-green-500" />
+                  </div>
+                  <button
+                    type="button"
+                    class="px-4 py-4 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm"
+                    @click="changePhoneNumber"
+                  >
+                    {{ locale === 'ar' ? 'تغيير' : 'Change' }}
+                  </button>
+                </div>
+                <p v-if="customerFound" class="mt-1 text-xs text-green-600">
+                  <UIcon name="i-lucide-user-check" class="w-3 h-3 inline" />
+                  {{ locale === 'ar' ? 'تم ملء بياناتك من طلبك السابق' : 'Your details were filled from your previous order' }}
                 </p>
               </div>
 

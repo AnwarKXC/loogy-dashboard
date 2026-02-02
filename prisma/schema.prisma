@@ -443,6 +443,60 @@ model SocialSettings {
 }
 
 // ============================================================================
+// WHATSAPP INTEGRATION (WPPConnect)
+// ============================================================================
+// WhatsApp Business integration for order notifications.
+// Uses WPPConnect library for WhatsApp Web automation.
+// ============================================================================
+
+model WhatsAppSettings {
+  id                         Int       @id @default(autoincrement())
+  isEnabled                  Boolean   @default(false)
+  connectionStatus           String    @default("disconnected") // disconnected, connecting, connected, failed
+  businessPhone              String? // The WhatsApp business number being used
+  recipientPhone             String? // Primary phone to receive order notifications
+  lastConnected              DateTime?
+  qrCode                     String?   @db.Text // Base64 QR code for authentication
+  sessionData                Json? // WPPConnect session data for reconnection
+  autoReconnect              Boolean   @default(true)
+  messageTemplate            Json? // Custom message template for orders
+  sendToCustomer             Boolean   @default(false) // Send order confirmation to customer
+  sendToBusiness             Boolean   @default(true) // Send order notification to business
+  businessNotificationNumber String? // Additional notification number
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+}
+
+// ============================================================================
+// OTP VERIFICATION
+// ============================================================================
+// Store OTP codes for phone verification via WhatsApp
+
+model PhoneOtp {
+  id        Int      @id @default(autoincrement())
+  phone     String // Phone number being verified
+  code      String // 6-digit OTP code
+  expiresAt DateTime // OTP expiration time
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0) // Failed verification attempts
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+  @@index([phone, expiresAt])
+}
+
+// Persistent auth token for phone numbers (created after OTP verification)
+model PhoneAuthToken {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique // Phone number
+  token     String   @unique // Auth token (UUID)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([token])
+}
+
+// ============================================================================
 // TAX CONFIGURATION
 // ============================================================================
 
